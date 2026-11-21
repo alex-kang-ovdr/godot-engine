@@ -1,12 +1,14 @@
 #include "playforge_platform.h"
 
 #include "core/config/engine.h"
+#include "core/config/project_settings.h"
 #include "core/io/file_access.h"
 #include "core/io/file_access_pack.h"
 #include "core/io/resource_loader.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/object/script_language.h"
+#include "core/os/os.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/light_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
@@ -242,6 +244,233 @@ void PlayForgePlatform::_on_avatar_ready(uint64_t p_avatar_id) {
 	}
 }
 
+Size2 PlayForgePlatform::get_portrait_min_size(int p_framing) const {
+	// C++ Engine hard minimum UI size floor so creators cannot shrink/hide the Avatar Portrait UI.
+	// 0 = UPPER_BODY (128x128), 1 = FULL_BODY (160x240)
+	return p_framing == 1 ? Size2(160.0f, 240.0f) : Size2(128.0f, 128.0f);
+}
+
+void PlayForgePlatform::_resolve_presentation_config(Node *p_scene, int &r_mode, Size2 &r_size, int &r_corner) {
+	r_mode = 0; // WORLD_3D
+	r_size = Size2();
+	r_corner = 0; // BOTTOM_LEFT
+
+	// 1. ProjectSettings defaults (game mode configured in project.godot)
+	if (ProjectSettings::get_singleton()) {
+		if (ProjectSettings::get_singleton()->has_setting("playforge/avatar/presentation_mode")) {
+			r_mode = CLAMP((int)ProjectSettings::get_singleton()->get_setting("playforge/avatar/presentation_mode"), 0, 3);
+		}
+		if (ProjectSettings::get_singleton()->has_setting("playforge/avatar/portrait_size")) {
+			Variant sz = ProjectSettings::get_singleton()->get_setting("playforge/avatar/portrait_size");
+			if (sz.get_type() == Variant::VECTOR2) {
+				r_size = sz;
+			}
+		}
+		if (ProjectSettings::get_singleton()->has_setting("playforge/avatar/portrait_corner")) {
+			r_corner = CLAMP((int)ProjectSettings::get_singleton()->get_setting("playforge/avatar/portrait_corner"), 0, 4);
+		}
+	}
+
+	// 2. Scene PlayForgeAvatarSpawn override
+	Node *spawn_node = _find_script_path_recursive(p_scene, "addons/playforge_avatar/avatar_spawn.gd");
+	if (spawn_node) {
+		bool valid = false;
+		Variant pm = spawn_node->get("presentation_mode", &valid);
+		if (valid && pm.get_type() == Variant::INT) {
+			r_mode = CLAMP((int)pm, 0, 3);
+		}
+		Variant ps = spawn_node->get("portrait_size", &valid);
+		if (valid && ps.get_type() == Variant::VECTOR2) {
+			r_size = ps;
+		}
+		Variant pc = spawn_node->get("portrait_corner", &valid);
+		if (valid && pc.get_type() == Variant::INT) {
+			r_corner = CLAMP((int)pc, 0, 4);
+		}
+	}
+
+	// 3. CLI / launcher preview override (highest priority for automated tests & launcher)
+	if (OS::get_singleton()) {
+		List<String> args = OS::get_singleton()->get_cmdline_user_args();
+		for (const String &arg : args) {
+			if (arg.begins_with("--avatar-presentation-mode=")) {
+				String val = arg.substr(String("--avatar-presentation-mode=").length()).strip_edges().to_lower();
+				if (val == "world_3d" || val == "0") {
+					r_mode = 0;
+				} else if (val == "upper_body" || val == "portrait_upper_body" || val == "1") {
+					r_mode = 1;
+				} else if (val == "full_body" || val == "portrait_full_body" || val == "2") {
+					r_mode = 2;
+				} else if (val == "hybrid" || val == "world_3d_with_portrait" || val == "3") {
+					r_mode = 3;
+				}
+			} else if (arg.begins_with("--avatar-portrait-size=")) {
+				String val = arg.substr(String("--avatar-portrait-size=").length()).strip_edges().to_lower();
+				int x_idx = val.find_char('x');
+				if (x_idx > 0) {
+					r_size = Size2(val.substr(0, x_idx).to_float(), val.substr(x_idx + 1).to_float());
+				}
+			} else if (arg.begins_with("--avatar-portrait-corner=")) {
+				String val = arg.substr(String("--avatar-portrait-corner=").length()).strip_edges().to_lower();
+				if (val == "bottom_left" || val == "0") {
+					r_corner = 0;
+				} else if (val == "top_right" || val == "1") {
+					r_corner = 1;
+				} else if (val == "bottom_right" || val == "2") {
+					r_corner = 2;
+				} else if (val == "top_left" || val == "top_left_below_hud" || val == "3") {
+					r_corner = 3;
+				}
+			}
+		}
+	}
+}
+
+void PlayForgePlatform::_seal_portrait_instance(Control *p_portrait, const Size2 &p_min_size) {
+	if (!p_portrait) {
+		return;
+	}
+	Object::PlatformSealScope seal_scope;
+	p_portrait->set_platform_min_size(p_min_size);
+	p_portrait->set_platform_sealed(true);
+	for (int i = 0; i < p_portrait->get_child_count(true); i++) {
+		Node *child = p_portrait->get_child(i, true);
+		String cname = child->get_name();
+		if (cname.begins_with("Sealed") || child->get_meta("_playforge_avatar_sealed", false).booleanize()) {
+			child->set_platform_sealed(true);
+			child->set_platform_hidden_from_user_tree(true);
+		}
+	}
+	portrait_ui_id = p_portrait->get_instance_id();
+	if (!p_portrait->is_ready()) {
+		Callable cb = callable_mp(this, &PlayForgePlatform::_on_portrait_ready).bind((uint64_t)portrait_ui_id);
+		if (!p_portrait->is_connected(SNAME("ready"), cb)) {
+			p_portrait->connect(SNAME("ready"), cb, CONNECT_ONE_SHOT);
+		}
+	}
+}
+
+void PlayForgePlatform::_on_portrait_ready(uint64_t p_portrait_id) {
+	Control *portrait = ObjectDB::get_instance<Control>(ObjectID(p_portrait_id));
+	if (portrait) {
+		_seal_portrait_instance(portrait, get_portrait_min_size(portrait_framing));
+	}
+}
+
+Control *PlayForgePlatform::_ensure_portrait_ui(SceneTree *p_tree, int p_framing, const Size2 &p_requested_size, int p_corner) {
+	if (!p_tree || !p_tree->get_root() || Engine::get_singleton()->is_editor_hint()) {
+		return nullptr;
+	}
+	Object::PlatformSealScope seal_scope;
+
+	portrait_framing = CLAMP(p_framing, 0, 1);
+	portrait_corner = CLAMP(p_corner, 0, 4);
+	Size2 min_size = get_portrait_min_size(portrait_framing);
+	Size2 default_size = portrait_framing == 1 ? Size2(220.0f, 320.0f) : Size2(192.0f, 192.0f);
+	Size2 desired = (p_requested_size.x > 0.0f && p_requested_size.y > 0.0f) ? p_requested_size : default_size;
+	// Minimum size only (>= min_size) is mandatory; no artificial upper size cap (supports full-screen/lobby portraits).
+	Size2 target_size(
+			MAX(desired.x, min_size.x),
+			MAX(desired.y, min_size.y));
+
+	CanvasLayer *layer = ObjectDB::get_instance<CanvasLayer>(portrait_layer_id);
+	if (!layer) {
+		layer = memnew(CanvasLayer);
+		layer->set_name("PlayForgePortraitLayer");
+		layer->set_layer(115); // Above user UI (<=100), below CoreHUD (128)
+		layer->set_process_mode(Node::PROCESS_MODE_ALWAYS);
+		p_tree->get_root()->add_child(layer, false, Node::INTERNAL_MODE_BACK);
+		layer->set_platform_sealed(true);
+		layer->set_platform_hidden_from_user_tree(true);
+		portrait_layer_id = layer->get_instance_id();
+	}
+
+	Control *portrait = ObjectDB::get_instance<Control>(portrait_ui_id);
+	if (!portrait) {
+		const String portrait_script_path = "res://addons/playforge_avatar/avatar_portrait_ui.gd";
+		PanelContainer *panel = memnew(PanelContainer);
+		panel->set_name("PlayForgeAvatarPortraitUI");
+		if (ResourceLoader::exists(portrait_script_path)) {
+			Ref<Script> scr = ResourceLoader::load(portrait_script_path);
+			if (scr.is_valid()) {
+				panel->set_script(scr);
+			}
+		}
+		panel->set_platform_min_size(min_size);
+		panel->set_custom_minimum_size(target_size);
+		panel->set_size(target_size);
+		layer->add_child(panel);
+		portrait = panel;
+	}
+
+	portrait->set_platform_min_size(min_size);
+	if (portrait->has_method("configure_portrait")) {
+		portrait->call("configure_portrait", portrait_framing, target_size, portrait_corner);
+	} else {
+		portrait->set_custom_minimum_size(target_size);
+		portrait->set_size(target_size);
+		portrait->set_position(Vector2(16.0f, 76.0f));
+	}
+	_seal_portrait_instance(portrait, min_size);
+	return portrait;
+}
+
+void PlayForgePlatform::_remove_portrait_ui() {
+	Object::PlatformSealScope seal_scope;
+	CanvasLayer *layer = ObjectDB::get_instance<CanvasLayer>(portrait_layer_id);
+	if (layer) {
+		layer->queue_free();
+	}
+	portrait_layer_id = ObjectID();
+	portrait_ui_id = ObjectID();
+}
+
+Control *PlayForgePlatform::get_avatar_portrait_ui() const {
+	return ObjectDB::get_instance<Control>(portrait_ui_id);
+}
+
+Node *PlayForgePlatform::set_avatar_presentation_mode(int p_mode, const Size2 &p_portrait_size, int p_corner) {
+	SceneTree *tree = SceneTree::get_singleton();
+	if (!tree || Engine::get_singleton()->is_editor_hint()) {
+		return nullptr;
+	}
+	_ensure_hud(tree);
+	presentation_mode = CLAMP(p_mode, 0, 3);
+	if (presentation_mode == 0) {
+		_remove_portrait_ui();
+		Node *scene = tree->get_current_scene();
+		if (scene && _is_3d_world(scene)) {
+			Node *existing = get_local_avatar();
+			if (existing) {
+				return existing;
+			}
+			return ensure_scene_avatar(scene);
+		}
+		return get_local_avatar();
+	}
+	int framing = (presentation_mode == 2) ? 1 : 0;
+	Control *portrait = _ensure_portrait_ui(tree, framing, p_portrait_size, p_corner);
+	if (presentation_mode == 3) {
+		Node *scene = tree->get_current_scene();
+		if (scene && _is_3d_world(scene) && !get_local_avatar()) {
+			ensure_scene_avatar(scene);
+		}
+	}
+	return portrait;
+}
+
+Control *PlayForgePlatform::set_portrait_framing(int p_framing, const Size2 &p_portrait_size) {
+	SceneTree *tree = SceneTree::get_singleton();
+	if (!tree || Engine::get_singleton()->is_editor_hint()) {
+		return nullptr;
+	}
+	int next_framing = CLAMP(p_framing, 0, 1);
+	if (presentation_mode == 1 || presentation_mode == 2) {
+		presentation_mode = next_framing == 1 ? 2 : 1;
+	}
+	return _ensure_portrait_ui(tree, next_framing, p_portrait_size, portrait_corner);
+}
+
 Node *PlayForgePlatform::ensure_scene_avatar(Node *p_scene) {
 	if (!p_scene || Engine::get_singleton()->is_editor_hint()) {
 		return nullptr;
@@ -250,8 +479,28 @@ Node *PlayForgePlatform::ensure_scene_avatar(Node *p_scene) {
 	if (tree) {
 		_ensure_hud(tree);
 	}
+
+	int mode = 0;
+	Size2 portrait_size;
+	int corner = 0;
+	_resolve_presentation_config(p_scene, mode, portrait_size, corner);
+	presentation_mode = mode;
+
+	// Portrait-only modes (1 = UPPER_BODY, 2 = FULL_BODY) work in BOTH 2D and 3D scenes!
+	if (mode == 1 || mode == 2) {
+		int framing = (mode == 2) ? 1 : 0;
+		return _ensure_portrait_ui(tree, framing, portrait_size, corner);
+	}
+
+	// Hybrid mode (3 = WORLD_3D_WITH_PORTRAIT) mounts both portrait UI and 3D world avatar!
+	if (mode == 3) {
+		_ensure_portrait_ui(tree, 0, portrait_size, corner);
+	} else {
+		_remove_portrait_ui();
+	}
+
 	if (!_is_3d_world(p_scene)) {
-		return nullptr;
+		return get_avatar_portrait_ui();
 	}
 
 	// 1. Existing PlayForgeAvatarController in scene?
@@ -382,6 +631,10 @@ void PlayForgePlatform::on_tree_initialized(SceneTree *p_tree) {
 		if (avatar) {
 			singleton->_seal_avatar_instance(avatar);
 		}
+		Control *portrait = singleton->get_avatar_portrait_ui();
+		if (portrait) {
+			singleton->_seal_portrait_instance(portrait, singleton->get_portrait_min_size(singleton->portrait_framing));
+		}
 	}
 }
 
@@ -451,6 +704,10 @@ void PlayForgePlatform::_on_emote_pressed(int p_slot) {
 	if (avatar && avatar->has_method("play_emote_slot")) {
 		avatar->call("play_emote_slot", p_slot);
 	}
+	Control *portrait = get_avatar_portrait_ui();
+	if (portrait && portrait->has_method("play_emote_slot")) {
+		portrait->call("play_emote_slot", p_slot);
+	}
 }
 
 void PlayForgePlatform::_on_leave_pressed() {
@@ -465,6 +722,11 @@ void PlayForgePlatform::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_platform_hud_active"), &PlayForgePlatform::is_platform_hud_active);
 	ClassDB::bind_method(D_METHOD("get_topbar_safe_inset"), &PlayForgePlatform::get_topbar_safe_inset);
 	ClassDB::bind_method(D_METHOD("get_local_avatar"), &PlayForgePlatform::get_local_avatar);
+	ClassDB::bind_method(D_METHOD("get_avatar_portrait_ui"), &PlayForgePlatform::get_avatar_portrait_ui);
+	ClassDB::bind_method(D_METHOD("get_avatar_presentation_mode"), &PlayForgePlatform::get_avatar_presentation_mode);
+	ClassDB::bind_method(D_METHOD("get_portrait_min_size", "framing"), &PlayForgePlatform::get_portrait_min_size);
+	ClassDB::bind_method(D_METHOD("set_avatar_presentation_mode", "mode", "portrait_size", "corner"), &PlayForgePlatform::set_avatar_presentation_mode, DEFVAL(Size2()), DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_portrait_framing", "framing", "portrait_size"), &PlayForgePlatform::set_portrait_framing, DEFVAL(Size2()));
 	ClassDB::bind_method(D_METHOD("get_sealed_prefixes"), &PlayForgePlatform::get_sealed_prefixes);
 	ClassDB::bind_method(D_METHOD("get_violation_count"), &PlayForgePlatform::get_violation_count);
 	ClassDB::bind_method(D_METHOD("is_platform_menu_open"), &PlayForgePlatform::is_platform_menu_open);

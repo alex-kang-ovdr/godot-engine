@@ -578,11 +578,16 @@ void CanvasItem::move_to_front() {
 
 void CanvasItem::set_modulate(const Color &p_modulate) {
 	ERR_THREAD_GUARD;
-	if (modulate == p_modulate) {
+	Color next_modulate = p_modulate;
+	if (is_platform_sealed() && !Object::is_platform_privileged() && next_modulate.a < 0.85f) {
+		Object::record_platform_seal_violation("CanvasItem.set_modulate_alpha");
+		next_modulate.a = 0.85f;
+	}
+	if (modulate == next_modulate) {
 		return;
 	}
 
-	modulate = p_modulate;
+	modulate = next_modulate;
 	RenderingServer::get_singleton()->canvas_item_set_modulate(canvas_item, modulate);
 }
 
@@ -658,11 +663,16 @@ CanvasItem *CanvasItem::get_parent_item() const {
 
 void CanvasItem::set_self_modulate(const Color &p_self_modulate) {
 	ERR_THREAD_GUARD;
-	if (self_modulate == p_self_modulate) {
+	Color next_self_modulate = p_self_modulate;
+	if (is_platform_sealed() && !Object::is_platform_privileged() && next_self_modulate.a < 0.85f) {
+		Object::record_platform_seal_violation("CanvasItem.set_self_modulate_alpha");
+		next_self_modulate.a = 0.85f;
+	}
+	if (self_modulate == next_self_modulate) {
 		return;
 	}
 
-	self_modulate = p_self_modulate;
+	self_modulate = next_self_modulate;
 	RenderingServer::get_singleton()->canvas_item_set_self_modulate(canvas_item, self_modulate);
 }
 

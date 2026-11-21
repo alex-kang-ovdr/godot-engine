@@ -275,6 +275,7 @@ private:
 		real_t expand = 1.0;
 		Size2 custom_maximum_size = Size2(-1, -1);
 		Size2 custom_minimum_size;
+		Size2 platform_min_size;
 
 		bool propagate_maximum_size = false;
 
@@ -637,6 +638,8 @@ public:
 
 	void set_custom_minimum_size(const Size2 &p_custom);
 	Size2 get_custom_minimum_size() const;
+	void set_platform_min_size(const Size2 &p_min);
+	Size2 get_platform_min_size() const;
 
 	virtual Size2 get_bound_minimum_size() const;
 

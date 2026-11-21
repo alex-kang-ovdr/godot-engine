@@ -1526,6 +1526,12 @@ void Control::set_size(const Size2 &p_size, bool p_keep_offsets) {
 	ERR_MAIN_THREAD_GUARD;
 	ERR_FAIL_COND(!std::isfinite(p_size.x) || !std::isfinite(p_size.y));
 	Size2 new_size = p_size;
+	if (is_platform_sealed() && !Object::is_platform_privileged() && (data.platform_min_size.x > 0.0f || data.platform_min_size.y > 0.0f)) {
+		if (new_size.x < data.platform_min_size.x || new_size.y < data.platform_min_size.y) {
+			Object::record_platform_seal_violation("Control.min_size_clamped");
+			new_size = new_size.max(data.platform_min_size);
+		}
+	}
 	Size2 min = get_combined_minimum_size();
 	if (new_size.x < min.x) {
 		new_size.x = min.x;
@@ -1540,6 +1546,9 @@ void Control::set_size(const Size2 &p_size, bool p_keep_offsets) {
 	}
 	if (max.y >= 0 && new_size.y > max.y) {
 		new_size.y = max.y;
+	}
+	if (data.platform_min_size.x > 0.0f || data.platform_min_size.y > 0.0f) {
+		new_size = new_size.max(data.platform_min_size);
 	}
 
 #ifdef TOOLS_ENABLED
@@ -1609,6 +1618,10 @@ Rect2 Control::get_anchorable_rect() const {
 
 void Control::set_scale(const Vector2 &p_scale) {
 	ERR_MAIN_THREAD_GUARD;
+	if (is_platform_sealed() && !Object::is_platform_privileged() && (p_scale.x < 1.0f || p_scale.y < 1.0f)) {
+		Object::record_platform_seal_violation("Control.set_scale");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot shrink scale of a platform-sealed Control below 1.0.");
+	}
 	if (data.scale == p_scale) {
 		return;
 	}
@@ -1799,6 +1812,12 @@ void Control::set_custom_maximum_size(const Size2 &p_custom) {
 	if (normalized.y < 0) {
 		normalized.y = -1;
 	}
+	if (is_platform_sealed() && !Object::is_platform_privileged() && (data.platform_min_size.x > 0.0f || data.platform_min_size.y > 0.0f)) {
+		if ((normalized.x >= 0.0f && normalized.x < data.platform_min_size.x) || (normalized.y >= 0.0f && normalized.y < data.platform_min_size.y)) {
+			Object::record_platform_seal_violation("Control.max_size_below_min");
+			ERR_FAIL_MSG("PlayForge Engine Seal: cannot set custom_maximum_size below platform minimum UI size.");
+		}
+	}
 
 	data.custom_maximum_size = normalized;
 	update_maximum_size();
@@ -1941,16 +1960,24 @@ Size2 Control::get_minimum_size() const {
 
 void Control::set_custom_minimum_size(const Size2 &p_custom) {
 	ERR_MAIN_THREAD_GUARD;
-	if (p_custom == data.custom_minimum_size) {
-		return;
-	}
-
 	if (!p_custom.is_finite()) {
 		// Prevent infinite loop.
 		return;
 	}
 
-	data.custom_minimum_size = p_custom;
+	Size2 next_min = p_custom;
+	if (is_platform_sealed() && !Object::is_platform_privileged() && (data.platform_min_size.x > 0.0f || data.platform_min_size.y > 0.0f)) {
+		if (next_min.x < data.platform_min_size.x || next_min.y < data.platform_min_size.y) {
+			Object::record_platform_seal_violation("Control.custom_min_size_clamped");
+			next_min = next_min.max(data.platform_min_size);
+		}
+	}
+
+	if (next_min == data.custom_minimum_size) {
+		return;
+	}
+
+	data.custom_minimum_size = next_min;
 	update_minimum_size();
 	update_configuration_warnings();
 }
@@ -1958,6 +1985,35 @@ void Control::set_custom_minimum_size(const Size2 &p_custom) {
 Size2 Control::get_custom_minimum_size() const {
 	ERR_READ_THREAD_GUARD_V(Size2());
 	return data.custom_minimum_size;
+}
+
+void Control::set_platform_min_size(const Size2 &p_min) {
+	ERR_MAIN_THREAD_GUARD;
+	if (!Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("Control.set_platform_min_size");
+		return;
+	}
+	Size2 clamped = p_min.max(Size2(0.0f, 0.0f));
+	if (data.platform_min_size == clamped) {
+		return;
+	}
+	data.platform_min_size = clamped;
+	if (data.custom_minimum_size.x < clamped.x || data.custom_minimum_size.y < clamped.y) {
+		data.custom_minimum_size = data.custom_minimum_size.max(clamped);
+	}
+	if (data.custom_maximum_size.x >= 0.0f && data.custom_maximum_size.x < clamped.x) {
+		data.custom_maximum_size.x = clamped.x;
+	}
+	if (data.custom_maximum_size.y >= 0.0f && data.custom_maximum_size.y < clamped.y) {
+		data.custom_maximum_size.y = clamped.y;
+	}
+	update_minimum_size();
+	_size_changed();
+}
+
+Size2 Control::get_platform_min_size() const {
+	ERR_READ_THREAD_GUARD_V(Size2());
+	return data.platform_min_size;
 }
 
 void Control::_update_desired_size_cache() const {
@@ -2131,6 +2187,7 @@ void Control::call_on_all_layout_pending_finished(const Callable &p_callable) {
 void Control::_update_minimum_size_cache() const {
 	Size2 minsize = get_minimum_size();
 	minsize = minsize.max(data.custom_minimum_size);
+	minsize = minsize.max(data.platform_min_size);
 
 	data.minimum_size_cache = minsize;
 	data.minimum_size_valid = true;
@@ -2158,6 +2215,7 @@ Size2 Control::get_bound_minimum_size() const {
 	if (max_size.y >= 0 && min_size.y > max_size.y) {
 		min_size.y = max_size.y;
 	}
+	min_size = min_size.max(data.platform_min_size);
 
 	return min_size;
 }
@@ -4721,6 +4779,7 @@ void Control::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_combined_pivot_offset"), &Control::get_combined_pivot_offset);
 	ClassDB::bind_method(D_METHOD("get_custom_maximum_size"), &Control::get_custom_maximum_size);
 	ClassDB::bind_method(D_METHOD("get_custom_minimum_size"), &Control::get_custom_minimum_size);
+	ClassDB::bind_method(D_METHOD("get_platform_min_size"), &Control::get_platform_min_size);
 	ClassDB::bind_method(D_METHOD("get_parent_area_size"), &Control::get_parent_area_size);
 	ClassDB::bind_method(D_METHOD("get_global_position"), &Control::get_global_position);
 	ClassDB::bind_method(D_METHOD("get_screen_position"), &Control::get_screen_position);
