@@ -583,11 +583,22 @@ void SceneTree::set_group(const StringName &p_group, const String &p_name, const
 	set_group_flags(GROUP_CALL_DEFAULT, p_group, p_name, p_value);
 }
 
+static SceneTree::PlayForgeTreeInitHook playforge_tree_init_hook = nullptr;
+static SceneTree::PlayForgeSceneLoadedHook playforge_scene_loaded_hook = nullptr;
+
+void SceneTree::set_playforge_hooks(PlayForgeTreeInitHook p_init_hook, PlayForgeSceneLoadedHook p_scene_hook) {
+	playforge_tree_init_hook = p_init_hook;
+	playforge_scene_loaded_hook = p_scene_hook;
+}
+
 void SceneTree::initialize() {
 	GodotProfileZone("SceneTree::initialize");
 	ERR_FAIL_NULL(root);
 	MainLoop::initialize();
 	root->_set_tree(this);
+	if (playforge_tree_init_hook) {
+		playforge_tree_init_hook(this);
+	}
 }
 
 void SceneTree::set_physics_interpolation_enabled(bool p_enabled) {
@@ -853,6 +864,7 @@ void SceneTree::process_tweens(double p_delta, bool p_physics) {
 }
 
 void SceneTree::finalize() {
+	Object::PlatformSealScope seal_scope;
 	_flush_delete_queue();
 
 	_flush_ugc();
@@ -1638,6 +1650,10 @@ void SceneTree::_flush_delete_queue() {
 void SceneTree::queue_delete(RequiredParam<Object> rp_object) {
 	_THREAD_SAFE_METHOD_
 	EXTRACT_PARAM_OR_FAIL(p_object, rp_object);
+	if (p_object->is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("SceneTree.queue_delete");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot queue_delete a platform-sealed object.");
+	}
 	p_object->_is_queued_for_deletion = true;
 	delete_queue.push_back(p_object->get_instance_id());
 }
@@ -1675,6 +1691,7 @@ void SceneTree::_flush_scene_change() {
 		// Might have already been freed externally.
 		Node *prev_scene = ObjectDB::get_instance<Node>(prev_scene_id);
 		if (prev_scene) {
+			Object::PlatformSealScope seal_scope;
 			memdelete(prev_scene);
 		}
 		prev_scene_id = ObjectID();
@@ -1690,6 +1707,10 @@ void SceneTree::_flush_scene_change() {
 		root->add_child(pending_new_scene);
 		// Update display for cursor instantly.
 		root->update_mouse_cursor_state();
+
+		if (playforge_scene_loaded_hook) {
+			playforge_scene_loaded_hook(this, pending_new_scene);
+		}
 
 		// Only on successful scene change.
 		emit_signal(SNAME("scene_changed"));
@@ -1754,6 +1775,7 @@ Error SceneTree::reload_current_scene() {
 void SceneTree::unload_current_scene() {
 	ERR_FAIL_COND_MSG(!Thread::is_main_thread(), "Unloading the current scene can only be done from the main thread.");
 	if (current_scene) {
+		Object::PlatformSealScope seal_scope;
 		memdelete(current_scene);
 		current_scene = nullptr;
 	}
@@ -1763,6 +1785,9 @@ void SceneTree::add_current_scene(Node *p_current) {
 	ERR_FAIL_COND_MSG(!Thread::is_main_thread(), "Adding a current scene can only be done from the main thread.");
 	current_scene = p_current;
 	root->add_child(p_current);
+	if (playforge_scene_loaded_hook) {
+		playforge_scene_loaded_hook(this, p_current);
+	}
 }
 
 RequiredResult<SceneTreeTimer> SceneTree::create_timer(double p_delay_sec, bool p_process_always, bool p_process_in_physics, bool p_ignore_time_scale) {

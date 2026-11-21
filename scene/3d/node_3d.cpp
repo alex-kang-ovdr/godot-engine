@@ -818,6 +818,10 @@ void Node3D::set_rotation_degrees(const Vector3 &p_euler_degrees) {
 
 void Node3D::set_scale(const Vector3 &p_scale) {
 	ERR_THREAD_GUARD;
+	if (is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("Node3D.set_scale");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot rescale a platform-sealed Node3D.");
+	}
 	if (_test_dirty_bits(DIRTY_EULER_ROTATION_AND_SCALE)) {
 		// Update rotation only if rotation and scale are dirty, as scale will be overridden.
 		data.euler_rotation = data.local_transform.basis.get_euler_normalized(data.euler_rotation_order);
@@ -1119,6 +1123,10 @@ void Node3D::hide() {
 
 void Node3D::set_visible(bool p_visible) {
 	ERR_MAIN_THREAD_GUARD;
+	if (is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("Node3D.set_visible");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot hide a platform-sealed Node3D.");
+	}
 	if (data.visible == p_visible) {
 		return;
 	}

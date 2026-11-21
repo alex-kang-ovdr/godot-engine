@@ -1120,6 +1120,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	bool skip_breakpoints = false;
 	bool ignore_error_breaks = false;
 	String main_pack;
+	String playforge_core_pack;
+	String playforge_ugc_pack;
 	bool quiet_stdout = false;
 	int separate_thread_render = -1; // Tri-state: -1 = not set, 0 = false, 1 = true.
 
@@ -1861,6 +1863,22 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 				OS::get_singleton()->print("Missing time scale argument, aborting.\n");
 				goto error;
 			}
+		} else if (arg == "--playforge-core-pack") {
+			if (N) {
+				playforge_core_pack = N->get();
+				N = N->next();
+			} else {
+				OS::get_singleton()->print("Missing argument for --playforge-core-pack <file>, aborting.\n");
+				goto error;
+			}
+		} else if (arg == "--playforge-ugc-pack") {
+			if (N) {
+				playforge_ugc_pack = N->get();
+				N = N->next();
+			} else {
+				OS::get_singleton()->print("Missing argument for --playforge-ugc-pack <file>, aborting.\n");
+				goto error;
+			}
 		} else if (arg == "--main-pack") {
 // Note: main-pack is always used on web and can't be disabled.
 // Note: main-pack can be used on Android so long as it's located within the 'assets' directory which is in the executable.
@@ -2103,6 +2121,13 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	}
 #endif // defined(DEBUG_ENABLED) || defined (TOOLS_ENABLED)
 
+	if (playforge_core_pack.is_empty() && OS::get_singleton()->has_environment("PLAYFORGE_CORE_PACK")) {
+		playforge_core_pack = OS::get_singleton()->get_environment("PLAYFORGE_CORE_PACK");
+	}
+	if (main_pack.is_empty() && !playforge_ugc_pack.is_empty()) {
+		main_pack = playforge_ugc_pack;
+	}
+
 	OS::get_singleton()->_in_editor = editor;
 	if (globals->setup(project_path, main_pack, false, editor) == OK) {
 #ifdef TOOLS_ENABLED
@@ -2133,6 +2158,20 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 		goto error;
 #endif
+	}
+
+	// PlayForge Engine Seal: mount modular Platform Core Pack (override any forged paths)
+	// and seal addons/playforge_avatar/ in C++ PackedData VFS before UGC scripts execute.
+	if (!playforge_core_pack.is_empty() && PackedData::get_singleton()) {
+		Object::PlatformSealScope seal_scope;
+		Error core_err = PackedData::get_singleton()->add_pack(playforge_core_pack, true, 0);
+		if (core_err == OK) {
+			PackedData::get_singleton()->seal_prefix("addons/playforge_avatar/");
+		} else {
+			ERR_PRINT(vformat("PlayForge Engine Seal: failed to mount core pack '%s' (error %d).", playforge_core_pack, (int)core_err));
+		}
+	} else if (!editor && !project_manager && PackedData::get_singleton()) {
+		PackedData::get_singleton()->seal_prefix("addons/playforge_avatar/");
 	}
 
 	// Initialize WorkerThreadPool.

@@ -438,6 +438,10 @@ public:
 	//used by Main::start, don't use otherwise
 	void add_current_scene(Node *p_current);
 
+	typedef void (*PlayForgeTreeInitHook)(SceneTree *p_tree);
+	typedef void (*PlayForgeSceneLoadedHook)(SceneTree *p_tree, Node *p_scene);
+	static void set_playforge_hooks(PlayForgeTreeInitHook p_init_hook, PlayForgeSceneLoadedHook p_scene_hook);
+
 	static SceneTree *get_singleton() { return singleton; }
 
 #ifdef TOOLS_ENABLED

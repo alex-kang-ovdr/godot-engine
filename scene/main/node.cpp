@@ -668,6 +668,10 @@ bool Node::is_physics_processing_internal() const {
 
 void Node::set_process_mode(ProcessMode p_mode) {
 	ERR_THREAD_GUARD
+	if (is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("Node.set_process_mode");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot change process_mode of a platform-sealed node.");
+	}
 	if (data.process_mode == p_mode) {
 		return;
 	}
@@ -1747,6 +1751,10 @@ void Node::add_sibling(RequiredParam<Node> rp_sibling, bool p_force_readable_nam
 void Node::remove_child(RequiredParam<Node> rp_child) {
 	ERR_FAIL_COND_MSG(data.tree && !Thread::is_main_thread(), "Removing children from a node inside the SceneTree is only allowed from the main thread. Use call_deferred(\"remove_child\",node).");
 	EXTRACT_PARAM_OR_FAIL(p_child, rp_child);
+	if (p_child->is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("Node.remove_child");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot remove a platform-sealed child node.");
+	}
 	ERR_FAIL_COND_MSG(data.blocked > 0, "Parent node is busy adding/removing children, `remove_child()` can't be called at this time. Consider using `remove_child.call_deferred(child)` instead.");
 	ERR_FAIL_COND(p_child->data.parent != this);
 
@@ -1890,6 +1898,165 @@ TypedArray<Node> Node::get_children(bool p_include_internal) const {
 	}
 
 	return children;
+}
+
+bool Node::_is_hidden_from_caller(const Node *p_candidate) const {
+	if (!p_candidate || Object::is_platform_privileged() || is_platform_hidden_from_user_tree()) {
+		return false;
+	}
+	const Node *cur = p_candidate;
+	while (cur) {
+		if (cur->is_platform_hidden_from_user_tree()) {
+			return true;
+		}
+		cur = cur->data.parent;
+	}
+	return false;
+}
+
+int Node::_get_child_count_script(bool p_include_internal) const {
+	ERR_THREAD_GUARD_V(0);
+	if (Object::is_platform_privileged() || is_platform_hidden_from_user_tree()) {
+		return get_child_count(p_include_internal);
+	}
+	_update_children_cache();
+	const int start = p_include_internal ? 0 : data.internal_children_front_count_cache;
+	const int end = p_include_internal ? (int)data.children_cache.size() : (int)data.children_cache.size() - data.internal_children_back_count_cache;
+	int visible_count = 0;
+	for (int i = start; i < end; i++) {
+		if (!data.children_cache[i]->is_platform_hidden_from_user_tree()) {
+			visible_count++;
+		}
+	}
+	return visible_count;
+}
+
+Node *Node::_get_child_script(int p_index, bool p_include_internal) const {
+	ERR_THREAD_GUARD_V(nullptr);
+	if (Object::is_platform_privileged() || is_platform_hidden_from_user_tree()) {
+		return get_child(p_index, p_include_internal);
+	}
+	_update_children_cache();
+	const int start = p_include_internal ? 0 : data.internal_children_front_count_cache;
+	const int end = p_include_internal ? (int)data.children_cache.size() : (int)data.children_cache.size() - data.internal_children_back_count_cache;
+	LocalVector<Node *> filtered;
+	for (int i = start; i < end; i++) {
+		if (!data.children_cache[i]->is_platform_hidden_from_user_tree()) {
+			filtered.push_back(data.children_cache[i]);
+		}
+	}
+	int idx = p_index;
+	if (idx < 0) {
+		idx += (int)filtered.size();
+	}
+	ERR_FAIL_INDEX_V(idx, (int)filtered.size(), nullptr);
+	return filtered[idx];
+}
+
+TypedArray<Node> Node::_get_children_script(bool p_include_internal) const {
+	ERR_THREAD_GUARD_V(TypedArray<Node>());
+	if (Object::is_platform_privileged() || is_platform_hidden_from_user_tree()) {
+		return get_children(p_include_internal);
+	}
+	_update_children_cache();
+	const int start = p_include_internal ? 0 : data.internal_children_front_count_cache;
+	const int end = p_include_internal ? (int)data.children_cache.size() : (int)data.children_cache.size() - data.internal_children_back_count_cache;
+	TypedArray<Node> children;
+	for (int i = start; i < end; i++) {
+		if (!data.children_cache[i]->is_platform_hidden_from_user_tree()) {
+			children.append(data.children_cache[i]);
+		}
+	}
+	return children;
+}
+
+Node *Node::_get_node_or_null_script(const NodePath &p_path) const {
+	Node *n = get_node_or_null(p_path);
+	if (_is_hidden_from_caller(n)) {
+		return nullptr;
+	}
+	return n;
+}
+
+Node *Node::_get_node_script(const NodePath &p_path) const {
+	Node *node = _get_node_or_null_script(p_path);
+	if (unlikely(!node)) {
+		const String desc = get_description();
+		if (p_path.is_absolute()) {
+			ERR_FAIL_V_MSG(nullptr,
+					vformat(R"(Node not found: "%s" (absolute path attempted from "%s").)", p_path, desc));
+		} else {
+			ERR_FAIL_V_MSG(nullptr,
+					vformat(R"(Node not found: "%s" (relative to "%s").)", p_path, desc));
+		}
+	}
+	return node;
+}
+
+bool Node::_has_node_script(const NodePath &p_path) const {
+	return _get_node_or_null_script(p_path) != nullptr;
+}
+
+Node *Node::_find_child_script(const String &p_pattern, bool p_recursive, bool p_owned) const {
+	ERR_THREAD_GUARD_V(nullptr);
+	ERR_FAIL_COND_V(p_pattern.is_empty(), nullptr);
+	_update_children_cache();
+	Node *const *cptr = data.children_cache.ptr();
+	int ccount = data.children_cache.size();
+	for (int i = 0; i < ccount; i++) {
+		if (_is_hidden_from_caller(cptr[i])) {
+			continue;
+		}
+		if (p_owned && !cptr[i]->data.owner) {
+			continue;
+		}
+		if (cptr[i]->data.name.operator String().match(p_pattern)) {
+			return cptr[i];
+		}
+		if (!p_recursive) {
+			continue;
+		}
+		Node *ret = cptr[i]->_find_child_script(p_pattern, true, p_owned);
+		if (ret) {
+			return ret;
+		}
+	}
+	return nullptr;
+}
+
+TypedArray<Node> Node::_find_children_script(const String &p_pattern, const String &p_type, bool p_recursive, bool p_owned) const {
+	ERR_THREAD_GUARD_V(TypedArray<Node>());
+	TypedArray<Node> ret;
+	ERR_FAIL_COND_V(p_pattern.is_empty() && p_type.is_empty(), ret);
+	_update_children_cache();
+	Node *const *cptr = data.children_cache.ptr();
+	int ccount = data.children_cache.size();
+	for (int i = 0; i < ccount; i++) {
+		if (_is_hidden_from_caller(cptr[i])) {
+			continue;
+		}
+		if (p_owned && !cptr[i]->data.owner) {
+			continue;
+		}
+		if (p_pattern.is_empty() || cptr[i]->data.name.operator String().match(p_pattern)) {
+			if (p_type.is_empty() || cptr[i]->is_class(p_type)) {
+				ret.append(cptr[i]);
+			} else if (cptr[i]->get_script_instance()) {
+				Ref<Script> scr = cptr[i]->get_script_instance()->get_script();
+				while (scr.is_valid()) {
+					if ((ScriptServer::is_global_class(p_type) && ScriptServer::get_global_class_path(p_type) == scr->get_path()) || p_type == scr->get_path()) {
+						ret.append(cptr[i]);
+						break;
+					}
+					scr = scr->get_base_script();
+				}
+			}
+		}
+		if (p_recursive) {
+			ret.append_array(cptr[i]->_find_children_script(p_pattern, p_type, true, p_owned));
+		}
+	}
+	return ret;
 }
 
 Node *Node::_get_child_by_name(const StringName &p_name) const {
@@ -2053,6 +2220,10 @@ TypedArray<Node> Node::find_children(const String &p_pattern, const String &p_ty
 
 void Node::reparent(RequiredParam<Node> rp_parent, bool p_keep_global_transform) {
 	ERR_THREAD_GUARD
+	if (is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("Node.reparent");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot reparent a platform-sealed node.");
+	}
 	EXTRACT_PARAM_OR_FAIL(p_parent, rp_parent);
 	ERR_FAIL_NULL_MSG(data.parent, "Node needs a parent to be reparented.");
 	ERR_FAIL_COND_MSG(p_parent == this, vformat("Can't reparent '%s' to itself.", p_parent->get_name()));
@@ -3459,6 +3630,10 @@ TypedArray<int> Node::get_orphan_node_ids() {
 }
 
 void Node::queue_free() {
+	if (is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("Node.queue_free");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot queue_free a platform-sealed node.");
+	}
 	// There are users which instantiate multiple scene trees for their games.
 	// Use the node's own tree to handle its deletion when relevant.
 	if (data.tree) {
@@ -3765,15 +3940,15 @@ void Node::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_child", "node", "force_readable_name", "internal"), &Node::add_child, DEFVAL(false), DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("remove_child", "node"), &Node::remove_child);
 	ClassDB::bind_method(D_METHOD("reparent", "new_parent", "keep_global_transform"), &Node::reparent, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("get_child_count", "include_internal"), &Node::get_child_count, DEFVAL(false)); // Note that the default value bound for include_internal is false, while the method is declared with true. This is because internal nodes are irrelevant for GDSCript.
-	ClassDB::bind_method(D_METHOD("get_children", "include_internal"), &Node::get_children, DEFVAL(false));
-	ClassDB::bind_method(D_METHOD("get_child", "idx", "include_internal"), &Node::get_child, DEFVAL(false));
-	ClassDB::bind_method(D_METHOD("has_node", "path"), &Node::has_node);
-	ClassDB::bind_method(D_METHOD("get_node", "path"), &Node::get_node);
-	ClassDB::bind_method(D_METHOD("get_node_or_null", "path"), &Node::get_node_or_null);
+	ClassDB::bind_method(D_METHOD("get_child_count", "include_internal"), &Node::_get_child_count_script, DEFVAL(false)); // Note that the default value bound for include_internal is false, while the method is declared with true. This is because internal nodes are irrelevant for GDSCript.
+	ClassDB::bind_method(D_METHOD("get_children", "include_internal"), &Node::_get_children_script, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("get_child", "idx", "include_internal"), &Node::_get_child_script, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("has_node", "path"), &Node::_has_node_script);
+	ClassDB::bind_method(D_METHOD("get_node", "path"), &Node::_get_node_script);
+	ClassDB::bind_method(D_METHOD("get_node_or_null", "path"), &Node::_get_node_or_null_script);
 	ClassDB::bind_method(D_METHOD("get_parent"), &Node::get_parent);
-	ClassDB::bind_method(D_METHOD("find_child", "pattern", "recursive", "owned"), &Node::find_child, DEFVAL(true), DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("find_children", "pattern", "type", "recursive", "owned"), &Node::find_children, DEFVAL(""), DEFVAL(true), DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("find_child", "pattern", "recursive", "owned"), &Node::_find_child_script, DEFVAL(true), DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("find_children", "pattern", "type", "recursive", "owned"), &Node::_find_children_script, DEFVAL(""), DEFVAL(true), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("find_parent", "pattern"), &Node::find_parent);
 	ClassDB::bind_method(D_METHOD("has_node_and_resource", "path"), &Node::has_node_and_resource);
 	ClassDB::bind_method(D_METHOD("get_node_and_resource", "path"), &Node::_get_node_and_resource);

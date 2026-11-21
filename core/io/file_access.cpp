@@ -158,6 +158,13 @@ Error FileAccess::reopen(const String &p_path, int p_mode_flags) {
 }
 
 Ref<FileAccess> FileAccess::open(const String &p_path, int p_mode_flags, Error *r_error) {
+	if ((p_mode_flags & WRITE) && PackedData::get_singleton() && PackedData::get_singleton()->is_path_sealed(p_path) && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("FileAccess.write_sealed_path");
+		if (r_error) {
+			*r_error = ERR_UNAUTHORIZED;
+		}
+		return Ref<FileAccess>();
+	}
 	//try packed data first
 
 	Ref<FileAccess> ret;

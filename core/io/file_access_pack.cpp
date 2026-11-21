@@ -46,8 +46,44 @@ Error PackedData::add_pack(const String &p_path, bool p_replace_files, uint64_t 
 	return ERR_FILE_UNRECOGNIZED;
 }
 
+void PackedData::seal_prefix(const String &p_prefix) {
+	String norm = p_prefix.simplify_path().trim_prefix("res://").trim_prefix("/");
+	if (norm.is_empty()) {
+		return;
+	}
+	if (!norm.ends_with("/")) {
+		norm += "/";
+	}
+	sealed_prefixes.insert(norm);
+}
+
+bool PackedData::is_path_sealed(const String &p_path) const {
+	if (sealed_prefixes.is_empty()) {
+		return false;
+	}
+	String norm = p_path.simplify_path().trim_prefix("res://").trim_prefix("/");
+	for (const String &prefix : sealed_prefixes) {
+		if (norm.begins_with(prefix) || (norm + "/") == prefix) {
+			return true;
+		}
+	}
+	return false;
+}
+
+PackedStringArray PackedData::get_sealed_prefixes() const {
+	PackedStringArray out;
+	for (const String &prefix : sealed_prefixes) {
+		out.push_back(prefix);
+	}
+	return out;
+}
+
 void PackedData::add_path(const String &p_pkg_path, const String &p_path, uint64_t p_ofs, uint64_t p_size, const uint8_t *p_md5, PackSource *p_src, bool p_replace_files, bool p_encrypted, bool p_bundle, bool p_delta, const String &p_salt) {
 	String simplified_path = p_path.simplify_path().trim_prefix("res://");
+	if (is_path_sealed(simplified_path) && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("PackedData.add_path_sealed");
+		return;
+	}
 	PathMD5 pmd5(simplified_path.md5_buffer());
 
 	bool exists = files.has(pmd5);
@@ -101,6 +137,10 @@ void PackedData::add_path(const String &p_pkg_path, const String &p_path, uint64
 
 void PackedData::remove_path(const String &p_path) {
 	String simplified_path = p_path.simplify_path().trim_prefix("res://");
+	if (is_path_sealed(simplified_path) && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("PackedData.remove_path_sealed");
+		return;
+	}
 	PathMD5 pmd5(simplified_path.md5_buffer());
 	if (!files.has(pmd5)) {
 		return;

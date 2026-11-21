@@ -441,6 +441,10 @@ public:
 	bool _is_queued_for_deletion : 1; // Set to true by SceneTree::queue_delete().
 
 private:
+	bool _platform_sealed : 1; // PlayForge Engine Seal: C++-only immutable platform flag.
+	bool _platform_hidden_from_user_tree : 1; // PlayForge Engine Seal: hidden from script tree queries.
+	static thread_local int _platform_privilege_depth;
+	static SafeNumeric<uint64_t> _platform_seal_violations;
 #ifdef TOOLS_ENABLED
 	bool _edited : 1;
 	uint32_t _edited_version = 0;
@@ -622,6 +626,18 @@ public: // Should be protected, but bug in clang++.
 	_FORCE_INLINE_ static void register_custom_data_to_otdb() {}
 
 public:
+	struct PlatformSealScope {
+		PlatformSealScope() { Object::_platform_privilege_depth++; }
+		~PlatformSealScope() { Object::_platform_privilege_depth--; }
+	};
+	static bool is_platform_privileged() { return _platform_privilege_depth > 0; }
+	static uint64_t get_platform_seal_violation_count() { return _platform_seal_violations.get(); }
+	static void record_platform_seal_violation(const char *p_reason);
+	void set_platform_sealed(bool p_sealed) { _platform_sealed = p_sealed; }
+	_FORCE_INLINE_ bool is_platform_sealed() const { return _platform_sealed; }
+	void set_platform_hidden_from_user_tree(bool p_hidden) { _platform_hidden_from_user_tree = p_hidden; }
+	_FORCE_INLINE_ bool is_platform_hidden_from_user_tree() const { return _platform_hidden_from_user_tree; }
+
 	void notify_property_list_changed();
 
 	static void *get_class_ptr_static() {

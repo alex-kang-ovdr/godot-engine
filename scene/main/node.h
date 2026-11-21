@@ -536,6 +536,17 @@ public:
 	int get_child_count(bool p_include_internal = true) const;
 	Node *get_child(int p_index, bool p_include_internal = true) const;
 	TypedArray<Node> get_children(bool p_include_internal = true) const;
+
+	// PlayForge Engine Seal: script-facing wrappers hiding platform-internal CoreGui/Avatar subtrees.
+	int _get_child_count_script(bool p_include_internal = false) const;
+	Node *_get_child_script(int p_index, bool p_include_internal = false) const;
+	TypedArray<Node> _get_children_script(bool p_include_internal = false) const;
+	Node *_get_node_or_null_script(const NodePath &p_path) const;
+	Node *_get_node_script(const NodePath &p_path) const;
+	bool _has_node_script(const NodePath &p_path) const;
+	Node *_find_child_script(const String &p_pattern, bool p_recursive = true, bool p_owned = true) const;
+	TypedArray<Node> _find_children_script(const String &p_pattern, const String &p_type = "", bool p_recursive = true, bool p_owned = true) const;
+	bool _is_hidden_from_caller(const Node *p_candidate) const;
 	bool has_node(const NodePath &p_path) const;
 	Node *get_node(const NodePath &p_path) const;
 	Node *get_node_or_null(const NodePath &p_path) const;

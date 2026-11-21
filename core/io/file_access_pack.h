@@ -109,6 +109,7 @@ private:
 
 	HashMap<PathMD5, PackedFile, PathMD5> files;
 	HashMap<PathMD5, Vector<PackedFile>, PathMD5> delta_patches;
+	HashSet<String> sealed_prefixes;
 
 	Vector<PackSource *> sources;
 
@@ -137,6 +138,10 @@ public:
 	Vector<PackedFile> get_delta_patches(const String &p_path) const;
 	bool has_delta_patches(const String &p_path) const;
 	HashSet<String> get_file_paths() const;
+
+	void seal_prefix(const String &p_prefix);
+	bool is_path_sealed(const String &p_path) const;
+	PackedStringArray get_sealed_prefixes() const;
 
 	void set_disabled(bool p_disabled) { disabled = p_disabled; }
 	_FORCE_INLINE_ bool is_disabled() const { return disabled; }

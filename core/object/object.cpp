@@ -765,10 +765,23 @@ Variant Object::callv(const StringName &p_method, const Array &p_args) {
 	return ret;
 }
 
+thread_local int Object::_platform_privilege_depth = 0;
+SafeNumeric<uint64_t> Object::_platform_seal_violations;
+
+void Object::record_platform_seal_violation(const char *p_reason) {
+	_platform_seal_violations.increment();
+	WARN_PRINT(vformat("PlayForge Engine Seal blocked unauthorized operation: %s", p_reason ? p_reason : "unknown"));
+}
+
 Variant Object::callp(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
 	r_error.error = Callable::CallError::CALL_OK;
 
 	if (p_method == CoreStringName(free_)) {
+		if (_platform_sealed && !is_platform_privileged()) {
+			record_platform_seal_violation("Object.free");
+			ERR_PRINT("PlayForge Engine Seal: cannot free a platform-sealed object.");
+			return Variant();
+		}
 //free must be here, before anything, always ready
 #ifdef DEBUG_ENABLED
 		if (p_argcount != 0) {
@@ -966,6 +979,10 @@ String Object::to_string() {
 }
 
 void Object::set_script(const Variant &p_script) {
+	if (_platform_sealed && !is_platform_privileged()) {
+		record_platform_seal_violation("Object.set_script");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot replace script on a platform-sealed object.");
+	}
 	if (get_script() == p_script) {
 		return;
 	}
@@ -1916,6 +1933,7 @@ void Object::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("is_queued_for_deletion"), &Object::is_queued_for_deletion);
 	ClassDB::bind_method(D_METHOD("cancel_free"), &Object::cancel_free);
+	ClassDB::bind_method(D_METHOD("is_platform_sealed"), &Object::is_platform_sealed);
 
 	ClassDB::add_virtual_method("Object", MethodInfo("free"), false);
 
@@ -2286,6 +2304,8 @@ void Object::_construct_object(bool p_reference) {
 	_can_translate = true;
 	_emitting = false;
 	_is_queued_for_deletion = false;
+	_platform_sealed = false;
+	_platform_hidden_from_user_tree = false;
 	_predelete_ok = false;
 
 	// ObjectDB::add_instance relies on AncestralClass::REF_COUNTED

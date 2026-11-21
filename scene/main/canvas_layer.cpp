@@ -30,6 +30,7 @@
 
 #include "canvas_layer.h"
 
+#include "core/config/engine.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "scene/main/canvas_item.h"
@@ -38,6 +39,14 @@
 #include "servers/rendering/rendering_server.h"
 
 void CanvasLayer::set_layer(int p_xform) {
+	if (is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("CanvasLayer.set_layer");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot modify layer of a platform-sealed CanvasLayer.");
+	}
+	if (!is_platform_sealed() && !Object::is_platform_privileged() && p_xform > 100 && !Engine::get_singleton()->is_editor_hint()) {
+		Object::record_platform_seal_violation("CanvasLayer.layer_clamped");
+		p_xform = 100;
+	}
 	layer = p_xform;
 	if (viewport.is_valid()) {
 		RenderingServer::get_singleton()->viewport_set_canvas_stacking(viewport, canvas, layer, get_index());
@@ -50,6 +59,10 @@ int CanvasLayer::get_layer() const {
 }
 
 void CanvasLayer::set_visible(bool p_visible) {
+	if (is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("CanvasLayer.set_visible");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot hide or toggle a platform-sealed CanvasLayer.");
+	}
 	if (p_visible == visible) {
 		return;
 	}
@@ -80,6 +93,10 @@ bool CanvasLayer::is_visible() const {
 }
 
 void CanvasLayer::set_transform(const Transform2D &p_xform) {
+	if (is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("CanvasLayer.set_transform");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot transform a platform-sealed CanvasLayer.");
+	}
 	transform = p_xform;
 	locrotscale_dirty = true;
 	if (viewport.is_valid()) {
@@ -119,6 +136,10 @@ void CanvasLayer::_update_locrotscale() const {
 }
 
 void CanvasLayer::set_offset(const Vector2 &p_offset) {
+	if (is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("CanvasLayer.set_offset");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot offset a platform-sealed CanvasLayer.");
+	}
 	if (locrotscale_dirty) {
 		_update_locrotscale();
 	}
@@ -153,6 +174,10 @@ real_t CanvasLayer::get_rotation() const {
 }
 
 void CanvasLayer::set_scale(const Vector2 &p_scale) {
+	if (is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("CanvasLayer.set_scale");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot scale a platform-sealed CanvasLayer.");
+	}
 	if (locrotscale_dirty) {
 		_update_locrotscale();
 	}

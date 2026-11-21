@@ -85,6 +85,10 @@ void CanvasItem::_propagate_visibility_changed(bool p_parent_visible_in_tree) {
 
 void CanvasItem::set_visible(bool p_visible) {
 	ERR_MAIN_THREAD_GUARD;
+	if (is_platform_sealed() && !Object::is_platform_privileged()) {
+		Object::record_platform_seal_violation("CanvasItem.set_visible");
+		ERR_FAIL_MSG("PlayForge Engine Seal: cannot change visibility of a platform-sealed CanvasItem.");
+	}
 	if (visible == p_visible) {
 		return;
 	}
