@@ -244,18 +244,39 @@ void PlayForgePlatform::_on_avatar_ready(uint64_t p_avatar_id) {
 	}
 }
 
+Node *PlayForgePlatform::_find_node_by_name_recursive(Node *p_root, const String &p_name) {
+	if (!p_root) {
+		return nullptr;
+	}
+	if (String(p_root->get_name()) == p_name) {
+		return p_root;
+	}
+	for (int i = 0; i < p_root->get_child_count(true); i++) {
+		Node *found = _find_node_by_name_recursive(p_root->get_child(i, true), p_name);
+		if (found) {
+			return found;
+		}
+	}
+	return nullptr;
+}
+
 Size2 PlayForgePlatform::get_portrait_min_size(int p_framing) const {
 	// C++ Engine hard minimum UI size floor so creators cannot shrink/hide the Avatar Portrait UI.
 	// 0 = UPPER_BODY (128x128), 1 = FULL_BODY (160x240)
 	return p_framing == 1 ? Size2(160.0f, 240.0f) : Size2(128.0f, 128.0f);
 }
 
-void PlayForgePlatform::_resolve_presentation_config(Node *p_scene, int &r_mode, Size2 &r_size, int &r_corner) {
-	r_mode = 0; // WORLD_3D
-	r_size = Size2();
+void PlayForgePlatform::_resolve_presentation_config(Node *p_scene, int &r_mode, Size2 &r_size, int &r_corner, Vector2 &r_custom_pos, Vector3 &r_spawn_pos, int &r_camera_mode, String &r_world_binding) {
+	bool is_3d = _is_3d_world(p_scene);
+	r_mode = is_3d ? 0 : 1; // 3D default: WORLD_3D, 2D default: mandatory PORTRAIT_UPPER_BODY
+	r_size = is_3d ? Size2() : Size2(144.0f, 144.0f);
 	r_corner = 0; // BOTTOM_LEFT
+	r_custom_pos = Vector2(-1.0f, -1.0f);
+	r_spawn_pos = Vector3(0.0f, 0.2f, 0.0f);
+	r_camera_mode = 0;
+	r_world_binding = "standalone";
 
-	// 1. ProjectSettings defaults (game mode configured in project.godot)
+	// 1. ProjectSettings defaults (game mode configured in project.godot [playforge])
 	if (ProjectSettings::get_singleton()) {
 		if (ProjectSettings::get_singleton()->has_setting("playforge/avatar/presentation_mode")) {
 			r_mode = CLAMP((int)ProjectSettings::get_singleton()->get_setting("playforge/avatar/presentation_mode"), 0, 3);
@@ -268,6 +289,24 @@ void PlayForgePlatform::_resolve_presentation_config(Node *p_scene, int &r_mode,
 		}
 		if (ProjectSettings::get_singleton()->has_setting("playforge/avatar/portrait_corner")) {
 			r_corner = CLAMP((int)ProjectSettings::get_singleton()->get_setting("playforge/avatar/portrait_corner"), 0, 4);
+		}
+		if (ProjectSettings::get_singleton()->has_setting("playforge/avatar/portrait_custom_position")) {
+			Variant cp = ProjectSettings::get_singleton()->get_setting("playforge/avatar/portrait_custom_position");
+			if (cp.get_type() == Variant::VECTOR2) {
+				r_custom_pos = cp;
+			}
+		}
+		if (ProjectSettings::get_singleton()->has_setting("playforge/avatar/spawn_position")) {
+			Variant sp = ProjectSettings::get_singleton()->get_setting("playforge/avatar/spawn_position");
+			if (sp.get_type() == Variant::VECTOR3) {
+				r_spawn_pos = sp;
+			}
+		}
+		if (ProjectSettings::get_singleton()->has_setting("playforge/avatar/camera_mode")) {
+			r_camera_mode = CLAMP((int)ProjectSettings::get_singleton()->get_setting("playforge/avatar/camera_mode"), 0, 2);
+		}
+		if (ProjectSettings::get_singleton()->has_setting("playforge/avatar/world_binding")) {
+			r_world_binding = String(ProjectSettings::get_singleton()->get_setting("playforge/avatar/world_binding")).strip_edges().to_lower();
 		}
 	}
 
@@ -286,6 +325,14 @@ void PlayForgePlatform::_resolve_presentation_config(Node *p_scene, int &r_mode,
 		Variant pc = spawn_node->get("portrait_corner", &valid);
 		if (valid && pc.get_type() == Variant::INT) {
 			r_corner = CLAMP((int)pc, 0, 4);
+		}
+		Variant cm = spawn_node->get("camera_mode", &valid);
+		if (valid && cm.get_type() == Variant::INT) {
+			r_camera_mode = CLAMP((int)cm, 0, 2);
+		}
+		Node3D *spawn_3d = Object::cast_to<Node3D>(spawn_node);
+		if (spawn_3d) {
+			r_spawn_pos = spawn_3d->get_position();
 		}
 	}
 
@@ -320,6 +367,8 @@ void PlayForgePlatform::_resolve_presentation_config(Node *p_scene, int &r_mode,
 					r_corner = 2;
 				} else if (val == "top_left" || val == "top_left_below_hud" || val == "3") {
 					r_corner = 3;
+				} else if (val == "custom" || val == "4") {
+					r_corner = 4;
 				}
 			}
 		}
@@ -357,7 +406,7 @@ void PlayForgePlatform::_on_portrait_ready(uint64_t p_portrait_id) {
 	}
 }
 
-Control *PlayForgePlatform::_ensure_portrait_ui(SceneTree *p_tree, int p_framing, const Size2 &p_requested_size, int p_corner) {
+Control *PlayForgePlatform::_ensure_portrait_ui(SceneTree *p_tree, int p_framing, const Size2 &p_requested_size, int p_corner, const Vector2 &p_custom_pos) {
 	if (!p_tree || !p_tree->get_root() || Engine::get_singleton()->is_editor_hint()) {
 		return nullptr;
 	}
@@ -365,6 +414,9 @@ Control *PlayForgePlatform::_ensure_portrait_ui(SceneTree *p_tree, int p_framing
 
 	portrait_framing = CLAMP(p_framing, 0, 1);
 	portrait_corner = CLAMP(p_corner, 0, 4);
+	if (p_custom_pos.x >= 0.0f && p_custom_pos.y >= 0.0f) {
+		portrait_custom_pos = p_custom_pos;
+	}
 	Size2 min_size = get_portrait_min_size(portrait_framing);
 	Size2 default_size = portrait_framing == 1 ? Size2(220.0f, 320.0f) : Size2(192.0f, 192.0f);
 	Size2 desired = (p_requested_size.x > 0.0f && p_requested_size.y > 0.0f) ? p_requested_size : default_size;
@@ -405,7 +457,7 @@ Control *PlayForgePlatform::_ensure_portrait_ui(SceneTree *p_tree, int p_framing
 
 	portrait->set_platform_min_size(min_size);
 	if (portrait->has_method("configure_portrait")) {
-		portrait->call("configure_portrait", portrait_framing, target_size, portrait_corner);
+		portrait->call("configure_portrait", portrait_framing, target_size, portrait_corner, portrait_custom_pos);
 	} else {
 		portrait->set_custom_minimum_size(target_size);
 		portrait->set_size(target_size);
@@ -471,6 +523,62 @@ Control *PlayForgePlatform::set_portrait_framing(int p_framing, const Size2 &p_p
 	return _ensure_portrait_ui(tree, next_framing, p_portrait_size, portrait_corner);
 }
 
+Node *PlayForgePlatform::_attach_avatar_to_player_character(Node *p_scene) {
+	if (!p_scene) {
+		return nullptr;
+	}
+	Node *target = _find_node_by_name_recursive(p_scene, "PlayerCharacter");
+	Node3D *char_node = Object::cast_to<Node3D>(target);
+	if (!char_node) {
+		return nullptr;
+	}
+	Node *existing = char_node->get_node_or_null(NodePath("PlayForgePlayerAvatar"));
+	if (existing) {
+		_seal_avatar_instance(existing);
+		return existing;
+	}
+	const String rig_path = "res://addons/playforge_avatar/avatar_rig.gd";
+	const String bridge_path = "res://addons/playforge_avatar/avatar_bridge.gd";
+	if (!ResourceLoader::exists(rig_path) || !ResourceLoader::exists(bridge_path)) {
+		return nullptr;
+	}
+	Ref<Script> rig_script = ResourceLoader::load(rig_path);
+	Ref<Script> bridge_script = ResourceLoader::load(bridge_path);
+	if (rig_script.is_null() || bridge_script.is_null()) {
+		return nullptr;
+	}
+	Object::PlatformSealScope seal_scope;
+	Node3D *rig = memnew(Node3D);
+	rig->set_name("PlayForgePlayerAvatar");
+	rig->set_position(Vector3(0.0f, -0.75f, 0.0f));
+	rig->set_script(rig_script);
+	char_node->add_child(rig);
+
+	Node *bridge = memnew(Node);
+	bridge->set_name("SealedAttachBridge");
+	bridge->set_script(bridge_script);
+	rig->add_child(bridge);
+	if (bridge->has_method("request_player_loadout")) {
+		bridge->connect(SNAME("loadout_resolved"), Callable(rig, SNAME("apply_sealed_loadout")));
+		bridge->call("request_player_loadout");
+	}
+	for (int i = 0; i < char_node->get_child_count(); i++) {
+		MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(char_node->get_child(i));
+		if (mi && !mi->is_platform_sealed() && Object::cast_to<CapsuleMesh>(mi->get_mesh().ptr())) {
+			mi->set_visible(false);
+		}
+	}
+	_seal_avatar_instance(rig);
+	return rig;
+}
+
+void PlayForgePlatform::_deferred_attach_player_character(uint64_t p_scene_id) {
+	Node *scene = ObjectDB::get_instance<Node>(ObjectID(p_scene_id));
+	if (scene && scene->is_inside_tree()) {
+		_attach_avatar_to_player_character(scene);
+	}
+}
+
 Node *PlayForgePlatform::ensure_scene_avatar(Node *p_scene) {
 	if (!p_scene || Engine::get_singleton()->is_editor_hint()) {
 		return nullptr;
@@ -483,24 +591,36 @@ Node *PlayForgePlatform::ensure_scene_avatar(Node *p_scene) {
 	int mode = 0;
 	Size2 portrait_size;
 	int corner = 0;
-	_resolve_presentation_config(p_scene, mode, portrait_size, corner);
+	Vector2 custom_pos(-1.0f, -1.0f);
+	Vector3 spawn_pos(0.0f, 0.2f, 0.0f);
+	int camera_mode = 0;
+	String world_binding = "standalone";
+	_resolve_presentation_config(p_scene, mode, portrait_size, corner, custom_pos, spawn_pos, camera_mode, world_binding);
 	presentation_mode = mode;
 
 	// Portrait-only modes (1 = UPPER_BODY, 2 = FULL_BODY) work in BOTH 2D and 3D scenes!
 	if (mode == 1 || mode == 2) {
 		int framing = (mode == 2) ? 1 : 0;
-		return _ensure_portrait_ui(tree, framing, portrait_size, corner);
+		return _ensure_portrait_ui(tree, framing, portrait_size, corner, custom_pos);
 	}
 
 	// Hybrid mode (3 = WORLD_3D_WITH_PORTRAIT) mounts both portrait UI and 3D world avatar!
 	if (mode == 3) {
-		_ensure_portrait_ui(tree, 0, portrait_size, corner);
+		_ensure_portrait_ui(tree, 0, portrait_size, corner, custom_pos);
 	} else {
 		_remove_portrait_ui();
 	}
 
 	if (!_is_3d_world(p_scene)) {
 		return get_avatar_portrait_ui();
+	}
+
+	if (world_binding == "attach_player_character") {
+		Node *attached = _attach_avatar_to_player_character(p_scene);
+		if (!attached) {
+			call_deferred(SNAME("_deferred_attach_player_character"), (uint64_t)p_scene->get_instance_id());
+		}
+		return attached ? attached : (Node *)get_avatar_portrait_ui();
 	}
 
 	// 1. Existing PlayForgeAvatarController in scene?
@@ -522,7 +642,7 @@ Node *PlayForgePlatform::ensure_scene_avatar(Node *p_scene) {
 		}
 	}
 
-	// 3. Blank 3D project (no spawn, no avatar) -> auto-inject fallback floor/light if missing + TPS Avatar!
+	// 3. Blank / minimal 3D project (no spawn, no avatar) -> auto-inject fallback floor/light if missing + TPS Avatar!
 	Object::PlatformSealScope seal_scope;
 
 	if (!_has_type_recursive(p_scene, SNAME("CollisionObject3D"))) {
@@ -537,18 +657,20 @@ Node *PlayForgePlatform::ensure_scene_avatar(Node *p_scene) {
 		col->set_position(Vector3(0.0f, -0.5f, 0.0f));
 		floor_body->add_child(col);
 
-		MeshInstance3D *mi = memnew(MeshInstance3D);
-		Ref<BoxMesh> box_mesh;
-		box_mesh.instantiate();
-		box_mesh->set_size(Vector3(48.0f, 1.0f, 48.0f));
-		Ref<StandardMaterial3D> mat;
-		mat.instantiate();
-		mat->set_albedo(Color(0.24f, 0.30f, 0.34f));
-		mat->set_roughness(0.85f);
-		box_mesh->set_material(mat);
-		mi->set_mesh(box_mesh);
-		mi->set_position(Vector3(0.0f, -0.5f, 0.0f));
-		floor_body->add_child(mi);
+		if (!_has_type_recursive(p_scene, SNAME("MeshInstance3D"))) {
+			MeshInstance3D *mi = memnew(MeshInstance3D);
+			Ref<BoxMesh> box_mesh;
+			box_mesh.instantiate();
+			box_mesh->set_size(Vector3(48.0f, 1.0f, 48.0f));
+			Ref<StandardMaterial3D> mat;
+			mat.instantiate();
+			mat->set_albedo(Color(0.24f, 0.30f, 0.34f));
+			mat->set_roughness(0.85f);
+			box_mesh->set_material(mat);
+			mi->set_mesh(box_mesh);
+			mi->set_position(Vector3(0.0f, -0.5f, 0.0f));
+			floor_body->add_child(mi);
+		}
 
 		p_scene->add_child(floor_body);
 	}
@@ -567,8 +689,9 @@ Node *PlayForgePlatform::ensure_scene_avatar(Node *p_scene) {
 		if (ctrl_script.is_valid()) {
 			CharacterBody3D *body = memnew(CharacterBody3D);
 			body->set_name("PlayForgePlayerAvatar");
-			body->set_position(Vector3(0.0f, 0.2f, 0.0f));
+			body->set_position(spawn_pos);
 			body->set_script(ctrl_script);
+			body->set("camera_mode", camera_mode);
 			p_scene->add_child(body);
 			avatar = body;
 		}
@@ -578,7 +701,7 @@ Node *PlayForgePlatform::ensure_scene_avatar(Node *p_scene) {
 	if (!avatar) {
 		CharacterBody3D *fallback = memnew(CharacterBody3D);
 		fallback->set_name("PlayForgePlayerAvatar");
-		fallback->set_position(Vector3(0.0f, 0.2f, 0.0f));
+		fallback->set_position(spawn_pos);
 
 		CollisionShape3D *cap_col = memnew(CollisionShape3D);
 		cap_col->set_name("SealedCapsule");
@@ -624,8 +747,253 @@ Node *PlayForgePlatform::ensure_scene_avatar(Node *p_scene) {
 	return avatar;
 }
 
+void PlayForgePlatform::_apply_avatar_visibility(bool p_visible) {
+	Object::PlatformSealScope seal_scope;
+	Node *avatar = get_local_avatar();
+	if (avatar) {
+		Node3D *avatar_3d = Object::cast_to<Node3D>(avatar);
+		if (avatar_3d && avatar_3d->is_visible() != p_visible) {
+			avatar_3d->set_visible(p_visible);
+		}
+	}
+	CanvasLayer *portrait_layer = ObjectDB::get_instance<CanvasLayer>(portrait_layer_id);
+	if (portrait_layer && portrait_layer->is_visible() != p_visible) {
+		portrait_layer->set_visible(p_visible);
+	}
+	Control *portrait = get_avatar_portrait_ui();
+	if (portrait) {
+		if (portrait->has_method("set_authorized_hidden")) {
+			portrait->call("set_authorized_hidden", !p_visible);
+		}
+		if (portrait->is_visible() != p_visible) {
+			portrait->set_visible(p_visible);
+		}
+	}
+}
+
+void PlayForgePlatform::_apply_hud_visibility(bool p_visible) {
+	Object::PlatformSealScope seal_scope;
+	CanvasLayer *hud = ObjectDB::get_instance<CanvasLayer>(hud_layer_id);
+	if (hud && hud->is_visible() != p_visible) {
+		hud->set_visible(p_visible);
+	}
+	if (!p_visible && menu_open) {
+		set_platform_menu_open(false);
+	}
+}
+
+void PlayForgePlatform::_tick_temporary_hide() {
+	if (!OS::get_singleton() || Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+	uint64_t now_usec = OS::get_singleton()->get_ticks_usec();
+	if (hide_last_tick_usec == 0) {
+		hide_last_tick_usec = now_usec;
+	}
+	double dt = (now_usec >= hide_last_tick_usec) ? double(now_usec - hide_last_tick_usec) / 1000000.0 : 0.0;
+	hide_last_tick_usec = now_usec;
+
+	if (avatar_temp_hidden) {
+		hide_budget_sec = MAX(0.0, hide_budget_sec - dt);
+		hide_remaining_sec = MAX(0.0, hide_remaining_sec - dt);
+		if (hide_remaining_sec <= 0.0 || hide_budget_sec <= 0.0) {
+			avatar_temp_hidden = false;
+			hide_remaining_sec = 0.0;
+			_apply_avatar_visibility(true);
+		} else {
+			_apply_avatar_visibility(false);
+		}
+	} else {
+		hide_budget_sec = MIN(AVATAR_HIDE_MAX_BUDGET_SEC, hide_budget_sec + dt * AVATAR_HIDE_RECHARGE_RATE);
+		hide_remaining_sec = 0.0;
+		_apply_avatar_visibility(true);
+	}
+
+	if (hud_temp_hidden) {
+		hud_hide_budget_sec = MAX(0.0, hud_hide_budget_sec - dt);
+		hud_hide_remaining_sec = MAX(0.0, hud_hide_remaining_sec - dt);
+		if (hud_hide_remaining_sec <= 0.0 || hud_hide_budget_sec <= 0.0) {
+			hud_temp_hidden = false;
+			hud_hide_remaining_sec = 0.0;
+			_apply_hud_visibility(true);
+		} else {
+			_apply_hud_visibility(false);
+		}
+	} else {
+		hud_hide_budget_sec = MIN(AVATAR_HIDE_MAX_BUDGET_SEC, hud_hide_budget_sec + dt * AVATAR_HIDE_RECHARGE_RATE);
+		hud_hide_remaining_sec = 0.0;
+		_apply_hud_visibility(true);
+	}
+}
+
+void PlayForgePlatform::_on_process_frame() {
+	_tick_temporary_hide();
+}
+
+bool PlayForgePlatform::request_temporary_avatar_hide(double p_duration_sec) {
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return false;
+	}
+	_tick_temporary_hide();
+	if (!Math::is_finite(p_duration_sec) || p_duration_sec <= 0.0) {
+		return false;
+	}
+	double clamped_req = CLAMP(p_duration_sec, 0.0, AVATAR_HIDE_MAX_BUDGET_SEC);
+	if (!avatar_temp_hidden) {
+		if (hide_budget_sec < AVATAR_HIDE_MIN_START_BUDGET_SEC) {
+			_apply_avatar_visibility(true);
+			return false;
+		}
+		double granted = MIN(clamped_req, hide_budget_sec);
+		if (granted <= 0.0) {
+			_apply_avatar_visibility(true);
+			return false;
+		}
+		avatar_temp_hidden = true;
+		hide_remaining_sec = granted;
+		_apply_avatar_visibility(false);
+		return true;
+	}
+	// Already hidden: cap strictly to remaining budget and <= 30.0s (cannot exceed budget or stretch past 30s).
+	double next_rem = MIN(clamped_req, hide_budget_sec);
+	if (next_rem <= 0.0) {
+		avatar_temp_hidden = false;
+		hide_remaining_sec = 0.0;
+		_apply_avatar_visibility(true);
+		return false;
+	}
+	hide_remaining_sec = next_rem;
+	_apply_avatar_visibility(false);
+	return true;
+}
+
+void PlayForgePlatform::end_temporary_avatar_hide() {
+	_tick_temporary_hide();
+	avatar_temp_hidden = false;
+	hide_remaining_sec = 0.0;
+	_apply_avatar_visibility(true);
+}
+
+bool PlayForgePlatform::is_avatar_temporarily_hidden() {
+	_tick_temporary_hide();
+	return avatar_temp_hidden;
+}
+
+double PlayForgePlatform::get_avatar_hide_budget_seconds() {
+	_tick_temporary_hide();
+	return hide_budget_sec;
+}
+
+double PlayForgePlatform::get_avatar_hide_remaining_seconds() {
+	_tick_temporary_hide();
+	return hide_remaining_sec;
+}
+
+Dictionary PlayForgePlatform::get_avatar_hide_state() {
+	_tick_temporary_hide();
+	Dictionary state;
+	state["hidden"] = avatar_temp_hidden;
+	state["remainingSeconds"] = hide_remaining_sec;
+	state["budgetSeconds"] = hide_budget_sec;
+	state["maxBudgetSeconds"] = AVATAR_HIDE_MAX_BUDGET_SEC;
+	state["rechargeRatePerSecond"] = AVATAR_HIDE_RECHARGE_RATE;
+	state["minStartBudgetSeconds"] = AVATAR_HIDE_MIN_START_BUDGET_SEC;
+	return state;
+}
+
+bool PlayForgePlatform::request_temporary_hud_hide(double p_duration_sec) {
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return false;
+	}
+	_tick_temporary_hide();
+	if (!Math::is_finite(p_duration_sec) || p_duration_sec <= 0.0) {
+		return false;
+	}
+	double clamped_req = CLAMP(p_duration_sec, 0.0, AVATAR_HIDE_MAX_BUDGET_SEC);
+	if (!hud_temp_hidden) {
+		if (hud_hide_budget_sec < AVATAR_HIDE_MIN_START_BUDGET_SEC) {
+			_apply_hud_visibility(true);
+			return false;
+		}
+		double granted = MIN(clamped_req, hud_hide_budget_sec);
+		if (granted <= 0.0) {
+			_apply_hud_visibility(true);
+			return false;
+		}
+		hud_temp_hidden = true;
+		hud_hide_remaining_sec = granted;
+		_apply_hud_visibility(false);
+		return true;
+	}
+	double next_rem = MIN(clamped_req, hud_hide_budget_sec);
+	if (next_rem <= 0.0) {
+		hud_temp_hidden = false;
+		hud_hide_remaining_sec = 0.0;
+		_apply_hud_visibility(true);
+		return false;
+	}
+	hud_hide_remaining_sec = next_rem;
+	_apply_hud_visibility(false);
+	return true;
+}
+
+void PlayForgePlatform::end_temporary_hud_hide() {
+	_tick_temporary_hide();
+	hud_temp_hidden = false;
+	hud_hide_remaining_sec = 0.0;
+	_apply_hud_visibility(true);
+}
+
+bool PlayForgePlatform::is_hud_temporarily_hidden() {
+	_tick_temporary_hide();
+	return hud_temp_hidden;
+}
+
+double PlayForgePlatform::get_hud_hide_budget_seconds() {
+	_tick_temporary_hide();
+	return hud_hide_budget_sec;
+}
+
+double PlayForgePlatform::get_hud_hide_remaining_seconds() {
+	_tick_temporary_hide();
+	return hud_hide_remaining_sec;
+}
+
+Dictionary PlayForgePlatform::get_hud_hide_state() {
+	_tick_temporary_hide();
+	Dictionary state;
+	state["hidden"] = hud_temp_hidden;
+	state["remainingSeconds"] = hud_hide_remaining_sec;
+	state["budgetSeconds"] = hud_hide_budget_sec;
+	state["maxBudgetSeconds"] = AVATAR_HIDE_MAX_BUDGET_SEC;
+	state["rechargeRatePerSecond"] = AVATAR_HIDE_RECHARGE_RATE;
+	state["minStartBudgetSeconds"] = AVATAR_HIDE_MIN_START_BUDGET_SEC;
+	return state;
+}
+
+bool PlayForgePlatform::request_temporary_platform_ui_hide(double p_duration_sec) {
+	bool av_ok = request_temporary_avatar_hide(p_duration_sec);
+	bool hud_ok = request_temporary_hud_hide(p_duration_sec);
+	return av_ok || hud_ok;
+}
+
+void PlayForgePlatform::end_temporary_platform_ui_hide() {
+	end_temporary_avatar_hide();
+	end_temporary_hud_hide();
+}
+
 void PlayForgePlatform::on_tree_initialized(SceneTree *p_tree) {
 	if (singleton) {
+		if (p_tree && !Engine::get_singleton()->is_editor_hint() && !singleton->process_frame_connected) {
+			Callable cb = callable_mp(singleton, &PlayForgePlatform::_on_process_frame);
+			if (!p_tree->is_connected(SNAME("process_frame"), cb)) {
+				p_tree->connect(SNAME("process_frame"), cb);
+			}
+			singleton->process_frame_connected = true;
+			if (OS::get_singleton() && singleton->hide_last_tick_usec == 0) {
+				singleton->hide_last_tick_usec = OS::get_singleton()->get_ticks_usec();
+			}
+		}
 		singleton->_ensure_hud(p_tree);
 		Node *avatar = singleton->get_local_avatar();
 		if (avatar) {
@@ -635,6 +1003,7 @@ void PlayForgePlatform::on_tree_initialized(SceneTree *p_tree) {
 		if (portrait) {
 			singleton->_seal_portrait_instance(portrait, singleton->get_portrait_min_size(singleton->portrait_framing));
 		}
+		singleton->_tick_temporary_hide();
 	}
 }
 
@@ -642,6 +1011,7 @@ void PlayForgePlatform::on_scene_loaded(SceneTree *p_tree, Node *p_scene) {
 	if (singleton) {
 		singleton->_ensure_hud(p_tree);
 		singleton->ensure_scene_avatar(p_scene);
+		singleton->_tick_temporary_hide();
 	}
 }
 
@@ -731,5 +1101,20 @@ void PlayForgePlatform::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_violation_count"), &PlayForgePlatform::get_violation_count);
 	ClassDB::bind_method(D_METHOD("is_platform_menu_open"), &PlayForgePlatform::is_platform_menu_open);
 	ClassDB::bind_method(D_METHOD("set_platform_menu_open", "open"), &PlayForgePlatform::set_platform_menu_open);
+	ClassDB::bind_method(D_METHOD("request_temporary_avatar_hide", "duration_sec"), &PlayForgePlatform::request_temporary_avatar_hide, DEFVAL(AVATAR_HIDE_MAX_BUDGET_SEC));
+	ClassDB::bind_method(D_METHOD("end_temporary_avatar_hide"), &PlayForgePlatform::end_temporary_avatar_hide);
+	ClassDB::bind_method(D_METHOD("is_avatar_temporarily_hidden"), &PlayForgePlatform::is_avatar_temporarily_hidden);
+	ClassDB::bind_method(D_METHOD("get_avatar_hide_budget_seconds"), &PlayForgePlatform::get_avatar_hide_budget_seconds);
+	ClassDB::bind_method(D_METHOD("get_avatar_hide_remaining_seconds"), &PlayForgePlatform::get_avatar_hide_remaining_seconds);
+	ClassDB::bind_method(D_METHOD("get_avatar_hide_state"), &PlayForgePlatform::get_avatar_hide_state);
+	ClassDB::bind_method(D_METHOD("request_temporary_hud_hide", "duration_sec"), &PlayForgePlatform::request_temporary_hud_hide, DEFVAL(AVATAR_HIDE_MAX_BUDGET_SEC));
+	ClassDB::bind_method(D_METHOD("end_temporary_hud_hide"), &PlayForgePlatform::end_temporary_hud_hide);
+	ClassDB::bind_method(D_METHOD("is_hud_temporarily_hidden"), &PlayForgePlatform::is_hud_temporarily_hidden);
+	ClassDB::bind_method(D_METHOD("get_hud_hide_budget_seconds"), &PlayForgePlatform::get_hud_hide_budget_seconds);
+	ClassDB::bind_method(D_METHOD("get_hud_hide_remaining_seconds"), &PlayForgePlatform::get_hud_hide_remaining_seconds);
+	ClassDB::bind_method(D_METHOD("get_hud_hide_state"), &PlayForgePlatform::get_hud_hide_state);
+	ClassDB::bind_method(D_METHOD("request_temporary_platform_ui_hide", "duration_sec"), &PlayForgePlatform::request_temporary_platform_ui_hide, DEFVAL(AVATAR_HIDE_MAX_BUDGET_SEC));
+	ClassDB::bind_method(D_METHOD("end_temporary_platform_ui_hide"), &PlayForgePlatform::end_temporary_platform_ui_hide);
 	ClassDB::bind_method(D_METHOD("ensure_scene_avatar", "scene"), &PlayForgePlatform::ensure_scene_avatar);
+	ClassDB::bind_method(D_METHOD("_deferred_attach_player_character", "scene_id"), &PlayForgePlatform::_deferred_attach_player_character);
 }
