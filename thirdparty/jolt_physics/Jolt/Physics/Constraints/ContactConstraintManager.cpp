@@ -12,6 +12,7 @@
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/IslandBuilder.h>
 #include <Jolt/Physics/DeterminismLog.h>
+#include <Jolt/Physics/Collision/PlayForgeGskExperiment.h>
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Core/QuickSort.h>
 #ifdef JPH_DEBUG_RENDERER
@@ -832,6 +833,24 @@ void ContactConstraintManager::GetContactsFromCache(ContactAllocator &ioContactA
 		return;
 	const CachedBodyPair &input_cbp = kv->GetValue();
 
+	// PlayForge compact 4-byte octahedral GSK warm-start axis extraction
+	const int gsk_mode = g_playforge_gsk_mode.load(std::memory_order_relaxed);
+	if (gsk_mode >= 1 && input_cbp.mGskOct != 0u)
+	{
+		Vec3 cached_axis = PlayForgeDecodeOctAxis(input_cbp.mGskOct);
+		if (body1 != &inBody1)
+		{
+			Quat q_2_to_1 = inBody1.GetRotation().Conjugated() * inBody2.GetRotation();
+			cached_axis = -(q_2_to_1 * cached_axis);
+		}
+		g_playforge_gsk_tls.warm_axis = cached_axis;
+		g_playforge_gsk_tls.has_warm_axis = true;
+	}
+
+	// Mode 1 (Pure GSK replacement): bypass Jolt's 1mm/2deg BodyPairContactCache early-out and always run warm-started GSK
+	if (gsk_mode == 1)
+		return;
+
 	// Get relative translation
 	Quat inv_r1 = body1->GetRotation().Conjugated();
 	Vec3 delta_position = inv_r1 * Vec3(body2->GetCenterOfMassPosition() - body1->GetCenterOfMassPosition());
@@ -1033,6 +1052,7 @@ ContactConstraintManager::BodyPairHandle ContactConstraintManager::AddBodyPair(C
 		return nullptr; // Out of cache space
 	CachedBodyPair *cbp = &body_pair_kv->GetValue();
 	cbp->mFirstCachedManifold = ManifoldMap::cInvalidHandle;
+	cbp->mGskOct = 0u;
 
 	// Get relative translation
 	Quat inv_r1 = body1->GetRotation().Conjugated();
@@ -1048,6 +1068,20 @@ ContactConstraintManager::BodyPairHandle ContactConstraintManager::AddBodyPair(C
 	delta_rotation.StoreFloat3(&cbp->mDeltaRotation);
 
 	return cbp;
+}
+
+void ContactConstraintManager::SetBodyPairGskAxis(BodyPairHandle inBodyPairHandle, const Body &inBody1, const Body &inBody2, Vec3Arg inAxisInBody1Space)
+{
+	if (inBodyPairHandle == nullptr)
+		return;
+	CachedBodyPair *cbp = reinterpret_cast<CachedBodyPair *>(inBodyPairHandle);
+	Vec3 axis_canonical = inAxisInBody1Space;
+	if (!(inBody1.GetID() < inBody2.GetID()))
+	{
+		Quat q_1_to_2 = inBody2.GetRotation().Conjugated() * inBody1.GetRotation();
+		axis_canonical = -(q_1_to_2 * axis_canonical);
+	}
+	cbp->mGskOct = PlayForgeEncodeOctAxis(axis_canonical);
 }
 
 template <EMotionType Type1, EMotionType Type2>

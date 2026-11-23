@@ -21,6 +21,7 @@
 #include <Jolt/Core/StreamOut.h>
 #include <Jolt/Geometry/EPAPenetrationDepth.h>
 #include <Jolt/Geometry/OrientedBox.h>
+#include <Jolt/Physics/Collision/PlayForgeGskExperiment.h>
 #include <Jolt/ObjectStream/TypeDeclarations.h>
 
 JPH_NAMESPACE_BEGIN
@@ -69,11 +70,25 @@ void ConvexShape::sCollideConvexVsConvex(const Shape *inShape1, const Shape *inS
 	// Note: As we don't remember the penetration axis from the last iteration, and it is likely that shape2 is pushed out of
 	// collision relative to shape1 by comparing their COM's, we use that as an initial penetration axis: shape2.com - shape1.com
 	// This has been seen to improve performance by approx. 1% over using a fixed axis like (1, 0, 0).
-	Vec3 penetration_axis = transform_2_to_1.GetTranslation();
+	const int gsk_mode = g_playforge_gsk_mode.load(std::memory_order_relaxed);
+	const bool track_stats = g_playforge_narrow_stats_enabled.load(std::memory_order_relaxed);
+	Vec3 penetration_axis;
+	if (gsk_mode >= 1 && g_playforge_gsk_tls.has_warm_axis && !g_playforge_gsk_tls.warm_axis.IsNearZero())
+	{
+		penetration_axis = g_playforge_gsk_tls.warm_axis;
+		if (track_stats)
+			g_playforge_gsk_stats.gsk_warm_hits.fetch_add(1, std::memory_order_relaxed);
+	}
+	else
+	{
+		penetration_axis = transform_2_to_1.GetTranslation();
+		// Ensure that we do not pass in a near zero penetration axis
+		if (penetration_axis.IsNearZero())
+			penetration_axis = Vec3::sAxisX();
+	}
 
-	// Ensure that we do not pass in a near zero penetration axis
-	if (penetration_axis.IsNearZero())
-		penetration_axis = Vec3::sAxisX();
+	if (track_stats)
+		g_playforge_gsk_stats.gjk_calls.fetch_add(1, std::memory_order_relaxed);
 
 	Vec3 point1, point2;
 	EPAPenetrationDepth pen_depth;
@@ -97,14 +112,26 @@ void ConvexShape::sCollideConvexVsConvex(const Shape *inShape1, const Shape *inS
 	switch (status)
 	{
 	case EPAPenetrationDepth::EStatus::Colliding:
+		if (gsk_mode >= 1)
+		{
+			g_playforge_gsk_tls.out_axis = penetration_axis;
+			g_playforge_gsk_tls.has_out_axis = true;
+		}
 		break;
 
 	case EPAPenetrationDepth::EStatus::NotColliding:
+		if (gsk_mode >= 1)
+		{
+			g_playforge_gsk_tls.out_axis = penetration_axis;
+			g_playforge_gsk_tls.has_out_axis = true;
+		}
 		return;
 
 	case EPAPenetrationDepth::EStatus::Indeterminate:
 		{
 			// Need to run expensive EPA algorithm
+			if (track_stats)
+				g_playforge_gsk_stats.epa_calls.fetch_add(1, std::memory_order_relaxed);
 
 			// We know we're overlapping at this point, so we can set the max separation distance to 0.
 			// Numerically it is possible that GJK finds that the shapes are overlapping but EPA finds that they're separated.
@@ -125,7 +152,19 @@ void ConvexShape::sCollideConvexVsConvex(const Shape *inShape1, const Shape *inS
 
 			// Perform EPA step
 			if (!pen_depth.GetPenetrationDepthStepEPA(shape1_add_max_separation_distance, transformed2_incl_cvx_radius, inCollideShapeSettings.mPenetrationTolerance, penetration_axis, point1, point2))
+			{
+				if (gsk_mode >= 1)
+				{
+					g_playforge_gsk_tls.out_axis = penetration_axis;
+					g_playforge_gsk_tls.has_out_axis = true;
+				}
 				return;
+			}
+			if (gsk_mode >= 1)
+			{
+				g_playforge_gsk_tls.out_axis = penetration_axis;
+				g_playforge_gsk_tls.has_out_axis = true;
+			}
 			break;
 		}
 	}

@@ -21,6 +21,7 @@
 #include <Jolt/Physics/Collision/Shape/ConvexShape.h>
 #include <Jolt/Physics/Collision/SimShapeFilterWrapper.h>
 #include <Jolt/Physics/Collision/InternalEdgeRemovingCollector.h>
+#include <Jolt/Physics/Collision/PlayForgeGskExperiment.h>
 #include <Jolt/Physics/Constraints/CalculateSolverSteps.h>
 #include <Jolt/Physics/Constraints/ConstraintPart/AxisConstraintPart.h>
 #include <Jolt/Physics/DeterminismLog.h>
@@ -1074,9 +1075,23 @@ void PhysicsSystem::ProcessBodyPair(ContactAllocator &ioContactAllocator, const 
 		std::swap(body1, body2);
 
 	// Check if the contact points from the previous frame are reusable and if so copy them
+	const bool track_stats = g_playforge_narrow_stats_enabled.load(std::memory_order_relaxed);
+	const auto np_t0 = track_stats ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point {};
+	g_playforge_gsk_tls.has_warm_axis = false;
+	g_playforge_gsk_tls.has_out_axis = false;
+
 	bool pair_handled = false, constraint_created = false;
 	if (mPhysicsSettings.mUseBodyPairContactCache && !(body1->IsCollisionCacheInvalid() || body2->IsCollisionCacheInvalid()))
 		mContactManager.GetContactsFromCache(ioContactAllocator, *body1, *body2, pair_handled, constraint_created);
+
+	if (track_stats)
+	{
+		g_playforge_gsk_stats.pair_total.fetch_add(1, std::memory_order_relaxed);
+		if (pair_handled)
+			g_playforge_gsk_stats.pair_cache_hits.fetch_add(1, std::memory_order_relaxed);
+		else
+			g_playforge_gsk_stats.pair_cache_misses.fetch_add(1, std::memory_order_relaxed);
+	}
 
 	// If the cache hasn't handled this body pair do actual collision detection
 	if (!pair_handled)
@@ -1326,6 +1341,9 @@ void PhysicsSystem::ProcessBodyPair(ContactAllocator &ioContactAllocator, const 
 			constraint_created = collector.mConstraintCreated;
 		}
 
+		if (g_playforge_gsk_tls.has_out_axis)
+			mContactManager.SetBodyPairGskAxis(body_pair_handle, *body1, *body2, g_playforge_gsk_tls.out_axis);
+
 	#ifdef JPH_TRACK_SIMULATION_STATS
 		// Track time spent processing collision for this body pair
 		uint64 num_ticks = GetProcessorTickCount() - start_ticks;
@@ -1360,6 +1378,12 @@ void PhysicsSystem::ProcessBodyPair(ContactAllocator &ioContactAllocator, const 
 
 		// Link the two bodies
 		mIslandBuilder.LinkBodies(body1->GetIndexInActiveBodiesInternal(), body2->GetIndexInActiveBodiesInternal());
+	}
+
+	if (track_stats)
+	{
+		const auto np_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - np_t0).count();
+		g_playforge_gsk_stats.narrow_phase_ns.fetch_add((uint64_t)np_ns, std::memory_order_relaxed);
 	}
 }
 

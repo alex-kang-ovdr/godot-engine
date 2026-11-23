@@ -103,6 +103,7 @@ public:
 	/// Create a handle for a colliding body pair so that contact constraints can be added between them.
 	/// Needs to be called once per body pair per frame before calling AddContactConstraint.
 	BodyPairHandle				AddBodyPair(ContactAllocator &ioContactAllocator, const Body &inBody1, const Body &inBody2);
+	void						SetBodyPairGskAxis(BodyPairHandle inBodyPairHandle, const Body &inBody1, const Body &inBody2, Vec3Arg inAxisInBody1Space);
 
 	/// Add a contact constraint for this frame.
 	///
@@ -342,9 +343,12 @@ private:
 
 		/// Handle to first manifold in ManifoldCache::mCachedManifolds
 		uint32					mFirstCachedManifold;
+
+		/// PlayForge compact 4-byte octahedral GSK warm-start axis (0 = empty)
+		uint32					mGskOct = 0;
 	};
 
-	static_assert(sizeof(CachedBodyPair) == 28, "Unexpected size");
+	static_assert(sizeof(CachedBodyPair) == 32, "Unexpected size");
 	static_assert(alignof(CachedBodyPair) == 4, "Assuming 4 byte aligned");
 
 	/// Define a map that maps BodyPair -> CachedBodyPair

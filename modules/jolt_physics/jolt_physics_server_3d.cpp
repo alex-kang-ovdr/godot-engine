@@ -58,6 +58,7 @@
 
 #ifndef WEB_ENABLED
 #include <Jolt/Core/JobSystemThreadPool.h>
+#include <Jolt/Physics/Collision/PlayForgeGskExperiment.h>
 #include <Jolt/Physics/PhysicsSettings.h>
 #endif
 
@@ -2141,4 +2142,32 @@ float JoltPhysicsServer3D::generic_6dof_joint_get_applied_torque(RID p_joint) {
 	JoltGeneric6DOFJoint3D *g6dof_joint = static_cast<JoltGeneric6DOFJoint3D *>(joint);
 
 	return g6dof_joint->get_applied_torque();
+}
+
+extern "C" void playforge_jolt_set_gsk_mode(int p_mode) {
+	JPH::g_playforge_gsk_mode.store(p_mode, std::memory_order_relaxed);
+}
+
+extern "C" int playforge_jolt_get_gsk_mode() {
+	return JPH::g_playforge_gsk_mode.load(std::memory_order_relaxed);
+}
+
+extern "C" void playforge_jolt_set_narrow_stats_enabled(bool p_enabled) {
+	JPH::g_playforge_narrow_stats_enabled.store(p_enabled, std::memory_order_relaxed);
+}
+
+extern "C" void playforge_jolt_reset_narrow_stats() {
+	JPH::g_playforge_gsk_stats.Reset();
+}
+
+extern "C" void playforge_jolt_get_narrow_stats(uint64_t *p_out9) {
+	p_out9[0] = JPH::g_playforge_gsk_stats.pair_total.load(std::memory_order_relaxed);
+	p_out9[1] = JPH::g_playforge_gsk_stats.pair_cache_hits.load(std::memory_order_relaxed);
+	p_out9[2] = JPH::g_playforge_gsk_stats.pair_cache_misses.load(std::memory_order_relaxed);
+	p_out9[3] = JPH::g_playforge_gsk_stats.gsk_warm_hits.load(std::memory_order_relaxed);
+	p_out9[4] = JPH::g_playforge_gsk_stats.gsk_early_sep.load(std::memory_order_relaxed);
+	p_out9[5] = JPH::g_playforge_gsk_stats.gjk_calls.load(std::memory_order_relaxed);
+	p_out9[6] = JPH::g_playforge_gsk_stats.gjk_iters.load(std::memory_order_relaxed);
+	p_out9[7] = JPH::g_playforge_gsk_stats.epa_calls.load(std::memory_order_relaxed);
+	p_out9[8] = JPH::g_playforge_gsk_stats.narrow_phase_ns.load(std::memory_order_relaxed);
 }

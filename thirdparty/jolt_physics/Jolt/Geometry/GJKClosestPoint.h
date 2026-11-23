@@ -7,6 +7,7 @@
 #include <Jolt/Core/NonCopyable.h>
 #include <Jolt/Geometry/ClosestPoint.h>
 #include <Jolt/Geometry/ConvexSupport.h>
+#include <Jolt/Physics/Collision/PlayForgeGskExperiment.h>
 
 //#define JPH_GJK_DEBUG
 #ifdef JPH_GJK_DEBUG
@@ -350,8 +351,12 @@ public:
 		// Previous length^2 of v
 		float prev_v_len_sq = FLT_MAX;
 
+		const bool track_stats = g_playforge_narrow_stats_enabled.load(std::memory_order_relaxed);
+		uint32_t local_iters = 0;
+
 		for (;;)
 		{
+			++local_iters;
 #ifdef JPH_GJK_DEBUG
 			Trace("v = [%s], num_points = %d", ConvertToString(ioV).c_str(), mNumPoints);
 #endif
@@ -383,6 +388,12 @@ public:
 			// Test if we have a separation of more than inMaxDistSq, in which case we terminate early
 			if (dot < 0.0f && dot * dot > v_len_sq * inMaxDistSq)
 			{
+				if (track_stats)
+				{
+					g_playforge_gsk_stats.gjk_iters.fetch_add(local_iters, std::memory_order_relaxed);
+					if (local_iters == 1)
+						g_playforge_gsk_stats.gsk_early_sep.fetch_add(1, std::memory_order_relaxed);
+				}
 #ifdef JPH_GJK_DEBUG
 				Trace("Distance bigger than max");
 #endif
@@ -468,6 +479,9 @@ public:
 			}
 			prev_v_len_sq = v_len_sq;
 		}
+
+		if (track_stats)
+			g_playforge_gsk_stats.gjk_iters.fetch_add(local_iters, std::memory_order_relaxed);
 
 		// Get the closest points
 		CalculatePointAAndB(outPointA, outPointB);
