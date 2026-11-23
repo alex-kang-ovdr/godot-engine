@@ -89,6 +89,8 @@ class JoltContactListener3D final
 	HashSet<JPH::SubShapeIDPair, ShapePairHasher> area_exits;
 	LocalVector<JPH::SubShapeIDPair> area_soft_body_overlaps;
 	Mutex write_mutex;
+	std::atomic<bool> has_reported_contacts { false };
+	std::atomic<bool> has_area_overlaps { false };
 	JoltSpace3D *space = nullptr;
 
 #ifdef DEBUG_ENABLED

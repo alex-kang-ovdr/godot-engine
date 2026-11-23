@@ -41,10 +41,37 @@
 #include <Jolt/Physics/SoftBody/SoftBodyManifold.h>
 
 void JoltContactListener3D::OnContactAdded(const JPH::Body &p_body1, const JPH::Body &p_body2, const JPH::ContactManifold &p_manifold, JPH::ContactSettings &p_settings) {
-	_try_override_collision_response(p_body1, p_body2, p_settings);
-	_try_apply_surface_velocities(p_body1, p_body2, p_settings);
-	_try_add_contacts(p_body1, p_body2, p_manifold, p_settings);
-	_try_evaluate_area_overlap(p_body1, p_body2, p_manifold.mSubShapeID1, p_manifold.mSubShapeID2);
+	if (unlikely(p_body1.IsSensor() || p_body2.IsSensor())) {
+		_try_evaluate_area_overlap(p_body1, p_body2, p_manifold.mSubShapeID1, p_manifold.mSubShapeID2);
+		return;
+	}
+
+	const JoltBody3D *body1 = reinterpret_cast<const JoltBody3D *>(p_body1.GetUserData());
+	const JoltBody3D *body2 = reinterpret_cast<const JoltBody3D *>(p_body2.GetUserData());
+	const bool is_dyn1 = p_body1.IsDynamic();
+	const bool is_dyn2 = p_body2.IsDynamic();
+
+	if (likely(is_dyn1 || is_dyn2)) {
+		if (unlikely(body1->get_collision_layer() != body2->get_collision_layer() || body1->get_collision_mask() != body2->get_collision_mask())) {
+			const bool can_collide1 = body1->can_collide_with(*body2);
+			const bool can_collide2 = body2->can_collide_with(*body1);
+			if (can_collide1 && !can_collide2) {
+				p_settings.mInvMassScale2 = 0.0f;
+				p_settings.mInvInertiaScale2 = 0.0f;
+			} else if (can_collide2 && !can_collide1) {
+				p_settings.mInvMassScale1 = 0.0f;
+				p_settings.mInvInertiaScale1 = 0.0f;
+			}
+		}
+	}
+
+	if (unlikely(is_dyn1 != is_dyn2)) {
+		_try_apply_surface_velocities(p_body1, p_body2, p_settings);
+	}
+
+	if (unlikely(body1->reports_contacts() || body2->reports_contacts())) {
+		_try_add_contacts(p_body1, p_body2, p_manifold, p_settings);
+	}
 
 #ifdef DEBUG_ENABLED
 	_try_add_debug_contacts(p_body1, p_body2, p_manifold);
@@ -52,14 +79,7 @@ void JoltContactListener3D::OnContactAdded(const JPH::Body &p_body1, const JPH::
 }
 
 void JoltContactListener3D::OnContactPersisted(const JPH::Body &p_body1, const JPH::Body &p_body2, const JPH::ContactManifold &p_manifold, JPH::ContactSettings &p_settings) {
-	_try_override_collision_response(p_body1, p_body2, p_settings);
-	_try_apply_surface_velocities(p_body1, p_body2, p_settings);
-	_try_add_contacts(p_body1, p_body2, p_manifold, p_settings);
-	_try_evaluate_area_overlap(p_body1, p_body2, p_manifold.mSubShapeID1, p_manifold.mSubShapeID2);
-
-#ifdef DEBUG_ENABLED
-	_try_add_debug_contacts(p_body1, p_body2, p_manifold);
-#endif
+	OnContactAdded(p_body1, p_body2, p_manifold, p_settings);
 }
 
 void JoltContactListener3D::OnContactRemoved(const JPH::SubShapeIDPair &p_shape_pair) {
@@ -193,6 +213,7 @@ bool JoltContactListener3D::_try_add_contacts(const JPH::Body &p_jolt_body1, con
 
 	Manifold &manifold = [&]() -> Manifold & {
 		const MutexLock write_lock(write_mutex);
+		has_reported_contacts.store(true, std::memory_order_relaxed);
 		return manifolds_by_shape_pair[shape_pair];
 	}();
 
@@ -287,11 +308,17 @@ bool JoltContactListener3D::_try_evaluate_area_overlap(const JPH::Body &p_body1,
 }
 
 bool JoltContactListener3D::_try_remove_contacts(const JPH::SubShapeIDPair &p_shape_pair) {
+	if (likely(!has_reported_contacts.load(std::memory_order_relaxed))) {
+		return false;
+	}
 	const MutexLock write_lock(write_mutex);
 	return manifolds_by_shape_pair.erase(p_shape_pair);
 }
 
 bool JoltContactListener3D::_try_remove_area_overlap(const JPH::SubShapeIDPair &p_shape_pair) {
+	if (likely(!has_area_overlaps.load(std::memory_order_relaxed))) {
+		return false;
+	}
 	const JPH::SubShapeIDPair swapped_shape_pair(p_shape_pair.GetBody2ID(), p_shape_pair.GetSubShapeID2(), p_shape_pair.GetBody1ID(), p_shape_pair.GetSubShapeID1());
 
 	const MutexLock write_lock(write_mutex);
@@ -409,6 +436,7 @@ void JoltContactListener3D::_evaluate_area_overlap(const JoltArea3D &p_area, con
 	if (p_area.can_monitor(p_other_area)) {
 		if (!area_overlaps.has(p_shape_pair)) {
 			area_overlaps.insert(p_shape_pair);
+			has_area_overlaps.store(true, std::memory_order_relaxed);
 			area_enters.insert(p_shape_pair);
 		} else if (_has_shape_shifted(p_area, p_shape_pair.GetSubShapeID1()) || _has_shape_shifted(p_other_area, p_shape_pair.GetSubShapeID2())) {
 			// A shape has taken on the `JPH::SubShapeID` value of another shape, likely because of the other shape having been replaced or moved
@@ -429,6 +457,7 @@ void JoltContactListener3D::_evaluate_area_overlap(const JoltArea3D &p_area, con
 	if (p_area.can_monitor(p_body)) {
 		if (!area_overlaps.has(p_shape_pair)) {
 			area_overlaps.insert(p_shape_pair);
+			has_area_overlaps.store(true, std::memory_order_relaxed);
 			area_enters.insert(p_shape_pair);
 		} else if (_has_shape_shifted(p_area, p_shape_pair.GetSubShapeID1()) || _has_shape_shifted(p_body, p_shape_pair.GetSubShapeID2())) {
 			// A shape has taken on the `JPH::SubShapeID` value of another shape, likely because of the other shape having been replaced or moved
@@ -565,4 +594,10 @@ void JoltContactListener3D::post_step() {
 	_flush_contacts();
 	_flush_area_exits();
 	_flush_area_enters();
+	if (manifolds_by_shape_pair.is_empty()) {
+		has_reported_contacts.store(false, std::memory_order_relaxed);
+	}
+	if (area_overlaps.is_empty()) {
+		has_area_overlaps.store(false, std::memory_order_relaxed);
+	}
 }
