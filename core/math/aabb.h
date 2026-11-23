@@ -265,40 +265,39 @@ Vector3 AABB::get_endpoint(int p_point) const {
 }
 
 bool AABB::intersects_convex_shape(const Plane *p_planes, int p_plane_count, const Vector3 *p_points, int p_point_count) const {
-	Vector3 half_extents = size * 0.5f;
-	Vector3 ofs = position + half_extents;
+	const Vector3 half_extents = size * 0.5f;
+	const Vector3 ofs = position + half_extents;
 
+	// Branchless abs-dot AABB vs plane separation test (ABI-invariant, vectorization-friendly).
 	for (int i = 0; i < p_plane_count; i++) {
 		const Plane &p = p_planes[i];
-		Vector3 point(
-				(p.normal.x > 0) ? -half_extents.x : half_extents.x,
-				(p.normal.y > 0) ? -half_extents.y : half_extents.y,
-				(p.normal.z > 0) ? -half_extents.z : half_extents.z);
-		point += ofs;
-		if (p.is_point_over(point)) {
+		const real_t center_dist = p.normal.x * ofs.x + p.normal.y * ofs.y + p.normal.z * ofs.z;
+		const real_t radius = Math::abs(p.normal.x) * half_extents.x + Math::abs(p.normal.y) * half_extents.y + Math::abs(p.normal.z) * half_extents.z;
+		if (center_dist - radius > p.d) {
 			return false;
 		}
 	}
 
-	// Make sure all points in the shape aren't fully separated from the AABB on
-	// each axis.
-	int bad_point_counts_positive[3] = { 0 };
-	int bad_point_counts_negative[3] = { 0 };
-
+	// Make sure all points in the shape aren't fully separated from the AABB on each axis (with early-out).
+	const Vector3 max_bound = position + size;
 	for (int k = 0; k < 3; k++) {
+		const real_t bmin = position.coord[k];
+		const real_t bmax = max_bound.coord[k];
+		bool all_pos = true;
+		bool all_neg = true;
 		for (int i = 0; i < p_point_count; i++) {
-			if (p_points[i].coord[k] > ofs.coord[k] + half_extents.coord[k]) {
-				bad_point_counts_positive[k]++;
+			const real_t c = p_points[i].coord[k];
+			if (c <= bmax) {
+				all_pos = false;
 			}
-			if (p_points[i].coord[k] < ofs.coord[k] - half_extents.coord[k]) {
-				bad_point_counts_negative[k]++;
+			if (c >= bmin) {
+				all_neg = false;
+			}
+			if (!all_pos && !all_neg) {
+				break;
 			}
 		}
-
-		if (bad_point_counts_negative[k] == p_point_count) {
-			return false;
-		}
-		if (bad_point_counts_positive[k] == p_point_count) {
+		if (all_pos || all_neg) {
 			return false;
 		}
 	}
@@ -307,17 +306,14 @@ bool AABB::intersects_convex_shape(const Plane *p_planes, int p_plane_count, con
 }
 
 bool AABB::inside_convex_shape(const Plane *p_planes, int p_plane_count) const {
-	Vector3 half_extents = size * 0.5f;
-	Vector3 ofs = position + half_extents;
+	const Vector3 half_extents = size * 0.5f;
+	const Vector3 ofs = position + half_extents;
 
 	for (int i = 0; i < p_plane_count; i++) {
 		const Plane &p = p_planes[i];
-		Vector3 point(
-				(p.normal.x < 0) ? -half_extents.x : half_extents.x,
-				(p.normal.y < 0) ? -half_extents.y : half_extents.y,
-				(p.normal.z < 0) ? -half_extents.z : half_extents.z);
-		point += ofs;
-		if (p.is_point_over(point)) {
+		const real_t center_dist = p.normal.x * ofs.x + p.normal.y * ofs.y + p.normal.z * ofs.z;
+		const real_t radius = Math::abs(p.normal.x) * half_extents.x + Math::abs(p.normal.y) * half_extents.y + Math::abs(p.normal.z) * half_extents.z;
+		if (center_dist + radius > p.d) {
 			return false;
 		}
 	}

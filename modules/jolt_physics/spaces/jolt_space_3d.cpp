@@ -30,6 +30,8 @@
 
 #include "jolt_space_3d.h"
 
+#include "core/object/worker_thread_pool.h"
+
 #include "../joints/jolt_joint_3d.h"
 #include "../jolt_physics_server_3d.h"
 #include "../jolt_project_settings.h"
@@ -78,10 +80,36 @@ void JoltSpace3D::_pre_step(float p_step) {
 	const JPH::BodyID *active_rigid_bodies = physics_system->GetActiveBodiesUnsafe(JPH::EBodyType::RigidBody);
 	const JPH::uint32 active_rigid_body_count = physics_system->GetNumActiveBodies(JPH::EBodyType::RigidBody);
 
-	for (JPH::uint32 i = 0; i < active_rigid_body_count; i++) {
-		JPH::Body *jolt_body = lock_iface.TryGetBody(active_rigid_bodies[i]);
-		JoltObject3D *object = reinterpret_cast<JoltObject3D *>(jolt_body->GetUserData());
-		object->pre_step(p_step);
+	WorkerThreadPool *wtp = WorkerThreadPool::get_singleton();
+	if (active_rigid_body_count >= 512 && wtp != nullptr) {
+		constexpr JPH::uint32 CHUNK_SIZE = 256;
+		struct PreStepCtx {
+			const JPH::BodyLockInterface *lock_iface;
+			const JPH::BodyID *bodies;
+			JPH::uint32 count;
+			float step;
+		} ctx{ &lock_iface, active_rigid_bodies, active_rigid_body_count, p_step };
+
+		const int num_chunks = (int)((active_rigid_body_count + CHUNK_SIZE - 1) / CHUNK_SIZE);
+		WorkerThreadPool::GroupID gid = wtp->add_native_group_task(
+				[](void *p_ud, uint32_t p_idx) {
+					const PreStepCtx *c = static_cast<const PreStepCtx *>(p_ud);
+					const JPH::uint32 start = p_idx * CHUNK_SIZE;
+					const JPH::uint32 end = MIN(start + CHUNK_SIZE, c->count);
+					for (JPH::uint32 i = start; i < end; ++i) {
+						JPH::Body *jolt_body = c->lock_iface->TryGetBody(c->bodies[i]);
+						JoltObject3D *object = reinterpret_cast<JoltObject3D *>(jolt_body->GetUserData());
+						object->pre_step(c->step);
+					}
+				},
+				&ctx, num_chunks, -1, true, SNAME("JoltPreStep"));
+		wtp->wait_for_group_task_completion(gid);
+	} else {
+		for (JPH::uint32 i = 0; i < active_rigid_body_count; i++) {
+			JPH::Body *jolt_body = lock_iface.TryGetBody(active_rigid_bodies[i]);
+			JoltObject3D *object = reinterpret_cast<JoltObject3D *>(jolt_body->GetUserData());
+			object->pre_step(p_step);
+		}
 	}
 
 	const JPH::BodyID *active_soft_bodies = physics_system->GetActiveBodiesUnsafe(JPH::EBodyType::SoftBody);

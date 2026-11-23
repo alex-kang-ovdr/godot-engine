@@ -42,6 +42,10 @@ class JoltSoftBody3D;
 class JoltSpace3D;
 class JoltTempAllocator;
 
+namespace JPH {
+class JobSystem;
+}
+
 class JoltPhysicsServer3D final : public PhysicsServer3D {
 	GDCLASS(JoltPhysicsServer3D, PhysicsServer3D)
 
@@ -56,7 +60,8 @@ class JoltPhysicsServer3D final : public PhysicsServer3D {
 
 	HashSet<JoltSpace3D *> active_spaces;
 
-	JoltJobSystem *job_system = nullptr;
+	JPH::JobSystem *job_system = nullptr;
+	JoltJobSystem *godot_job_system = nullptr;
 	JoltTempAllocator *temp_allocator = nullptr;
 
 	bool on_separate_thread = false;
@@ -429,6 +434,8 @@ public:
 	virtual bool is_flushing_queries() const override;
 
 	virtual int get_process_info(PhysicsServer3D::ProcessInfo p_process_info) override;
+
+	virtual int64_t batch_fill_multimesh_buffer(const int64_t *p_body_rids, const float *p_custom_r, int64_t p_count, float *r_dst) const override;
 
 	bool is_on_separate_thread() const { return on_separate_thread; }
 	bool is_active() const { return active; }

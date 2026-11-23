@@ -411,6 +411,10 @@ public:
 		return physics_server_3d->get_process_info(p_info);
 	}
 
+	virtual int64_t batch_fill_multimesh_buffer(const int64_t *p_body_rids, const float *p_custom_r, int64_t p_count, float *r_dst) const override {
+		return physics_server_3d->batch_fill_multimesh_buffer(p_body_rids, p_custom_r, p_count, r_dst);
+	}
+
 	PhysicsServer3DWrapMT(PhysicsServer3D *p_contained, bool p_create_thread);
 	~PhysicsServer3DWrapMT();
 };

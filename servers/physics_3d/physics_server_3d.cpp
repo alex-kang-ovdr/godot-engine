@@ -1159,6 +1159,40 @@ PhysicsServer3D::~PhysicsServer3D() {
 	singleton = nullptr;
 }
 
+int64_t PhysicsServer3D::batch_fill_multimesh_buffer(const int64_t *p_body_rids, const float *p_custom_r, int64_t p_count, float *r_dst) const {
+	if (!p_body_rids || !r_dst || p_count <= 0) {
+		return 0;
+	}
+	int64_t written = 0;
+	for (int64_t i = 0; i < p_count; ++i) {
+		const RID rid = RID::from_uint64(static_cast<uint64_t>(p_body_rids[i]));
+		const Variant state = body_get_state(rid, BODY_STATE_TRANSFORM);
+		if (state.get_type() != Variant::TRANSFORM3D) {
+			continue;
+		}
+		const Transform3D xf = state;
+		float *out = r_dst + i * 16;
+		out[0] = (float)xf.basis.rows[0].x;
+		out[1] = (float)xf.basis.rows[0].y;
+		out[2] = (float)xf.basis.rows[0].z;
+		out[3] = (float)xf.origin.x;
+		out[4] = (float)xf.basis.rows[1].x;
+		out[5] = (float)xf.basis.rows[1].y;
+		out[6] = (float)xf.basis.rows[1].z;
+		out[7] = (float)xf.origin.y;
+		out[8] = (float)xf.basis.rows[2].x;
+		out[9] = (float)xf.basis.rows[2].y;
+		out[10] = (float)xf.basis.rows[2].z;
+		out[11] = (float)xf.origin.z;
+		out[12] = p_custom_r ? p_custom_r[i] : 0.0f;
+		out[13] = 0.0f;
+		out[14] = 0.0f;
+		out[15] = 0.0f;
+		++written;
+	}
+	return written;
+}
+
 PhysicsServer3DManager *PhysicsServer3DManager::singleton = nullptr;
 const String PhysicsServer3DManager::setting_property_name(PNAME("physics/3d/physics_engine"));
 

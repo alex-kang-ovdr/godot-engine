@@ -828,6 +828,8 @@ public:
 
 	virtual int get_process_info(ProcessInfo p_info) = 0;
 
+	virtual int64_t batch_fill_multimesh_buffer(const int64_t *p_body_rids, const float *p_custom_r, int64_t p_count, float *r_dst) const;
+
 	PhysicsServer3D();
 	~PhysicsServer3D();
 };

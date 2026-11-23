@@ -53,6 +53,14 @@
 #include "spaces/jolt_space_3d.h"
 #include "spaces/jolt_temp_allocator.h"
 
+#include "core/object/worker_thread_pool.h"
+#include "core/os/os.h"
+
+#ifndef WEB_ENABLED
+#include <Jolt/Core/JobSystemThreadPool.h>
+#include <Jolt/Physics/PhysicsSettings.h>
+#endif
+
 JoltPhysicsServer3D::JoltPhysicsServer3D(bool p_on_separate_thread) :
 		on_separate_thread(p_on_separate_thread) {
 	singleton = this;
@@ -1604,7 +1612,14 @@ void JoltPhysicsServer3D::set_active(bool p_active) {
 }
 
 void JoltPhysicsServer3D::init() {
-	job_system = new JoltJobSystem();
+#ifndef WEB_ENABLED
+	const int worker_threads = MAX(1, OS::get_singleton()->get_processor_count() - 1);
+	job_system = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, worker_threads);
+	godot_job_system = nullptr;
+#else
+	godot_job_system = new JoltJobSystem();
+	job_system = godot_job_system;
+#endif
 	temp_allocator = new JoltTempAllocator();
 }
 
@@ -1617,6 +1632,7 @@ void JoltPhysicsServer3D::finish() {
 	if (job_system != nullptr) {
 		delete job_system;
 		job_system = nullptr;
+		godot_job_system = nullptr;
 	}
 }
 
@@ -1626,11 +1642,15 @@ void JoltPhysicsServer3D::step(real_t p_step) {
 	}
 
 	for (JoltSpace3D *active_space : active_spaces) {
-		job_system->pre_step();
+		if (godot_job_system != nullptr) {
+			godot_job_system->pre_step();
+		}
 
 		active_space->step((float)p_step);
 
-		job_system->post_step();
+		if (godot_job_system != nullptr) {
+			godot_job_system->post_step();
+		}
 	}
 }
 
@@ -1656,7 +1676,9 @@ void JoltPhysicsServer3D::flush_queries() {
 	flushing_queries = false;
 
 #ifdef DEBUG_ENABLED
-	job_system->flush_timings();
+	if (godot_job_system != nullptr) {
+		godot_job_system->flush_timings();
+	}
 #endif
 }
 
@@ -1666,6 +1688,102 @@ bool JoltPhysicsServer3D::is_flushing_queries() const {
 
 int JoltPhysicsServer3D::get_process_info(ProcessInfo p_process_info) {
 	return 0;
+}
+
+int64_t JoltPhysicsServer3D::batch_fill_multimesh_buffer(const int64_t *p_body_rids, const float *p_custom_r, int64_t p_count, float *r_dst) const {
+	if (!p_body_rids || !r_dst || p_count <= 0) {
+		return 0;
+	}
+
+	auto fill_range = [&](int64_t p_start, int64_t p_end) {
+		for (int64_t i = p_start; i < p_end; ++i) {
+			const RID rid = RID::from_uint64(static_cast<uint64_t>(p_body_rids[i]));
+			JoltBody3D *body = body_owner.get_or_null(rid);
+			if (unlikely(body == nullptr)) {
+				continue;
+			}
+			float *out = r_dst + i * 16;
+			if (likely(body->in_space())) {
+				const JPH::Body *jb = body->get_jolt_body();
+				const JPH::RMat44 m = jb->GetWorldTransform();
+				const JPH::Vec3 c0 = m.GetColumn3(0);
+				const JPH::Vec3 c1 = m.GetColumn3(1);
+				const JPH::Vec3 c2 = m.GetColumn3(2);
+				const JPH::RVec3 t = m.GetTranslation();
+				const Vector3 sc = body->get_scale();
+				if (likely(sc.x == 1.0f && sc.y == 1.0f && sc.z == 1.0f)) {
+					out[0] = c0.GetX();
+					out[1] = c1.GetX();
+					out[2] = c2.GetX();
+					out[3] = (float)t.GetX();
+					out[4] = c0.GetY();
+					out[5] = c1.GetY();
+					out[6] = c2.GetY();
+					out[7] = (float)t.GetY();
+					out[8] = c0.GetZ();
+					out[9] = c1.GetZ();
+					out[10] = c2.GetZ();
+					out[11] = (float)t.GetZ();
+				} else {
+					out[0] = c0.GetX() * (float)sc.x;
+					out[1] = c1.GetX() * (float)sc.y;
+					out[2] = c2.GetX() * (float)sc.z;
+					out[3] = (float)t.GetX();
+					out[4] = c0.GetY() * (float)sc.x;
+					out[5] = c1.GetY() * (float)sc.y;
+					out[6] = c2.GetY() * (float)sc.z;
+					out[7] = (float)t.GetY();
+					out[8] = c0.GetZ() * (float)sc.x;
+					out[9] = c1.GetZ() * (float)sc.y;
+					out[10] = c2.GetZ() * (float)sc.z;
+					out[11] = (float)t.GetZ();
+				}
+			} else {
+				const Transform3D xf = body->get_transform_scaled();
+				out[0] = (float)xf.basis.rows[0].x;
+				out[1] = (float)xf.basis.rows[0].y;
+				out[2] = (float)xf.basis.rows[0].z;
+				out[3] = (float)xf.origin.x;
+				out[4] = (float)xf.basis.rows[1].x;
+				out[5] = (float)xf.basis.rows[1].y;
+				out[6] = (float)xf.basis.rows[1].z;
+				out[7] = (float)xf.origin.y;
+				out[8] = (float)xf.basis.rows[2].x;
+				out[9] = (float)xf.basis.rows[2].y;
+				out[10] = (float)xf.basis.rows[2].z;
+				out[11] = (float)xf.origin.z;
+			}
+			out[12] = p_custom_r ? p_custom_r[i] : 0.0f;
+			out[13] = 0.0f;
+			out[14] = 0.0f;
+			out[15] = 0.0f;
+		}
+	};
+
+	constexpr int64_t CHUNK_SIZE = 512;
+	WorkerThreadPool *wtp = WorkerThreadPool::get_singleton();
+	if (p_count >= 2048 && wtp != nullptr) {
+		struct BatchCtx {
+			decltype(fill_range) *fn;
+			int64_t count;
+			int64_t chunk_size;
+		} ctx{ &fill_range, p_count, CHUNK_SIZE };
+
+		const int num_chunks = (int)((p_count + CHUNK_SIZE - 1) / CHUNK_SIZE);
+		WorkerThreadPool::GroupID gid = wtp->add_native_group_task(
+				[](void *p_ud, uint32_t p_idx) {
+					const BatchCtx *c = static_cast<const BatchCtx *>(p_ud);
+					const int64_t start = (int64_t)p_idx * c->chunk_size;
+					const int64_t end = MIN(start + c->chunk_size, c->count);
+					(*c->fn)(start, end);
+				},
+				&ctx, num_chunks, -1, true, SNAME("JoltBatchSync"));
+		wtp->wait_for_group_task_completion(gid);
+	} else {
+		fill_range(0, p_count);
+	}
+
+	return p_count;
 }
 
 void JoltPhysicsServer3D::free_space(JoltSpace3D *p_space) {
