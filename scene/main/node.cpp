@@ -302,7 +302,15 @@ void Node::_notification(int p_notification) {
 			}
 
 			if (data.parent) {
-				data.parent->remove_child(this);
+				if (is_platform_sealed()) {
+					// A sealed node only reaches PREDELETE when the platform freed it (or its parent) on purpose,
+					// e.g. a queue_free() issued inside PlatformSealScope and flushed next frame. Detaching it must
+					// not be blocked, or the parent keeps a dangling child and frees it twice.
+					Object::PlatformSealScope seal_scope;
+					data.parent->remove_child(this);
+				} else {
+					data.parent->remove_child(this);
+				}
 			}
 
 			// kill children as cleanly as possible
@@ -1748,6 +1756,49 @@ void Node::add_sibling(RequiredParam<Node> rp_sibling, bool p_force_readable_nam
 	data.parent->_move_child(p_sibling, get_index() + 1);
 }
 
+void Node::_playforge_preserve_sealed_descendants(Node *p_subtree) {
+	SceneTree *tree = SceneTree::get_singleton();
+	if (!tree || !p_subtree || !p_subtree->is_inside_tree()) {
+		return;
+	}
+	Window *root = tree->get_root();
+	if (!root || p_subtree == root) {
+		return;
+	}
+
+	// Collect the top-most sealed nodes under p_subtree (a sealed node keeps its own sealed children).
+	LocalVector<Node *> sealed;
+	LocalVector<Node *> to_visit;
+	to_visit.push_back(p_subtree);
+	while (!to_visit.is_empty()) {
+		Node *n = to_visit[to_visit.size() - 1];
+		to_visit.resize(to_visit.size() - 1);
+		for (const KeyValue<StringName, Node *> &E : n->data.children) {
+			if (E.value->is_platform_sealed()) {
+				sealed.push_back(E.value);
+			} else {
+				to_visit.push_back(E.value);
+			}
+		}
+	}
+	if (sealed.is_empty()) {
+		return;
+	}
+
+	static const StringName preserved_process_mode_meta = SNAME("_playforge_preserved_process_mode");
+	Object::PlatformSealScope seal_scope;
+	for (Node *s : sealed) {
+		WARN_PRINT(vformat("PlayForge Engine Seal: preserved sealed node '%s' at the tree root; its last world transform is kept until the next scene adopts it.", s->get_name()));
+		if (!s->has_meta(preserved_process_mode_meta)) {
+			s->set_meta(preserved_process_mode_meta, (int)s->get_process_mode());
+		}
+		// Virtual: Node3D/Node2D/Control keep the global transform across the move.
+		s->reparent(root, true);
+		// Hold it where it was (no scripted movement or gravity) until a scene adopts it.
+		s->set_process_mode(PROCESS_MODE_DISABLED);
+	}
+}
+
 void Node::remove_child(RequiredParam<Node> rp_child) {
 	ERR_FAIL_COND_MSG(data.tree && !Thread::is_main_thread(), "Removing children from a node inside the SceneTree is only allowed from the main thread. Use call_deferred(\"remove_child\",node).");
 	EXTRACT_PARAM_OR_FAIL(p_child, rp_child);
@@ -1757,6 +1808,13 @@ void Node::remove_child(RequiredParam<Node> rp_child) {
 	}
 	ERR_FAIL_COND_MSG(data.blocked > 0, "Parent node is busy adding/removing children, `remove_child()` can't be called at this time. Consider using `remove_child.call_deferred(child)` instead.");
 	ERR_FAIL_COND(p_child->data.parent != this);
+
+	// PlayForge Engine Seal: a subtree that holds platform-sealed nodes is being detached (or its root is
+	// being freed) outside the platform. Sealed nodes cannot be deleted, so move them to the tree root first,
+	// keeping their last world transform, and hold them there until the next scene adopts them.
+	if (!Object::is_platform_privileged()) {
+		_playforge_preserve_sealed_descendants(p_child);
+	}
 
 	/**
 	 *  Do not change the data.internal_children*cache counters here.

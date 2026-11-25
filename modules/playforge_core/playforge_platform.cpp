@@ -623,15 +623,24 @@ Node *PlayForgePlatform::ensure_scene_avatar(Node *p_scene) {
 		return attached ? attached : (Node *)get_avatar_portrait_ui();
 	}
 
+	// 0. Avatar preserved at the tree root after its previous scene was removed outside the platform
+	//    (see Node::_playforge_preserve_sealed_descendants): adopt it into this scene instead of spawning a
+	//    second one. Its last world transform is kept, and its process mode is restored.
+	static const StringName preserved_process_mode_meta = SNAME("_playforge_preserved_process_mode");
+	Node *preserved = get_local_avatar();
+	if (preserved && (!tree || preserved->get_parent() != tree->get_root() || !preserved->has_meta(preserved_process_mode_meta))) {
+		preserved = nullptr;
+	}
+
 	// 1. Existing PlayForgeAvatarController in scene?
-	Node *existing_ctrl = _find_script_path_recursive(p_scene, "addons/playforge_avatar/avatar_controller.gd");
+	Node *existing_ctrl = preserved ? nullptr : _find_script_path_recursive(p_scene, "addons/playforge_avatar/avatar_controller.gd");
 	if (existing_ctrl) {
 		_seal_avatar_instance(existing_ctrl);
 		return existing_ctrl;
 	}
 
 	// 2. Existing PlayForgeAvatarSpawn in scene? Spawn synchronously and seal.
-	Node *spawn_node = _find_script_path_recursive(p_scene, "addons/playforge_avatar/avatar_spawn.gd");
+	Node *spawn_node = preserved ? nullptr : _find_script_path_recursive(p_scene, "addons/playforge_avatar/avatar_spawn.gd");
 	if (spawn_node && spawn_node->has_method("spawn_avatar")) {
 		Object::PlatformSealScope seal_scope;
 		Variant spawned_var = spawn_node->call("spawn_avatar");
@@ -680,6 +689,14 @@ Node *PlayForgePlatform::ensure_scene_avatar(Node *p_scene) {
 		sun->set_name("PlayForgeDefaultLight");
 		sun->set_rotation_degrees(Vector3(-48.0f, -32.0f, 0.0f));
 		p_scene->add_child(sun);
+	}
+
+	if (preserved) {
+		// Adopt after the blank-scene floor/light check, which must not count the avatar's own body.
+		preserved->reparent(p_scene, true); // still inside seal_scope
+		preserved->set_process_mode((Node::ProcessMode)(int)preserved->get_meta(preserved_process_mode_meta));
+		preserved->remove_meta(preserved_process_mode_meta);
+		return preserved;
 	}
 
 	const String ctrl_path = "res://addons/playforge_avatar/avatar_controller.gd";

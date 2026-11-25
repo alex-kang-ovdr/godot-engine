@@ -332,6 +332,9 @@ private:
 	friend class SceneTree;
 
 	void _set_tree(SceneTree *p_tree);
+	// PlayForge Engine Seal: moves platform-sealed nodes out of a subtree that is leaving the tree outside the
+	// platform, so they survive (see Node::remove_child).
+	static void _playforge_preserve_sealed_descendants(Node *p_subtree);
 	void _propagate_pause_notification(bool p_enable);
 	void _propagate_suspend_notification(bool p_enable);
 
