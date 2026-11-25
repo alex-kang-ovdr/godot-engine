@@ -1,0 +1,20 @@
+; PlayForge 엔진 패치 회귀 시험 프로젝트 (playforge/tests/README.md 참고)
+config_version=5
+
+[application]
+
+config/name="PlayForgeEngineRegression"
+run/flush_stdout_on_print=true
+
+[debug]
+
+settings/stdout/verbose_stdout=false
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
+
+[playforge]
+
+avatar/spawn_position=Vector3(3, 0.5, -2)

@@ -1,0 +1,7 @@
+# 실행 결과·Godot 캐시는 커밋하지 않는다.
+results/
+project/.godot/
+# vfs_seal 시험이 실행 중 잠깐 만드는 디렉터리(정상 종료 시 삭제됨)
+project/addons/
+project/pf_tmp_open/
+__pycache__/
