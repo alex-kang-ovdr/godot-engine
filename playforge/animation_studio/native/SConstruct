@@ -1,0 +1,66 @@
+import os
+import sys
+
+from SCons.Errors import UserError
+from SCons.Script import ARGUMENTS, Action, Default, SConscript
+
+
+API_VERSION = "4.7"
+
+
+def get_godot_cpp_dir():
+	godot_cpp_dir = os.environ.get("GODOT_CPP_DIR")
+	if not godot_cpp_dir:
+		raise UserError("Set GODOT_CPP_DIR to a compatible godot-cpp checkout")
+	godot_cpp_dir = os.path.abspath(godot_cpp_dir)
+	if not os.path.isfile(os.path.join(godot_cpp_dir, "SConstruct")):
+		raise UserError("GODOT_CPP_DIR does not contain godot-cpp/SConstruct: {}".format(godot_cpp_dir))
+	return godot_cpp_dir
+
+
+def write_descriptor(target, source, env):
+	descriptor = """[configuration]
+entry_symbol = \"animation_studio_pose_sampler_library_init\"
+compatibility_minimum = \"4.7\"
+
+[libraries]
+windows.debug.x86_64 = \"res://addons/animation_studio/bin/animation_studio_pose_sampler.windows.template_debug.x86_64.dll\"
+"""
+	with open(target[0].abspath, "w", encoding="utf-8", newline="\n") as descriptor_file:
+		descriptor_file.write(descriptor)
+	return 0
+
+
+def write_scan_ignore(target, source, env):
+	with open(target[0].abspath, "w", encoding="utf-8", newline="\n") as ignore_file:
+		ignore_file.write("")
+	return 0
+
+
+if sys.platform != "win32":
+	raise UserError("Animation Studio native sampler is configured for Windows x86_64 only; Linux and macOS are unsupported")
+if ARGUMENTS.get("platform", "windows") != "windows" or ARGUMENTS.get("arch", "x86_64") != "x86_64" or ARGUMENTS.get("target", "template_debug") != "template_debug":
+	raise UserError("Animation Studio native sampler currently supports only platform=windows arch=x86_64 target=template_debug")
+
+godot_cpp_dir = get_godot_cpp_dir()
+env = SConscript(os.path.join(godot_cpp_dir, "SConstruct"), {"api_version": API_VERSION})
+
+output_dir = os.path.normpath(os.path.join("..", "addons", "animation_studio", "bin"))
+os.makedirs(output_dir, exist_ok=True)
+library = env.SharedLibrary(
+	os.path.join(output_dir, "animation_studio_pose_sampler{}{}".format(env["suffix"], env["SHLIBSUFFIX"])),
+	["animation_studio_pose_sampler.cpp"],
+)
+env.NoCache(library)
+
+descriptor = env.Command(
+	os.path.join(output_dir, "animation_studio_pose_sampler.gdextension"),
+	library,
+	Action(write_descriptor, "Generating $TARGET after the extension library links"),
+)
+scan_ignore = env.Command(
+	os.path.join(output_dir, ".gdignore"),
+	descriptor,
+	Action(write_scan_ignore, "Ignoring native output directory during automatic project scans"),
+)
+Default(scan_ignore)

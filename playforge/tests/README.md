@@ -20,6 +20,7 @@ bin/godot.windows.editor.x86_64.console.exe --headless --fixed-fps 60 --path pla
 - 각 시험 씬은 `PFTEST {json}` 한 줄씩 출력한다. `status`: `PASS`/`FAIL`(판정), `INFO`(측정값·시간, 판정 없음), `GAP`(패치 설계 밖 우회 관찰, 판정 없음), `NOT_COVERED`, 끝에 `SUMMARY`. 종료 코드는 FAIL이 있으면 1, 없으면 0.
 - `run.py`는 모든 씬을 돌리고 `results/latest.json`(git 제외)에 모은다. FAIL, SUMMARY 없이 끝난 경우(엔진 중단), 시간 초과, 프로세스 간 결정성 불일치가 하나라도 있으면 종료 코드 1.
 - 물리 스위트는 `--fixed-fps 60`으로 실시간 동기화를 끄고 돌린다. 물리 틱 수는 같으므로 결과 hash도 같다.
+- Animation Studio의 `animation_coexistence`, `animation_pose_parity`, `animation_compressed_parity`는 별도 Godot 프로젝트에서 실행한다. 네이티브 확장 빌드와 glTF 재임포트 시험은 [Animation Studio 실행 안내](../animation_studio/README.md)를 따른다.
 - 실행 파일이 보고한 엔진 커밋과 저장소 HEAD가 다르면 요약에 `MISMATCH`를 찍는다. 이때 실행 결과는 HEAD가 아니라 그 실행 파일에 대한 결과다.
 - 시험은 코어 팩(`--playforge-core-pack`) 없이 돈다. 그래서 아바타는 엔진 내장 TPS 대체 아바타(`SealedCapsule`/`SealedCameraPivot` 등)다.
 

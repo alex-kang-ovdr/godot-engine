@@ -1,0 +1,6 @@
+/.sconsign*.dblite
+/.scons_env.json
+*.obj
+*.exp
+*.lib
+*.pdb

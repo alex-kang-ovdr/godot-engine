@@ -1,0 +1,10 @@
+; Standalone headless Animation Studio pilot tests.
+config_version=5
+
+[application]
+config/name="AnimationStudioCoexistenceTests"
+run/main_scene="res://tests/coexistence.tscn"
+run/flush_stdout_on_print=true
+
+[rendering]
+renderer/rendering_method="gl_compatibility"

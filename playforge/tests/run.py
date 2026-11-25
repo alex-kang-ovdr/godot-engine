@@ -22,6 +22,7 @@ from pathlib import Path
 
 TESTS_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = TESTS_DIR / "project"
+ANIMATION_PROJECT = TESTS_DIR.parent / "animation_studio"
 REPO_ROOT = TESTS_DIR.parent.parent
 RESULTS_DIR = TESTS_DIR / "results"
 DEFAULT_BIN = REPO_ROOT / "bin" / "godot.windows.editor.x86_64.console.exe"
@@ -43,6 +44,9 @@ SUITES = [
     ("jolt_api", "res://jolt/jolt_api.tscn", ["--fixed-fps", "60"], [], 120, "83f5f345 e7a83dd7"),
     ("jolt_determinism", "res://jolt/jolt_determinism.tscn", ["--fixed-fps", "60"], [], 300, "83f5f345 c9050da1 e7a83dd7"),
     ("jolt_contacts", "res://jolt/jolt_contacts.tscn", ["--fixed-fps", "60"], [], 120, "c9050da1"),
+    ("animation_coexistence", "res://tests/coexistence.tscn", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
+    ("animation_pose_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
+    ("animation_compressed_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], ["--compressed"], 30, "Animation Studio", ANIMATION_PROJECT),
 ]
 
 # 실행으로 관찰할 수 없는 패치(빌드 플래그 등)는 소스에 표식이 남아 있는지만 확인한다.
@@ -80,8 +84,9 @@ def git_head() -> str:
         return ""
 
 
-def run_suite(godot: Path, name: str, scene: str, engine_args: list[str], user_args: list[str], timeout: int) -> dict:
-    cmd = [str(godot), "--headless", *engine_args, "--path", str(PROJECT_DIR), scene]
+def run_suite(godot: Path, name: str, scene: str, engine_args: list[str], user_args: list[str], timeout: int, project_dir: Path = PROJECT_DIR) -> dict:
+    entry = ["--script", scene] if scene.endswith(".gd") else [scene]
+    cmd = [str(godot), "--headless", *engine_args, "--path", str(project_dir), *entry]
     if user_args:
         cmd += ["--", *user_args]
     t0 = time.monotonic()
@@ -109,6 +114,8 @@ def run_suite(godot: Path, name: str, scene: str, engine_args: list[str], user_a
     summary = next((r for r in records if r.get("status") == "SUMMARY"), None)
     start = next((r for r in records if r.get("status") == "START"), {})
     problems = []
+    if project_dir == ANIMATION_PROJECT and "ERROR:" in err:
+        problems.append("engine reported an error")
     if timed_out:
         problems.append(f"timeout after {timeout}s")
     elif summary is None:
@@ -205,7 +212,7 @@ def main() -> int:
         results.append(check_source_markers())
     det_runs = []
     for rep in range(max(1, args.repeat)):
-        for name, scene, eargs, uargs, timeout, guards in SUITES:
+        for name, scene, eargs, uargs, timeout, guards, *project in SUITES:
             if only and name not in only:
                 continue
             uargs = list(uargs) + (["--quick"] if args.quick and name == "hide_budget" else [])
@@ -214,7 +221,7 @@ def main() -> int:
             for k in range(n):
                 label = name if (rep == 0 and k == 0) else f"{name}#{rep * n + k + 1}"
                 print(f"[run] {label} ...", flush=True)
-                r = run_suite(godot, name, scene, eargs, uargs, timeout)
+                r = run_suite(godot, name, scene, eargs, uargs, timeout, *project)
                 r["label"] = label
                 r["guards"] = guards
                 results.append(r)
