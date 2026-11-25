@@ -45,7 +45,7 @@ bin/godot.windows.editor.x86_64.console.exe --headless --fixed-fps 60 --path pla
 | `jolt_determinism` | `jolt/jolt_determinism.tscn` | `83f5f345`, `c9050da1`, `e7a83dd7` | 상자 600개(병렬 pre_step 경로) 탑 + 90틱 폭발, 300틱. GSK 모드 2·0·1 각각 새 World3D로 같은 프로세스에서 두 번 → 1cm 양자화 hash 일치. 비트 단위 hash와 시간은 INFO |
 | `jolt_determinism_cross_process` | (run.py가 위 스위트를 두 프로세스로 돌려 비교) | 같음 | 프로세스 간 1cm 양자화 hash 일치 (HavokProfile 벤치마크의 "같은 기기 반복 실행" 주장) |
 | `jolt_contacts` | `jolt/jolt_contacts.tscn` | `c9050da1` | 강체 800개 + 감지 영역 + 한쪽만 감지하는 layer/mask 강체 + 정적 컨베이어. fast path 뒤에도 `body_entered`/`get_colliding_bodies`/영역 진입·퇴장/해제 후 접촉 제거가 보고되고, 엔진 오류 0건, 위치 유한·바닥 위. 시간은 INFO |
-| `enet_rpc_netdebug` | `network/net_debug.tscn` | Forge-Refactoring-Multiplayer E3 | 별도 server/client `SceneMultiplayer` API에서 래퍼 없는 RPC 왕복, 양방향 지연·100% 손실·Off 복구, 메서드별 누적 profiler의 disable/re-enable 동작, ENet `pop_statistic`을 확인. 별도 host의 DTLS 설정 전환에서 지연 큐 폐기와 설정 보존도 검사하지만 DTLS 실통신은 검증하지 않는다. 현재 변경 소스로 빌드한 Godot가 필요 |
+| `enet_rpc_netdebug` | `network/net_debug.tscn` | Forge-Refactoring-Multiplayer E3 | 별도 server/client `SceneMultiplayer` API에서 래퍼 없는 RPC 왕복, 양방향 지연·100% 손실·Off 복구, 메서드별 누적 profiler의 disable/re-enable 동작, ENet `pop_statistic`을 확인. 별도 루프백 ENet 연결은 런타임 self-signed `CN=localhost` 인증서와 명시적 trust root로 DTLS hostname 검증 handshake·데이터 왕복·런타임 지연·Off 복구를 검증하며, 이전 transport-upgrade 큐 폐기 검사는 유지한다. 현재 변경 소스로 빌드한 Godot가 필요 |
 
 ## 현재 발견된 엔진 문제 (시험이 FAIL로 남겨 둠)
 

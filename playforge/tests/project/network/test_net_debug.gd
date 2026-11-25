@@ -209,6 +209,131 @@ func _run_smoke() -> void:
 		"client=%s server=%s" % [str(client_traffic), str(server_traffic)])
 
 	_test_dtls_upgrade_queue_cleanup()
+	await _test_dtls_enet_roundtrip()
+
+
+func _test_dtls_enet_roundtrip() -> void:
+	# Use a runtime-generated self-signed localhost certificate as both server identity and
+	# the client's explicit trust root. TLSOptions.client performs certificate and CN checks.
+	var crypto := Crypto.new()
+	var key := crypto.generate_rsa(2048)
+	var cert := crypto.generate_self_signed_certificate(key, "CN=localhost,O=PlayForge Tests,C=US")
+	t.check("dtls_runtime_certificate_generated", C_ENET_SIMULATION, key != null and cert != null)
+	if key == null or cert == null:
+		return
+	var server_options := TLSOptions.server(key, cert)
+	var client_options := TLSOptions.client(cert)
+	t.check("dtls_client_verification_enabled", C_ENET_SIMULATION,
+		client_options != null and not client_options.is_unsafe_client()
+		and client_options.get_trusted_ca_chain() == cert,
+		"unsafe=%s trusted_cert=%s" % [client_options.is_unsafe_client(), client_options.get_trusted_ca_chain() == cert])
+
+	var dtls_server := ENetConnection.new()
+	var dtls_client := ENetConnection.new()
+	var err := dtls_server.create_host_bound("127.0.0.1", 0, 4)
+	t.check("dtls_server_host_create", C_ENET_SIMULATION, err == OK, "error=%d" % err)
+	if err != OK:
+		return
+	err = dtls_server.dtls_server_setup(server_options)
+	t.check("dtls_server_setup_with_certificate", C_ENET_SIMULATION, err == OK, "error=%d" % err)
+	if err != OK:
+		dtls_server.destroy()
+		return
+	err = dtls_client.create_host_bound("127.0.0.1", 0, 4)
+	t.check("dtls_client_host_create", C_ENET_SIMULATION, err == OK, "error=%d" % err)
+	if err != OK:
+		dtls_server.destroy()
+		return
+	err = dtls_client.dtls_client_setup("localhost", client_options)
+	t.check("dtls_client_setup_verified_localhost", C_ENET_SIMULATION, err == OK, "error=%d" % err)
+	if err != OK:
+		dtls_client.destroy()
+		dtls_server.destroy()
+		return
+	var client_dtls_peer := dtls_client.connect_to_host("127.0.0.1", dtls_server.get_local_port(), 1)
+	t.check("dtls_client_connect_started", C_ENET_SIMULATION, client_dtls_peer != null)
+	if client_dtls_peer == null:
+		dtls_client.destroy()
+		dtls_server.destroy()
+		return
+	var server_dtls_peer: ENetPacketPeer
+	var got_secure_request := false
+	var got_secure_reply := false
+	var initial_send_error := ERR_BUG
+	var reply_send_error := ERR_BUG
+	var deadline := Time.get_ticks_msec() + 8000
+	while Time.get_ticks_msec() < deadline and not got_secure_reply:
+		var server_event := dtls_server.service(0)
+		if int(server_event[0]) == ENetConnection.EVENT_CONNECT:
+			server_dtls_peer = server_event[1]
+		elif int(server_event[0]) == ENetConnection.EVENT_RECEIVE:
+			var packet_peer: ENetPacketPeer = server_event[1]
+			var payload := packet_peer.get_packet()
+			if payload.get_string_from_utf8() == "verified dtls payload":
+				got_secure_request = true
+				reply_send_error = packet_peer.send(0, "verified dtls reply".to_utf8_buffer(), ENetPacketPeer.FLAG_RELIABLE)
+		var client_event := dtls_client.service(0)
+		if int(client_event[0]) == ENetConnection.EVENT_CONNECT:
+			initial_send_error = client_dtls_peer.send(0, "verified dtls payload".to_utf8_buffer(), ENetPacketPeer.FLAG_RELIABLE)
+		elif int(client_event[0]) == ENetConnection.EVENT_RECEIVE:
+			var reply: PackedByteArray = client_event[1].get_packet()
+			got_secure_reply = reply.get_string_from_utf8() == "verified dtls reply"
+		await get_tree().process_frame
+	t.check("dtls_client_request_send_succeeded", C_ENET_SIMULATION, initial_send_error == OK, "error=%d" % initial_send_error)
+	t.check("dtls_server_reply_send_succeeded", C_ENET_SIMULATION, reply_send_error == OK, "error=%d" % reply_send_error)
+	t.check("dtls_verified_certificate_hostname_handshake_and_data", C_ENET_SIMULATION,
+		got_secure_request and got_secure_reply and server_dtls_peer != null,
+		"request=%s reply=%s server_peer=%s" % [got_secure_request, got_secure_reply, server_dtls_peer != null])
+	if not got_secure_reply:
+		dtls_client.destroy()
+		dtls_server.destroy()
+		return
+
+	# Apply impairment to the live DTLS client transport. Reliable ENet delivery lets the
+	# subsequent Off packet prove recovery without relying on a dropped datagram timing race.
+	err = dtls_client.apply_debug_packet_command("NetEmulation.PktLag 120")
+	t.check("dtls_runtime_lag_command", C_ENET_SIMULATION, err == OK, "error=%d" % err)
+	var delayed_sent_usec := Time.get_ticks_usec()
+	var lag_send_error := client_dtls_peer.send(0, "lagged dtls payload".to_utf8_buffer(), ENetPacketPeer.FLAG_RELIABLE)
+	t.check("dtls_lagged_payload_send_succeeded", C_ENET_SIMULATION, lag_send_error == OK, "error=%d" % lag_send_error)
+	var lag_observed_usec := 0
+	deadline = Time.get_ticks_msec() + 6000
+	while Time.get_ticks_msec() < deadline:
+		var server_event := dtls_server.service(0)
+		if int(server_event[0]) == ENetConnection.EVENT_RECEIVE:
+			var payload: PackedByteArray = server_event[1].get_packet()
+			if payload.get_string_from_utf8() == "lagged dtls payload":
+				lag_observed_usec = Time.get_ticks_usec() - delayed_sent_usec
+				break
+		dtls_client.service(0)
+		await get_tree().process_frame
+	# Same 80 ms tolerance as the 120 ms plain ENet latency regression check above.
+	t.check("dtls_runtime_latency_observed", C_ENET_SIMULATION, lag_observed_usec >= 80_000,
+		"observed_ms=%.1f" % (float(lag_observed_usec) / 1000.0))
+	err = dtls_client.apply_debug_packet_command("NetEmulation.Off")
+	t.check("dtls_runtime_off_command", C_ENET_SIMULATION, err == OK, "error=%d" % err)
+	var off_status := dtls_client.get_debug_packet_simulation()
+	t.check("dtls_off_restores_zero_profile", C_ENET_SIMULATION,
+		int(off_status.get("outgoing_delay_ms", -1)) == 0
+		and float(off_status.get("outgoing_loss_percent", -1.0)) == 0.0
+		and int(off_status.get("incoming_delay_ms", -1)) == 0
+		and float(off_status.get("incoming_loss_percent", -1.0)) == 0.0, str(off_status))
+	var restored_send_error := client_dtls_peer.send(0, "restored dtls payload".to_utf8_buffer(), ENetPacketPeer.FLAG_RELIABLE)
+	t.check("dtls_restored_payload_send_succeeded", C_ENET_SIMULATION, restored_send_error == OK, "error=%d" % restored_send_error)
+	var restored := false
+	deadline = Time.get_ticks_msec() + 6000
+	while Time.get_ticks_msec() < deadline:
+		var server_event := dtls_server.service(0)
+		if int(server_event[0]) == ENetConnection.EVENT_RECEIVE:
+			var payload: PackedByteArray = server_event[1].get_packet()
+			if payload.get_string_from_utf8() == "restored dtls payload":
+				restored = true
+				break
+		dtls_client.service(0)
+		await get_tree().process_frame
+	t.check("dtls_off_restores_secure_data_delivery", C_ENET_SIMULATION, restored)
+	dtls_client.destroy()
+	dtls_server.destroy()
 
 
 func _test_dtls_upgrade_queue_cleanup() -> void:

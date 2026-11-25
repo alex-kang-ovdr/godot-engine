@@ -26,9 +26,9 @@ Epic의 [Unreal Engine Network Emulation 문서](https://dev.epicgames.com/docum
 
 ## 회귀와 사용 예시
 
-`playforge/tests/project/network/net_debug.tscn`은 한 프로세스에서 별도 `SceneMultiplayer` API와 ENet server/client를 구성하고, 래퍼 없는 `@rpc` 왕복, 양방향 지연·손실, `Off` 복구, profiler 누적/중지/재시작, ENet host 통계를 검증한다. 100% 손실은 unreliable RPC에 적용해 재전송 없이 복구 동작을 결정적으로 검사한다. 임시 ENet host에서 loopback UDP datagram을 지연 큐에 둔 뒤 DTLS client 설정으로 전환하는 검사는 큐 폐기 카운터와 impairment 설정 보존만 확인한다. DTLS handshake나 암호화된 실통신을 검증하지 않는다.
+`playforge/tests/project/network/net_debug.tscn`은 한 프로세스에서 별도 `SceneMultiplayer` API와 ENet server/client를 구성하고, 래퍼 없는 `@rpc` 왕복, 양방향 지연·손실, `Off` 복구, profiler 누적/중지/재시작, ENet host 통계를 검증한다. 100% 손실은 unreliable RPC에 적용해 재전송 없이 복구 동작을 결정적으로 검사한다. 별도 루프백 ENet host 쌍은 실행 중 RSA 2048 키와 `CN=localhost` self-signed 인증서를 생성하고, client의 `TLSOptions.client(cert)`가 해당 인증서를 trust root로 사용하도록 해 CA와 hostname 검증을 수행한다. DTLS 연결의 `ENetPacketPeer` reliable payload 왕복으로 handshake와 암호화된 데이터 경로를 확인한 뒤 runtime outgoing 지연 관측 및 `NetEmulation.Off` 후 복구를 검증한다. 기존 임시 host의 transport-upgrade 검사도 유지해 대기 datagram 폐기와 impairment 설정 보존을 검사한다.
 
-검증 기록: Windows SCons 빌드가 68.44초에 완료됐다. 현재 소스 바이너리에서 `python playforge/tests/run.py --only enet_rpc_netdebug --repeat 2`를 실행해 매회 33/33 검사가 통과했다. 이전 단일 실행에서는 설정 outgoing 지연 120 ms에서 130.6 ms를 관측했다. DTLS 설정 전환 검사는 큐 폐기·설정 보존만 확인하며 실통신 결과는 포함하지 않는다.
+검증 기록: Windows SCons 빌드가 68.44초에 완료됐다. DTLS 실통신 회귀를 추가한 현재 소스 바이너리에서 `python playforge/tests/run.py --only enet_rpc_netdebug --repeat 2`를 실행해 두 반복 모두 50/50 검사가 통과했다. 테스트는 런타임 생성한 `CN=localhost` 인증서를 client trust root로 지정하고 TLS 검증이 안전 모드인지 확인한 뒤, 인증서·호스트명 검증 handshake, reliable 요청과 응답 payload의 실제 수신을 확인한다. DTLS outgoing 지연은 120 ms 설정에서 두 반복 모두 80 ms 판정 하한 이상으로 관측됐고, `Off` 이후 동일 연결에서 secure payload 전달이 복구됐다. 기존 plain ENet 지연 관측은 120 ms 설정에서 130.6 ms였다.
 
 저장소 루트에서 현재 소스로 빌드한 Godot 실행 파일을 지정해 실행한다:
 
