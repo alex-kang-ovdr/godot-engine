@@ -33,6 +33,7 @@
 #include "enet_packet_peer.h"
 
 #include "core/crypto/crypto.h"
+#include "core/variant/dictionary.h"
 #include "core/object/ref_counted.h"
 
 #include <enet/enet.h>
@@ -119,6 +120,9 @@ public:
 	void bandwidth_limit(int p_in_bandwidth = 0, int p_out_bandwidth = 0);
 	void channel_limit(int p_max_channels);
 	void bandwidth_throttle();
+	Error set_debug_packet_simulation(int p_outgoing_delay_ms, double p_outgoing_loss_percent, int p_incoming_delay_ms, double p_incoming_loss_percent, int p_seed = 1);
+	Error apply_debug_packet_command(const String &p_command);
+	Dictionary get_debug_packet_simulation() const;
 	void compress(CompressionMode p_mode);
 	double pop_statistic(HostStatistic p_stat);
 	int get_max_channels() const;

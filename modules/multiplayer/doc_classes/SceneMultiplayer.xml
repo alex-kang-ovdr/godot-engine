@@ -40,6 +40,12 @@
 				Returns the IDs of the peers currently trying to authenticate with this [MultiplayerAPI].
 			</description>
 		</method>
+		<method name="get_rpc_profile" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns a snapshot keyed by RPC method name. Each entry contains [code]sent[/code], [code]received[/code], [code]sent_bytes[/code], and [code]received_bytes[/code]. Outgoing calls count once per successful remote target submission. Incoming calls count when dispatched after the RPC authority check. Bytes count encoded RPC messages at their respective measurement points. Local calls, transport headers, and retransmissions are excluded.
+			</description>
+		</method>
 		<method name="send_auth">
 			<return type="int" enum="Error" />
 			<param index="0" name="id" type="int" />
@@ -56,6 +62,13 @@
 			<param index="3" name="channel" type="int" default="0" />
 			<description>
 				Sends the given raw [param bytes] to a specific peer identified by [param id] (see [method MultiplayerPeer.set_target_peer]). Default ID is [code]0[/code], i.e. broadcast to all peers.
+			</description>
+		</method>
+		<method name="set_rpc_profiling_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables per-method traffic counters for this multiplayer instance. Profiling starts disabled. Enabling a new capture clears the previous counters. Disabling freezes the last capture for [method get_rpc_profile].
 			</description>
 		</method>
 	</methods>

@@ -43,6 +43,7 @@ SUITES = [
     ("jolt_api", "res://jolt/jolt_api.tscn", ["--fixed-fps", "60"], [], 120, "83f5f345 e7a83dd7"),
     ("jolt_determinism", "res://jolt/jolt_determinism.tscn", ["--fixed-fps", "60"], [], 300, "83f5f345 c9050da1 e7a83dd7"),
     ("jolt_contacts", "res://jolt/jolt_contacts.tscn", ["--fixed-fps", "60"], [], 120, "c9050da1"),
+    ("enet_rpc_netdebug", "res://network/net_debug.tscn", [], [], 60, "Forge-Refactoring-Multiplayer E3"),
 ]
 
 # 실행으로 관찰할 수 없는 패치(빌드 플래그 등)는 소스에 표식이 남아 있는지만 확인한다.

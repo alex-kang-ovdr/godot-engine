@@ -36,6 +36,9 @@
 #ifndef __ENET_GODOT_H__
 #define __ENET_GODOT_H__
 
+#include <stddef.h>
+#include <stdint.h>
+
 #ifdef WINDOWS_ENABLED
 #include <stdint.h>
 #include <winsock2.h>
@@ -76,6 +79,29 @@ typedef struct _ENetAddress
    uint16_t port;
    uint8_t wildcard;
 } ENetAddress;
+
+typedef struct _ENetDebugPacketSimulationStatus {
+	int outgoing_delay_ms;
+	double outgoing_loss_percent;
+	int incoming_delay_ms;
+	double incoming_loss_percent;
+	uint32_t seed;
+	uint64_t outgoing_queued_packets;
+	uint64_t outgoing_queued_bytes;
+	uint64_t incoming_queued_packets;
+	uint64_t incoming_queued_bytes;
+	uint64_t outgoing_dropped_loss;
+	uint64_t outgoing_dropped_queue;
+	uint64_t incoming_dropped_loss;
+	uint64_t incoming_dropped_queue;
+	uint64_t outgoing_discarded_transport_upgrade;
+	uint64_t incoming_discarded_transport_upgrade;
+	uint64_t outgoing_send_errors;
+	uint64_t incoming_oversize_packets;
+} ENetDebugPacketSimulationStatus;
+
+ENET_API int enet_socket_set_debug_packet_simulation(ENetSocket, int, double, int, double, uint32_t);
+ENET_API int enet_socket_get_debug_packet_simulation(ENetSocket, ENetDebugPacketSimulationStatus *);
 #define enet_host_equal(host_a, host_b) (memcmp(&host_a, &host_b,16) == 0)
 
 #endif /* __ENET_GODOT_H__ */

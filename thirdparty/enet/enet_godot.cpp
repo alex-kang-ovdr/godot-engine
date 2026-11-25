@@ -43,8 +43,98 @@
 // This must be last for windows to compile (tested with MinGW)
 #include "enet/enet.h"
 
+#include <deque>
+#include <utility>
+#include <vector>
+
+static constexpr size_t ENET_SIMULATION_MAX_QUEUE_PACKETS = 256;
+static constexpr size_t ENET_SIMULATION_MAX_QUEUE_BYTES = 1024 * 1024;
+
+struct ENetSimulatedDatagram {
+	std::vector<uint8_t> data;
+	IPAddress address;
+	uint16_t port = 0;
+	uint64_t due_time_ms = 0;
+};
+
 /// Abstract ENet interface for UDP/DTLS.
 class ENetGodotSocket {
+private:
+	int simulation_outgoing_delay_ms = 0;
+	double simulation_outgoing_loss_percent = 0.0;
+	int simulation_incoming_delay_ms = 0;
+	double simulation_incoming_loss_percent = 0.0;
+	uint32_t simulation_seed = 1;
+	uint32_t simulation_rng = 1;
+	std::deque<ENetSimulatedDatagram> simulation_outgoing_queue;
+	std::deque<ENetSimulatedDatagram> simulation_incoming_queue;
+	Vector<uint8_t> simulation_receive_buffer;
+	size_t simulation_outgoing_bytes = 0;
+	size_t simulation_incoming_bytes = 0;
+	uint64_t simulation_outgoing_dropped_loss = 0;
+	uint64_t simulation_outgoing_dropped_queue = 0;
+	uint64_t simulation_incoming_dropped_loss = 0;
+	uint64_t simulation_incoming_dropped_queue = 0;
+	uint64_t simulation_outgoing_discarded_transport_upgrade = 0;
+	uint64_t simulation_incoming_discarded_transport_upgrade = 0;
+	uint64_t simulation_outgoing_send_errors = 0;
+	uint64_t simulation_incoming_oversize_packets = 0;
+
+	uint32_t _simulation_random() {
+		simulation_rng ^= simulation_rng << 13;
+		simulation_rng ^= simulation_rng >> 17;
+		simulation_rng ^= simulation_rng << 5;
+		return simulation_rng;
+	}
+
+	bool _simulation_drops(double p_loss_percent) {
+		if (p_loss_percent <= 0.0) {
+			return false;
+		}
+		if (p_loss_percent >= 100.0) {
+			return true;
+		}
+		return (double(_simulation_random()) / 4294967296.0) * 100.0 < p_loss_percent;
+	}
+
+	void _flush_outgoing() {
+		const uint64_t now = OS::get_singleton()->get_ticks_msec();
+		while (!simulation_outgoing_queue.empty() && simulation_outgoing_queue.front().due_time_ms <= now) {
+			ENetSimulatedDatagram &datagram = simulation_outgoing_queue.front();
+			int sent = 0;
+			Error err = sendto(datagram.data.data(), int(datagram.data.size()), sent, datagram.address, datagram.port);
+			if (err == ERR_BUSY) {
+				break;
+			}
+			if (err != OK) {
+				simulation_outgoing_send_errors++;
+			}
+			simulation_outgoing_bytes -= datagram.data.size();
+			simulation_outgoing_queue.pop_front();
+		}
+	}
+
+	Error _take_incoming(uint8_t *p_buffer, int p_len, int &r_read, IPAddress &r_ip, uint16_t &r_port) {
+		if (simulation_incoming_queue.empty() || simulation_incoming_queue.front().due_time_ms > OS::get_singleton()->get_ticks_msec()) {
+			return ERR_BUSY;
+		}
+		ENetSimulatedDatagram &datagram = simulation_incoming_queue.front();
+		if (size_t(p_len) < datagram.data.size()) {
+			r_read = int(datagram.data.size());
+			simulation_incoming_oversize_packets++;
+			simulation_incoming_bytes -= datagram.data.size();
+			simulation_incoming_queue.pop_front();
+			return ERR_OUT_OF_MEMORY;
+		}
+		r_read = int(datagram.data.size());
+		r_ip = datagram.address;
+		r_port = datagram.port;
+		memcpy(p_buffer, datagram.data.data(), datagram.data.size());
+		simulation_incoming_bytes -= datagram.data.size();
+		simulation_incoming_queue.pop_front();
+		return OK;
+	}
+
 public:
 	virtual Error bind(IPAddress p_ip, uint16_t p_port) = 0;
 	virtual Error get_socket_address(IPAddress *r_ip, uint16_t *r_port) = 0;
@@ -57,6 +147,162 @@ public:
 	virtual void disconnect_peer(ENetPeer *p_peer) {}
 	virtual void bind_peer(ENetPeer *p_peer) {}
 	virtual ~ENetGodotSocket() {}
+
+	Error sendto_simulated(const uint8_t *p_buffer, int p_len, int &r_sent, IPAddress p_ip, uint16_t p_port) {
+		if (simulation_outgoing_delay_ms == 0 && simulation_outgoing_loss_percent == 0.0 && simulation_outgoing_queue.empty()) {
+			return sendto(p_buffer, p_len, r_sent, p_ip, p_port);
+		}
+		_flush_outgoing();
+		if (_simulation_drops(simulation_outgoing_loss_percent)) {
+			simulation_outgoing_dropped_loss++;
+			r_sent = p_len;
+			return OK;
+		}
+		if (simulation_outgoing_delay_ms == 0 && simulation_outgoing_queue.empty()) {
+			return sendto(p_buffer, p_len, r_sent, p_ip, p_port);
+		}
+		if (simulation_outgoing_queue.size() >= ENET_SIMULATION_MAX_QUEUE_PACKETS || simulation_outgoing_bytes + size_t(p_len) > ENET_SIMULATION_MAX_QUEUE_BYTES) {
+			simulation_outgoing_dropped_queue++;
+			r_sent = p_len;
+			return OK;
+		}
+		ENetSimulatedDatagram datagram;
+		datagram.data.assign(p_buffer, p_buffer + p_len);
+		datagram.address = p_ip;
+		datagram.port = p_port;
+		datagram.due_time_ms = OS::get_singleton()->get_ticks_msec() + uint64_t(simulation_outgoing_delay_ms);
+		simulation_outgoing_bytes += datagram.data.size();
+		simulation_outgoing_queue.push_back(std::move(datagram));
+		r_sent = p_len;
+		return OK;
+	}
+
+	Error recvfrom_simulated(uint8_t *p_buffer, int p_len, int &r_read, IPAddress &r_ip, uint16_t &r_port) {
+		if (simulation_incoming_delay_ms == 0 && simulation_incoming_loss_percent == 0.0 && simulation_incoming_queue.empty() && simulation_outgoing_queue.empty()) {
+			return recvfrom(p_buffer, p_len, r_read, r_ip, r_port);
+		}
+		if (!simulation_outgoing_queue.empty()) {
+			_flush_outgoing();
+		}
+		Error queued_result = _take_incoming(p_buffer, p_len, r_read, r_ip, r_port);
+		if (queued_result != ERR_BUSY) {
+			return queued_result;
+		}
+
+		if (simulation_incoming_delay_ms == 0) {
+			// Loss-only mode uses the caller buffer directly and never queues surviving datagrams.
+			for (size_t i = 0; i < 64; i++) {
+				Error err = recvfrom(p_buffer, p_len, r_read, r_ip, r_port);
+				if (err == ERR_BUSY) {
+					return ERR_BUSY;
+				}
+				if (err != OK) {
+					return err;
+				}
+				if (!_simulation_drops(simulation_incoming_loss_percent)) {
+					return OK;
+				}
+				simulation_incoming_dropped_loss++;
+			}
+			return ERR_BUSY;
+		}
+
+		if (simulation_receive_buffer.size() != 65535) {
+			simulation_receive_buffer.resize(65535);
+		}
+		for (size_t i = 0; i < 64; i++) {
+			int read = 0;
+			IPAddress address;
+			uint16_t port = 0;
+			Error err = recvfrom(simulation_receive_buffer.ptrw(), simulation_receive_buffer.size(), read, address, port);
+			if (err == ERR_BUSY) {
+				break;
+			}
+			if (err != OK) {
+				return err;
+			}
+			if (_simulation_drops(simulation_incoming_loss_percent)) {
+				simulation_incoming_dropped_loss++;
+				continue;
+			}
+			if (simulation_incoming_queue.size() >= ENET_SIMULATION_MAX_QUEUE_PACKETS || simulation_incoming_bytes + size_t(read) > ENET_SIMULATION_MAX_QUEUE_BYTES) {
+				simulation_incoming_dropped_queue++;
+				continue;
+			}
+			ENetSimulatedDatagram datagram;
+			datagram.data.assign(simulation_receive_buffer.ptr(), simulation_receive_buffer.ptr() + read);
+			datagram.address = address;
+			datagram.port = port;
+			datagram.due_time_ms = OS::get_singleton()->get_ticks_msec() + uint64_t(simulation_incoming_delay_ms);
+			simulation_incoming_bytes += datagram.data.size();
+			simulation_incoming_queue.push_back(std::move(datagram));
+		}
+		return _take_incoming(p_buffer, p_len, r_read, r_ip, r_port);
+	}
+
+	int set_debug_packet_simulation(int p_out_delay, double p_out_loss, int p_in_delay, double p_in_loss, uint32_t p_seed) {
+		if (p_out_delay < 0 || p_out_delay > 60000 || p_in_delay < 0 || p_in_delay > 60000 || !Math::is_finite(p_out_loss) || p_out_loss < 0.0 || p_out_loss > 100.0 || !Math::is_finite(p_in_loss) || p_in_loss < 0.0 || p_in_loss > 100.0) {
+			return -1;
+		}
+		simulation_outgoing_delay_ms = p_out_delay;
+		simulation_outgoing_loss_percent = p_out_loss;
+		simulation_incoming_delay_ms = p_in_delay;
+		simulation_incoming_loss_percent = p_in_loss;
+		if (simulation_seed != p_seed) {
+			simulation_seed = p_seed;
+			simulation_rng = p_seed ? p_seed : 0x6d2b79f5;
+		}
+		if (p_out_delay == 0) {
+			const uint64_t now = OS::get_singleton()->get_ticks_msec();
+			for (ENetSimulatedDatagram &datagram : simulation_outgoing_queue) {
+				datagram.due_time_ms = now;
+			}
+		}
+		if (p_in_delay == 0) {
+			const uint64_t now = OS::get_singleton()->get_ticks_msec();
+			for (ENetSimulatedDatagram &datagram : simulation_incoming_queue) {
+				datagram.due_time_ms = now;
+			}
+		}
+		return 0;
+	}
+
+	void get_debug_packet_simulation(ENetDebugPacketSimulationStatus *r_status) const {
+		r_status->outgoing_delay_ms = simulation_outgoing_delay_ms;
+		r_status->outgoing_loss_percent = simulation_outgoing_loss_percent;
+		r_status->incoming_delay_ms = simulation_incoming_delay_ms;
+		r_status->incoming_loss_percent = simulation_incoming_loss_percent;
+		r_status->seed = simulation_seed;
+		r_status->outgoing_queued_packets = simulation_outgoing_queue.size();
+		r_status->outgoing_queued_bytes = simulation_outgoing_bytes;
+		r_status->incoming_queued_packets = simulation_incoming_queue.size();
+		r_status->incoming_queued_bytes = simulation_incoming_bytes;
+		r_status->outgoing_dropped_loss = simulation_outgoing_dropped_loss;
+		r_status->outgoing_dropped_queue = simulation_outgoing_dropped_queue;
+		r_status->incoming_dropped_loss = simulation_incoming_dropped_loss;
+		r_status->incoming_dropped_queue = simulation_incoming_dropped_queue;
+		r_status->outgoing_discarded_transport_upgrade = simulation_outgoing_discarded_transport_upgrade;
+		r_status->incoming_discarded_transport_upgrade = simulation_incoming_discarded_transport_upgrade;
+		r_status->outgoing_send_errors = simulation_outgoing_send_errors;
+		r_status->incoming_oversize_packets = simulation_incoming_oversize_packets;
+	}
+
+	void transfer_debug_packet_simulation_to(ENetGodotSocket *p_target) {
+		p_target->simulation_outgoing_delay_ms = simulation_outgoing_delay_ms;
+		p_target->simulation_outgoing_loss_percent = simulation_outgoing_loss_percent;
+		p_target->simulation_incoming_delay_ms = simulation_incoming_delay_ms;
+		p_target->simulation_incoming_loss_percent = simulation_incoming_loss_percent;
+		p_target->simulation_seed = simulation_seed;
+		p_target->simulation_rng = simulation_rng;
+		p_target->simulation_outgoing_discarded_transport_upgrade = simulation_outgoing_discarded_transport_upgrade + simulation_outgoing_queue.size();
+		p_target->simulation_incoming_discarded_transport_upgrade = simulation_incoming_discarded_transport_upgrade + simulation_incoming_queue.size();
+		p_target->simulation_outgoing_dropped_loss = simulation_outgoing_dropped_loss;
+		p_target->simulation_outgoing_dropped_queue = simulation_outgoing_dropped_queue;
+		p_target->simulation_incoming_dropped_loss = simulation_incoming_dropped_loss;
+		p_target->simulation_incoming_dropped_queue = simulation_incoming_dropped_queue;
+		p_target->simulation_outgoing_send_errors = simulation_outgoing_send_errors;
+		p_target->simulation_incoming_oversize_packets = simulation_incoming_oversize_packets;
+	}
 };
 
 class ENetDTLSClient;
@@ -539,7 +785,9 @@ int enet_host_dtls_server_setup(ENetHost *host, void *p_options) {
 	if (!sock->can_upgrade()) {
 		return -1;
 	}
-	host->socket = memnew(ENetDTLSServer(static_cast<ENetUDP *>(sock), Ref<TLSOptions>(static_cast<TLSOptions *>(p_options)), host->peerCount));
+	ENetGodotSocket *dtls_socket = memnew(ENetDTLSServer(static_cast<ENetUDP *>(sock), Ref<TLSOptions>(static_cast<TLSOptions *>(p_options)), host->peerCount));
+	sock->transfer_debug_packet_simulation_to(dtls_socket);
+	host->socket = dtls_socket;
 	memdelete(sock);
 	return 0;
 }
@@ -550,7 +798,9 @@ int enet_host_dtls_client_setup(ENetHost *host, const char *p_for_hostname, void
 	if (!sock->can_upgrade()) {
 		return -1;
 	}
-	host->socket = memnew(ENetDTLSClient(static_cast<ENetUDP *>(sock), String::utf8(p_for_hostname), Ref<TLSOptions>(static_cast<TLSOptions *>(p_options))));
+	ENetGodotSocket *dtls_socket = memnew(ENetDTLSClient(static_cast<ENetUDP *>(sock), String::utf8(p_for_hostname), Ref<TLSOptions>(static_cast<TLSOptions *>(p_options))));
+	sock->transfer_debug_packet_simulation_to(dtls_socket);
+	host->socket = dtls_socket;
 	memdelete(sock);
 	return 0;
 }
@@ -581,6 +831,18 @@ void enet_socket_destroy(ENetSocket socket) {
 	memdelete(sock);
 }
 
+int enet_socket_set_debug_packet_simulation(ENetSocket socket, int p_outgoing_delay_ms, double p_outgoing_loss_percent, int p_incoming_delay_ms, double p_incoming_loss_percent, uint32_t p_seed) {
+	ERR_FAIL_NULL_V(socket, -1);
+	return ((ENetGodotSocket *)socket)->set_debug_packet_simulation(p_outgoing_delay_ms, p_outgoing_loss_percent, p_incoming_delay_ms, p_incoming_loss_percent, p_seed);
+}
+
+int enet_socket_get_debug_packet_simulation(ENetSocket socket, ENetDebugPacketSimulationStatus *r_status) {
+	ERR_FAIL_NULL_V(socket, -1);
+	ERR_FAIL_NULL_V(r_status, -1);
+	((ENetGodotSocket *)socket)->get_debug_packet_simulation(r_status);
+	return 0;
+}
+
 int enet_socket_send(ENetSocket socket, const ENetAddress *address, const ENetBuffer *buffers, size_t bufferCount) {
 	ERR_FAIL_NULL_V(address, -1);
 
@@ -608,7 +870,7 @@ int enet_socket_send(ENetSocket socket, const ENetAddress *address, const ENetBu
 	}
 
 	int sent = 0;
-	err = sock->sendto((const uint8_t *)&w[0], size, sent, dest, address->port);
+	err = sock->sendto_simulated((const uint8_t *)&w[0], size, sent, dest, address->port);
 	if (err != OK) {
 		if (err == ERR_BUSY) { // Blocking call
 			return 0;
@@ -629,7 +891,7 @@ int enet_socket_receive(ENetSocket socket, ENetAddress *address, ENetBuffer *buf
 	int read;
 	IPAddress ip;
 
-	Error err = sock->recvfrom((uint8_t *)buffers[0].data, buffers[0].dataLength, read, ip, address->port);
+	Error err = sock->recvfrom_simulated((uint8_t *)buffers[0].data, buffers[0].dataLength, read, ip, address->port);
 	if (err == ERR_BUSY) {
 		return 0;
 	}

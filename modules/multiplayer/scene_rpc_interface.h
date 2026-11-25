@@ -84,6 +84,14 @@ private:
 	Vector<uint8_t> packet_cache;
 
 	HashMap<ObjectID, RPCConfigCache> rpc_cache;
+	struct MethodTraffic {
+		int64_t sent = 0;
+		int64_t received = 0;
+		int64_t sent_bytes = 0;
+		int64_t received_bytes = 0;
+	};
+	bool profile_enabled = false;
+	HashMap<StringName, MethodTraffic> method_traffic;
 
 #ifdef DEBUG_ENABLED
 	_FORCE_INLINE_ void _profile_node_data(const String &p_what, ObjectID p_id, int p_size);
@@ -99,6 +107,8 @@ protected:
 	const RPCConfigCache &_get_node_config(const Node *p_node);
 
 public:
+	void set_profiling_enabled(bool p_enabled);
+	Dictionary get_profile() const;
 	Error rpcp(Object *p_obj, int p_peer_id, const StringName &p_method, const Variant **p_arg, int p_argcount);
 	void process_rpc(int p_from, const uint8_t *p_packet, int p_packet_len);
 	String get_rpc_md5(const Object *p_obj);

@@ -1,7 +1,7 @@
 # PlayForge 엔진 패치 회귀 시험
 
-upstream Godot를 병합할 때 PlayForge 패치(아바타·CoreHUD 봉인 3건, Jolt 성능 4건)가 조용히 빠지거나 깨지면 잡아내기 위한 헤드리스 시험이다.
-upstream 경로와 겹치지 않도록 최상위 `playforge/` 아래에 둔다. 엔진 C++ 소스는 건드리지 않는다.
+PlayForge 엔진 변경이 upstream 통합 과정에서 조용히 빠지거나 깨지는 일을 잡기 위한 헤드리스 회귀 시험이다.
+시험 자산은 upstream 경로와 겹치지 않도록 최상위 `playforge/` 아래에 둔다. ENet/RPC E3 코어 변경 근거와 제거 조건은 [`../NET_DEBUG_E3_ADR.md`](../NET_DEBUG_E3_ADR.md)에 기록한다.
 
 ## 실행
 
@@ -10,11 +10,14 @@ upstream 경로와 겹치지 않도록 최상위 `playforge/` 아래에 둔다. 
 python playforge/tests/run.py                 # 전체(약 45초, 숨김 예산 30초 소진 시험 포함)
 python playforge/tests/run.py --quick         # 30초 소진 시험 생략
 python playforge/tests/run.py --only avatar_seal,jolt_api
+python playforge/tests/run.py --only enet_rpc_netdebug --godot <현재-소스로-빌드한-Godot>
 python playforge/tests/run.py --repeat 2      # 모든 스위트를 두 번(안정성 확인)
 
 # 스위트 하나를 직접 돌릴 때
 bin/godot.windows.editor.x86_64.console.exe --headless --path playforge/tests/project res://avatar/avatar_seal.tscn
 bin/godot.windows.editor.x86_64.console.exe --headless --fixed-fps 60 --path playforge/tests/project res://jolt/jolt_determinism.tscn
+# ENet 장애 주입 / SceneMultiplayer RPC 프로파일링 (현재 소스 빌드 필요)
+<현재-소스로-빌드한-Godot> --headless --path playforge/tests/project res://network/net_debug.tscn
 ```
 
 - 각 시험 씬은 `PFTEST {json}` 한 줄씩 출력한다. `status`: `PASS`/`FAIL`(판정), `INFO`(측정값·시간, 판정 없음), `GAP`(패치 설계 밖 우회 관찰, 판정 없음), `NOT_COVERED`, 끝에 `SUMMARY`. 종료 코드는 FAIL이 있으면 1, 없으면 0.
@@ -42,6 +45,7 @@ bin/godot.windows.editor.x86_64.console.exe --headless --fixed-fps 60 --path pla
 | `jolt_determinism` | `jolt/jolt_determinism.tscn` | `83f5f345`, `c9050da1`, `e7a83dd7` | 상자 600개(병렬 pre_step 경로) 탑 + 90틱 폭발, 300틱. GSK 모드 2·0·1 각각 새 World3D로 같은 프로세스에서 두 번 → 1cm 양자화 hash 일치. 비트 단위 hash와 시간은 INFO |
 | `jolt_determinism_cross_process` | (run.py가 위 스위트를 두 프로세스로 돌려 비교) | 같음 | 프로세스 간 1cm 양자화 hash 일치 (HavokProfile 벤치마크의 "같은 기기 반복 실행" 주장) |
 | `jolt_contacts` | `jolt/jolt_contacts.tscn` | `c9050da1` | 강체 800개 + 감지 영역 + 한쪽만 감지하는 layer/mask 강체 + 정적 컨베이어. fast path 뒤에도 `body_entered`/`get_colliding_bodies`/영역 진입·퇴장/해제 후 접촉 제거가 보고되고, 엔진 오류 0건, 위치 유한·바닥 위. 시간은 INFO |
+| `enet_rpc_netdebug` | `network/net_debug.tscn` | Forge-Refactoring-Multiplayer E3 | 별도 server/client `SceneMultiplayer` API에서 래퍼 없는 RPC 왕복, 양방향 지연·100% 손실·Off 복구, 메서드별 누적 profiler의 disable/re-enable 동작, ENet `pop_statistic`을 확인. 별도 host의 DTLS 설정 전환에서 지연 큐 폐기와 설정 보존도 검사하지만 DTLS 실통신은 검증하지 않는다. 현재 변경 소스로 빌드한 Godot가 필요 |
 
 ## 현재 발견된 엔진 문제 (시험이 FAIL로 남겨 둠)
 
@@ -85,3 +89,5 @@ bin/godot.windows.editor.x86_64.console.exe --headless --fixed-fps 60 --path pla
 - `project/project.godot` 시험 프로젝트(Jolt 사용, `playforge/avatar/spawn_position = (3, 0.5, -2)`)
 - `project/lib/pf_test.gd` 결과 출력·오류 수집(`Logger`)·봉인 시도 헬퍼, `evil_*.gd` 스크립트 교체 시도용
 - `project/avatar/*`, `project/jolt/*` 시험 씬과 스크립트
+- `project/network/*` ENet 장애 주입 및 SceneMultiplayer RPC 프로파일링 회귀 fixture
+- 상위 설명과 설계 근거: [`../NET_DEBUG_E3_ADR.md`](../NET_DEBUG_E3_ADR.md)

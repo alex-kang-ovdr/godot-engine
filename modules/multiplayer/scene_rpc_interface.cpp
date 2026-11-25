@@ -294,6 +294,11 @@ void SceneRPCInterface::_process_rpc(Node *p_node, const uint16_t p_rpc_method_i
 
 	Callable::CallError ce;
 
+	if (profile_enabled) {
+		MethodTraffic &traffic = method_traffic[config.name];
+		traffic.received++;
+		traffic.received_bytes += p_packet_len;
+	}
 	p_node->callp(config.name, (const Variant **)argp.ptr(), argc, ce);
 	if (ce.error != Callable::CallError::CALL_OK) {
 		String error = Variant::get_call_error_text(p_node, config.name, (const Variant **)argp.ptr(), argc, ce);
@@ -438,9 +443,18 @@ void SceneRPCInterface::_send_rpc(Node *p_node, int p_to, uint16_t p_rpc_id, con
 	peer->set_transfer_channel(p_config.channel);
 	peer->set_transfer_mode(p_config.transfer_mode);
 
+	auto send_to_peer = [&](int p_peer, int p_length) {
+		Error send_error = multiplayer->send_command(p_peer, packet_cache.ptr(), p_length);
+		if (profile_enabled && send_error == OK) {
+			MethodTraffic &traffic = method_traffic[p_name];
+			traffic.sent++;
+			traffic.sent_bytes += p_length;
+		}
+	};
+
 	if (has_all_peers) {
 		for (const int P : targets) {
-			multiplayer->send_command(P, packet_cache.ptr(), ofs);
+			send_to_peer(P, ofs);
 		}
 	} else {
 		// Unreachable because the node ID is never compressed if the peers doesn't know it.
@@ -460,14 +474,34 @@ void SceneRPCInterface::_send_rpc(Node *p_node, int p_to, uint16_t p_rpc_id, con
 			if (confirmed) {
 				// This one confirmed path, so use id.
 				encode_uint32(psc_id, &(packet_cache.write[1]));
-				multiplayer->send_command(P, packet_cache.ptr(), ofs);
+				send_to_peer(P, ofs);
 			} else {
 				// This one did not confirm path yet, so use entire path (sorry!).
 				encode_uint32(0x80000000 | ofs, &(packet_cache.write[1])); // Offset to path and flag.
-				multiplayer->send_command(P, packet_cache.ptr(), ofs + path_len);
+				send_to_peer(P, ofs + path_len);
 			}
 		}
 	}
+}
+
+void SceneRPCInterface::set_profiling_enabled(bool p_enabled) {
+	if (p_enabled && !profile_enabled) {
+		method_traffic.clear();
+	}
+	profile_enabled = p_enabled;
+}
+
+Dictionary SceneRPCInterface::get_profile() const {
+	Dictionary profile;
+	for (const KeyValue<StringName, MethodTraffic> &entry : method_traffic) {
+		Dictionary counts;
+		counts["sent"] = entry.value.sent;
+		counts["received"] = entry.value.received;
+		counts["sent_bytes"] = entry.value.sent_bytes;
+		counts["received_bytes"] = entry.value.received_bytes;
+		profile[entry.key] = counts;
+	}
+	return profile;
 }
 
 Error SceneRPCInterface::rpcp(Object *p_obj, int p_peer_id, const StringName &p_method, const Variant **p_arg, int p_argcount) {

@@ -636,6 +636,8 @@ int SceneMultiplayer::get_max_delta_packet_size() const {
 }
 
 void SceneMultiplayer::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_rpc_profiling_enabled", "enabled"), &SceneMultiplayer::set_rpc_profiling_enabled);
+	ClassDB::bind_method(D_METHOD("get_rpc_profile"), &SceneMultiplayer::get_rpc_profile);
 	ClassDB::bind_method(D_METHOD("set_root_path", "path"), &SceneMultiplayer::set_root_path);
 	ClassDB::bind_method(D_METHOD("get_root_path"), &SceneMultiplayer::get_root_path);
 	ClassDB::bind_method(D_METHOD("clear"), &SceneMultiplayer::clear);

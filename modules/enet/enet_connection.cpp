@@ -218,6 +218,80 @@ void ENetConnection::bandwidth_throttle() {
 	enet_host_bandwidth_throttle(host);
 }
 
+Error ENetConnection::set_debug_packet_simulation(int p_outgoing_delay_ms, double p_outgoing_loss_percent, int p_incoming_delay_ms, double p_incoming_loss_percent, int p_seed) {
+	ERR_FAIL_NULL_V_MSG(host, ERR_UNCONFIGURED, "The ENetConnection instance isn't currently active.");
+	ERR_FAIL_COND_V_MSG(p_outgoing_delay_ms < 0 || p_outgoing_delay_ms > 60000 || p_incoming_delay_ms < 0 || p_incoming_delay_ms > 60000, ERR_INVALID_PARAMETER, "Packet simulation delay must be between 0 and 60000 milliseconds.");
+	ERR_FAIL_COND_V_MSG(!Math::is_finite(p_outgoing_loss_percent) || p_outgoing_loss_percent < 0.0 || p_outgoing_loss_percent > 100.0 || !Math::is_finite(p_incoming_loss_percent) || p_incoming_loss_percent < 0.0 || p_incoming_loss_percent > 100.0, ERR_INVALID_PARAMETER, "Packet simulation loss must be between 0 and 100 percent.");
+	ERR_FAIL_COND_V_MSG(p_seed < 0, ERR_INVALID_PARAMETER, "Packet simulation seed must be non-negative.");
+#ifdef GODOT_ENET
+	return enet_socket_set_debug_packet_simulation(host->socket, p_outgoing_delay_ms, p_outgoing_loss_percent, p_incoming_delay_ms, p_incoming_loss_percent, uint32_t(p_seed)) == 0 ? OK : ERR_UNAVAILABLE;
+#else
+	ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "Packet simulation is available only with the built-in ENet implementation.");
+#endif
+}
+
+Error ENetConnection::apply_debug_packet_command(const String &p_command) {
+	const String command = p_command.strip_edges();
+	if (command == "NetEmulation.Off") {
+		const Dictionary current = get_debug_packet_simulation();
+		return set_debug_packet_simulation(0, 0.0, 0, 0.0, int(current.get("seed", 1)));
+	}
+	const PackedStringArray parts = command.split(" ", false);
+	ERR_FAIL_COND_V_MSG(parts.size() != 2, ERR_INVALID_PARAMETER, "Expected NetEmulation.PktLag, NetEmulation.PktIncomingLag, NetEmulation.PktLoss, NetEmulation.PktIncomingLoss, or NetEmulation.Off.");
+	const bool is_delay = parts[0] == "NetEmulation.PktLag" || parts[0] == "NetEmulation.PktIncomingLag";
+	const bool is_loss = parts[0] == "NetEmulation.PktLoss" || parts[0] == "NetEmulation.PktIncomingLoss";
+	ERR_FAIL_COND_V_MSG(!is_delay && !is_loss, ERR_INVALID_PARAMETER, "Unknown NetEmulation packet simulation command.");
+	const bool is_incoming = parts[0] == "NetEmulation.PktIncomingLag" || parts[0] == "NetEmulation.PktIncomingLoss";
+	const bool valid_number = is_delay ? parts[1].is_valid_int() : parts[1].is_valid_float();
+	ERR_FAIL_COND_V_MSG(!valid_number, ERR_INVALID_PARAMETER, "Packet simulation command value must be numeric.");
+	const double value = parts[1].to_float();
+	ERR_FAIL_COND_V_MSG(is_delay && (value < 0.0 || value > 60000.0 || Math::floor(value) != value), ERR_INVALID_PARAMETER, "Packet simulation delay must be an integer between 0 and 60000 milliseconds.");
+	ERR_FAIL_COND_V_MSG(is_loss && (value < 0.0 || value > 100.0), ERR_INVALID_PARAMETER, "Packet simulation loss must be between 0 and 100 percent.");
+	const Dictionary current = get_debug_packet_simulation();
+	const int out_delay = is_delay && !is_incoming ? int(value) : int(current.get("outgoing_delay_ms", 0));
+	const double out_loss = is_loss && !is_incoming ? value : double(current.get("outgoing_loss_percent", 0.0));
+	const int in_delay = is_delay && is_incoming ? int(value) : int(current.get("incoming_delay_ms", 0));
+	const double in_loss = is_loss && is_incoming ? value : double(current.get("incoming_loss_percent", 0.0));
+	return set_debug_packet_simulation(out_delay, out_loss, in_delay, in_loss, int(current.get("seed", 1)));
+}
+
+Dictionary ENetConnection::get_debug_packet_simulation() const {
+	Dictionary status;
+#ifdef GODOT_ENET
+	if (host == nullptr) {
+		status["available"] = false;
+		return status;
+	}
+	ENetDebugPacketSimulationStatus simulation_status = {};
+	if (enet_socket_get_debug_packet_simulation(host->socket, &simulation_status) != 0) {
+		status["available"] = false;
+		return status;
+	}
+	status["available"] = true;
+	status["outgoing_delay_ms"] = simulation_status.outgoing_delay_ms;
+	status["outgoing_loss_percent"] = simulation_status.outgoing_loss_percent;
+	status["incoming_delay_ms"] = simulation_status.incoming_delay_ms;
+	status["incoming_loss_percent"] = simulation_status.incoming_loss_percent;
+	status["seed"] = simulation_status.seed;
+	status["outgoing_queued_packets"] = int64_t(simulation_status.outgoing_queued_packets);
+	status["outgoing_queued_bytes"] = int64_t(simulation_status.outgoing_queued_bytes);
+	status["incoming_queued_packets"] = int64_t(simulation_status.incoming_queued_packets);
+	status["incoming_queued_bytes"] = int64_t(simulation_status.incoming_queued_bytes);
+	status["outgoing_dropped_loss"] = int64_t(simulation_status.outgoing_dropped_loss);
+	status["outgoing_dropped_queue"] = int64_t(simulation_status.outgoing_dropped_queue);
+	status["incoming_dropped_loss"] = int64_t(simulation_status.incoming_dropped_loss);
+	status["incoming_dropped_queue"] = int64_t(simulation_status.incoming_dropped_queue);
+	status["outgoing_discarded_transport_upgrade"] = int64_t(simulation_status.outgoing_discarded_transport_upgrade);
+	status["incoming_discarded_transport_upgrade"] = int64_t(simulation_status.incoming_discarded_transport_upgrade);
+	status["outgoing_send_errors"] = int64_t(simulation_status.outgoing_send_errors);
+	status["incoming_oversize_packets"] = int64_t(simulation_status.incoming_oversize_packets);
+#else
+	status["available"] = false;
+	status["reason"] = "builtin_enet_required";
+#endif
+	return status;
+}
+
 void ENetConnection::compress(CompressionMode p_mode) {
 	ERR_FAIL_NULL_MSG(host, "The ENetConnection instance isn't currently active.");
 	Compressor::setup(host, p_mode);
@@ -380,6 +454,9 @@ void ENetConnection::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("service", "timeout"), &ENetConnection::_service, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("flush"), &ENetConnection::flush);
 	ClassDB::bind_method(D_METHOD("bandwidth_limit", "in_bandwidth", "out_bandwidth"), &ENetConnection::bandwidth_limit, DEFVAL(0), DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_debug_packet_simulation", "outgoing_delay_ms", "outgoing_loss_percent", "incoming_delay_ms", "incoming_loss_percent", "seed"), &ENetConnection::set_debug_packet_simulation, DEFVAL(1));
+	ClassDB::bind_method(D_METHOD("apply_debug_packet_command", "command"), &ENetConnection::apply_debug_packet_command);
+	ClassDB::bind_method(D_METHOD("get_debug_packet_simulation"), &ENetConnection::get_debug_packet_simulation);
 	ClassDB::bind_method(D_METHOD("channel_limit", "limit"), &ENetConnection::channel_limit);
 	ClassDB::bind_method(D_METHOD("broadcast", "channel", "packet", "flags"), &ENetConnection::_broadcast);
 	ClassDB::bind_method(D_METHOD("compress", "mode"), &ENetConnection::compress);
