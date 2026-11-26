@@ -1,6 +1,14 @@
 # Havok Hero 원본 재생
 
-[Animation Studio](../project.godot)를 Godot 에디터로 열면 하단 패널 **Hero 상태머신**에서 제작 과정 1~5단계와 255틱 다시보기(Rewind)를 바로 조작할 수 있다. F5 실행 시 **Hero 상태머신 · 제작과정 다시보기 →** 또는 **Havok Hero · 원본 클립 →**을 선택하거나 [Hero 씬](hero.tscn) · [Hero 상태머신 스튜디오](hero_locomotion_studio.tscn)를 F6로 실행할 수 있다. 클립을 선택하고 타임라인을 끌거나 **+ 1/60 s**로 진행한다. **다음 SDK 기준 포즈**는 해당 시각에서 재생을 멈추고 모든 본의 로컬 위치·회전 오차 중 최댓값을 표시한다. 타임라인이 끝나면 클립의 시작 위치로 돌아간다.
+[Animation Studio](../project.godot)를 Godot 에디터로 열면 상단 메뉴 **프로젝트 → 도구 → Hero 제작 과정 가상 포인터 다시보기** 또는 하단 패널 **Hero 상태머신**에서 데모 에셋을 빈 씬에서 단계별로 조립하는 가상 포인터 제작 과정 다시보기(14단계, `0.0~14.0s`)와 1~5단계·255틱 로코모션 Rewind를 바로 조작할 수 있다. 에디터 실행 시 실제 `SceneTreeDock`·`FileSystemDock`·`InspectorDock`·3D 뷰포트 위에도 역할별 가상 포인터와 대상 강조 박스가 함께 표시된다. F5 실행 시 **Hero 상태머신 · 제작과정 다시보기 →** 또는 **Havok Hero · 원본 클립 →**을 선택하거나 [Hero 씬](hero.tscn) · [Hero 상태머신 스튜디오](hero_locomotion_studio.tscn)를 F6로 실행할 수 있다. 클립을 선택하고 타임라인을 끌거나 **+ 1/60 s**로 진행한다. **다음 SDK 기준 포즈**는 해당 시각에서 재생을 멈추고 모든 본의 로컬 위치·회전 오차 중 최댓값을 표시한다. 타임라인이 끝나면 클립의 시작 위치로 돌아간다.
+
+## 가상 포인터 제작 과정 다시보기
+
+[가상 포인터 오버레이](authoring_cursor_overlay.gd)와 [14단계 제작 타임라인](authoring_replay.gd)은 4개 역할(`에셋`·`리그·씬`·`상태머신`·`물리·IK`)과 단계 칩(`탐색`·`대상`·`실행`·`변경`·`완료`), 클릭 리플, 대상 위젯 강조 박스를 사용해 빈 씬 → `Motion` 노드 → 85본 와이어프레임 리그 → 18,050정점 스킨 바인딩 → 공유 지형 → `Idle`/`Idle→Walk`/`Walking`/`Running` 상태머신 → 카메라 추적 리드 → 지형 레이캐스트 2본 발 IK → 255틱 궤적 완성까지를 순서대로 재현한다. 타임라인을 뒤로 스크러빙하면 3D 씬 가시성, 씬 트리, 인스펙터 속성, 역할별 작업 로그, 상태머신 단계가 정확히 해당 시점으로 되감긴다.
+
+```powershell
+python playforge/tests/run.py --godot $env:GODOT_BIN --only animation_hero_studio
+```
 
 ## 원본
 
