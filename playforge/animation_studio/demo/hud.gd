@@ -45,6 +45,7 @@ func bind(director: Node3D) -> void:
 	lab = director
 	%HeroSample.pressed.connect(func(): get_tree().change_scene_to_file("res://hero/hero.tscn"))
 	%HeroStudio.pressed.connect(func(): get_tree().change_scene_to_file("res://hero/hero_locomotion_studio.tscn"))
+	%QuadrupedStudio.pressed.connect(func(): get_tree().change_scene_to_file("res://quadruped/quadruped_locomotor_studio.tscn"))
 	%GraphStudio.pressed.connect(func(): get_tree().change_scene_to_file("res://demo/graph_studio.tscn"))
 	%Gallery.pressed.connect(func(): get_tree().change_scene_to_file("res://catalog/gallery.tscn"))
 	for i in FOCUS_NAMES.size():
