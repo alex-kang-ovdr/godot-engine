@@ -45,6 +45,7 @@ SUITES = [
     ("jolt_determinism", "res://jolt/jolt_determinism.tscn", ["--fixed-fps", "60"], [], 300, "83f5f345 c9050da1 e7a83dd7"),
     ("jolt_contacts", "res://jolt/jolt_contacts.tscn", ["--fixed-fps", "60"], [], 120, "c9050da1"),
     ("animation_coexistence", "res://tests/coexistence.tscn", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
+    ("animation_graph_rewind", "res://tests/graph_rewind.gd", ["--fixed-fps", "60"], [], 30, "Animation Studio Stage 2", ANIMATION_PROJECT),
     ("animation_havok_demo", "res://tests/havok_demo.gd", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
     ("animation_hero_behavior", "res://tests/hero_behavior.gd", ["--fixed-fps", "60"], [], 90, "Hero locomotion and IK", ANIMATION_PROJECT),
     ("animation_hero_behavior_native", "res://tests/hero_behavior.gd", ["--fixed-fps", "60"], ["--native"], 90, "Havok Hero Behavior SDK", ANIMATION_PROJECT),
