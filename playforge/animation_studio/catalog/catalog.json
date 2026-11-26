@@ -1,5 +1,6 @@
 [
   {
+    "product": "animation",
     "case": "AdditiveBlendingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -27,6 +28,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AdditiveBlendingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -54,6 +56,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AdditiveBlendingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -81,6 +84,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AdditiveBlendingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -108,6 +112,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NormalBlendingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -133,6 +138,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "PerBoneCompressionDemo",
     "domain": "animation",
     "domain_flags": [
@@ -158,6 +164,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "CompressionDemo",
     "domain": "animation",
     "domain_flags": [
@@ -183,6 +190,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "CrabbyDemo",
     "domain": "animation",
     "domain_flags": [
@@ -214,6 +222,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
   },
   {
+    "product": "animation",
     "case": "CrabbyDemo",
     "domain": "animation",
     "domain_flags": [
@@ -245,6 +254,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "FootIkDemo",
     "domain": "animation",
     "domain_flags": [
@@ -276,6 +286,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
   },
   {
+    "product": "animation",
     "case": "FootIkDemo",
     "domain": "animation",
     "domain_flags": [
@@ -307,6 +318,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "LookAtDemo",
     "domain": "animation",
     "domain_flags": [
@@ -334,6 +346,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "LookAtDemo",
     "domain": "animation",
     "domain_flags": [
@@ -361,6 +374,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "ReachingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -386,6 +400,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AdditivePartitions",
     "domain": "animation",
     "domain_flags": [
@@ -413,6 +428,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AdditivePartitions",
     "domain": "animation",
     "domain_flags": [
@@ -440,6 +456,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AdditivePartitions",
     "domain": "animation",
     "domain_flags": [
@@ -467,6 +484,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AdditivePartitions",
     "domain": "animation",
     "domain_flags": [
@@ -494,6 +512,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroringPartitionsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -521,6 +540,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroringPartitionsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -548,6 +568,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroringPartitionsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -575,6 +596,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroringPartitionsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -602,6 +624,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -636,6 +659,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -670,6 +694,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -704,6 +729,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -738,6 +764,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsWithChainsMTDemo",
     "domain": "animation",
     "domain_flags": [
@@ -772,6 +799,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsWithChainsMTDemo",
     "domain": "animation",
     "domain_flags": [
@@ -806,6 +834,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsWithChainsMTDemo",
     "domain": "animation",
     "domain_flags": [
@@ -840,6 +869,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsWithChainsMTDemo",
     "domain": "animation",
     "domain_flags": [
@@ -874,6 +904,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -908,6 +939,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -942,6 +974,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -976,6 +1009,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1010,6 +1044,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1044,6 +1079,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1078,6 +1114,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1112,6 +1149,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1146,6 +1184,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1180,6 +1219,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1214,6 +1254,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1248,6 +1289,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1280,6 +1322,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1312,6 +1355,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1344,6 +1388,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1376,6 +1421,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1408,6 +1454,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1440,6 +1487,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1472,6 +1520,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1504,6 +1553,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1536,6 +1586,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1568,6 +1619,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1600,6 +1652,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1634,6 +1687,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1668,6 +1722,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1702,6 +1757,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1736,6 +1792,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1770,6 +1827,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1804,6 +1862,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1838,6 +1897,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1872,6 +1932,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1906,6 +1967,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1940,6 +2002,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -1972,6 +2035,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2004,6 +2068,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2036,6 +2101,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2068,6 +2134,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2100,6 +2167,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2132,6 +2200,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2164,6 +2233,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2196,6 +2266,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2228,6 +2299,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyPartitionsMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2260,6 +2332,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "PartitionPlaybackDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2287,6 +2360,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "PartitionPlaybackDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2314,6 +2388,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "PartitionPlaybackDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2341,6 +2416,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "PartitionPlaybackDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2368,6 +2444,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2397,6 +2474,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2426,6 +2504,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsDemo",
     "domain": "other",
     "domain_flags": [
@@ -2455,6 +2534,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingPartitionsDemo",
     "domain": "other",
     "domain_flags": [
@@ -2484,6 +2564,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AttachmentsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2509,6 +2590,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "HardwareSkinningDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2534,6 +2616,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "ScalingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2559,6 +2642,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SkinningDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2584,6 +2668,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "BasicMovementDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2609,6 +2694,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "CharacterAnimationDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2638,6 +2724,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "MirroredMotionDemo",
     "domain": "other",
     "domain_flags": [
@@ -2670,6 +2757,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroredMotionDemo",
     "domain": "other",
     "domain_flags": [
@@ -2702,6 +2790,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroredMotionDemo",
     "domain": "other",
     "domain_flags": [
@@ -2734,6 +2823,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroredMotionDemo",
     "domain": "other",
     "domain_flags": [
@@ -2766,6 +2856,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroredMotionDemo",
     "domain": "other",
     "domain_flags": [
@@ -2798,6 +2889,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroredMotionDemo",
     "domain": "other",
     "domain_flags": [
@@ -2830,6 +2922,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroredMotionDemo",
     "domain": "other",
     "domain_flags": [
@@ -2862,6 +2955,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroredMotionDemo",
     "domain": "other",
     "domain_flags": [
@@ -2894,6 +2988,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroredMotionDemo",
     "domain": "other",
     "domain_flags": [
@@ -2926,6 +3021,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroredMotionDemo",
     "domain": "other",
     "domain_flags": [
@@ -2958,6 +3054,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MotionExtractionDemo",
     "domain": "animation",
     "domain_flags": [
@@ -2983,6 +3080,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3017,6 +3115,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3051,6 +3150,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3085,6 +3185,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3119,6 +3220,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3153,6 +3255,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3187,6 +3290,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3221,6 +3325,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3255,6 +3360,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3289,6 +3395,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3323,6 +3430,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3358,6 +3466,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3393,6 +3502,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3427,6 +3537,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3461,6 +3572,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3495,6 +3607,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3527,6 +3640,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3559,6 +3673,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3591,6 +3706,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3623,6 +3739,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3655,6 +3772,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3687,6 +3805,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3719,6 +3838,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3751,6 +3871,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3783,6 +3904,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3815,6 +3937,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3847,6 +3970,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3879,6 +4003,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3911,6 +4036,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3943,6 +4069,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -3975,6 +4102,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4009,6 +4137,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4043,6 +4172,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4077,6 +4207,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4111,6 +4242,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4145,6 +4277,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4179,6 +4312,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4213,6 +4347,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4247,6 +4382,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4281,6 +4417,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4315,6 +4452,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4349,6 +4487,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4383,6 +4522,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4417,6 +4557,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4451,6 +4592,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4483,6 +4625,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4515,6 +4658,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4547,6 +4691,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4579,6 +4724,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4611,6 +4757,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4643,6 +4790,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4675,6 +4823,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4707,6 +4856,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4739,6 +4889,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4771,6 +4922,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4803,6 +4955,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4835,6 +4988,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4867,6 +5021,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4899,6 +5054,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SkeletonMappingMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4933,6 +5089,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SkeletonMappingMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -4967,6 +5124,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SkeletonMappingMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5001,6 +5159,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SkeletonMappingMultithreadingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5035,6 +5194,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimatedSkeletonDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5060,6 +5220,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnnotationDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5085,6 +5246,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "BindingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5110,6 +5272,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "ControlDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5135,6 +5298,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "CycleControlDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5160,6 +5324,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "EaseCurvesDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5185,6 +5350,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "FloatTracksDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5210,6 +5376,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "IndividualBoneSamplingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5235,6 +5402,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MaskingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5260,6 +5428,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroringDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5287,6 +5456,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroringDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5314,6 +5484,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroringDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5341,6 +5512,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "MirroringDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5368,6 +5540,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RuntimeBindingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5393,6 +5566,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SkeletonDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5418,6 +5592,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5454,6 +5629,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5490,6 +5666,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5526,6 +5703,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5562,6 +5740,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5598,6 +5777,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5634,6 +5814,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5670,6 +5851,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5706,6 +5888,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5742,6 +5925,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5778,6 +5962,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5814,6 +5999,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5850,6 +6036,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5886,6 +6073,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5922,6 +6110,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5958,6 +6147,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -5994,6 +6184,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6030,6 +6221,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6066,6 +6258,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6098,6 +6291,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6130,6 +6324,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6162,6 +6357,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6194,6 +6390,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6226,6 +6423,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6258,6 +6456,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6290,6 +6489,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6322,6 +6522,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6354,6 +6555,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6386,6 +6588,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6418,6 +6621,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6450,6 +6654,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6482,6 +6687,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "NpRagdollBlendTestDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6514,6 +6720,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "ConstraintMatchingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6545,6 +6752,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "ConstraintMatchingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6576,6 +6784,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "NpConstraintMatchingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6605,6 +6814,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
   },
   {
+    "product": "animation",
     "case": "DismembermentDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6643,6 +6853,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "DismembermentDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6681,6 +6892,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "DismembermentDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6719,6 +6931,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "DismembermentDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6757,6 +6970,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "NpDismembermentDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6795,6 +7009,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
   },
   {
+    "product": "animation",
     "case": "NpDismembermentDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6833,6 +7048,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
   },
   {
+    "product": "animation",
     "case": "NpDismembermentDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6871,6 +7087,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
   },
   {
+    "product": "animation",
     "case": "NpDismembermentDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6909,6 +7126,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
   },
   {
+    "product": "animation",
     "case": "NpRagdollPenetrationDetectionDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6934,6 +7152,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "PenetrationDemo",
     "domain": "animation",
     "domain_flags": [
@@ -6963,6 +7182,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "NpRagdollAnimationDemo",
     "domain": "physics",
     "domain_flags": [
@@ -6992,6 +7212,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
   },
   {
+    "product": "animation",
     "case": "NpRagdollControllerDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7021,6 +7242,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_DEMO_FACTORY expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
   },
   {
+    "product": "animation",
     "case": "RagdollControllerDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7050,6 +7272,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO_FACTORY expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "NpRagdollScalingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7079,6 +7302,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
   },
   {
+    "product": "animation",
     "case": "RagdollScalingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7108,6 +7332,7 @@
     "registration_condition": "HKA_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
   },
   {
+    "product": "animation",
     "case": "BasicPoseRetargetingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7135,6 +7360,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "BasicPoseRetargetingDemo",
     "domain": "other",
     "domain_flags": [
@@ -7162,6 +7388,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "BlendedRetargetingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7189,6 +7416,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "BlendedRetargetingDemo",
     "domain": "other",
     "domain_flags": [
@@ -7216,6 +7444,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "BlendAdditiveRetargetingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7243,6 +7472,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "BlendAdditiveRetargetingDemo",
     "domain": "other",
     "domain_flags": [
@@ -7270,6 +7500,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "BlendPartialRetargetingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7297,6 +7528,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "BlendPartialRetargetingDemo",
     "domain": "other",
     "domain_flags": [
@@ -7324,6 +7556,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "ChainRetargetingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7349,6 +7582,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7383,6 +7617,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7417,6 +7652,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7451,6 +7687,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7485,6 +7722,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7519,6 +7757,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7553,6 +7792,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7587,6 +7827,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7621,6 +7862,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7655,6 +7897,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "other",
     "domain_flags": [
@@ -7689,6 +7932,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "other",
     "domain_flags": [
@@ -7723,6 +7967,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "other",
     "domain_flags": [
@@ -7757,6 +8002,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "other",
     "domain_flags": [
@@ -7791,6 +8037,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "other",
     "domain_flags": [
@@ -7825,6 +8072,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "other",
     "domain_flags": [
@@ -7859,6 +8107,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "other",
     "domain_flags": [
@@ -7893,6 +8142,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "other",
     "domain_flags": [
@@ -7927,6 +8177,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "AnimationMappingShowcaseDemo",
     "domain": "other",
     "domain_flags": [
@@ -7961,6 +8212,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -7990,6 +8242,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8019,6 +8272,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8049,6 +8303,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "RetargetingTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8079,6 +8334,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SkeletonMappingDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8104,6 +8360,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8131,6 +8388,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8158,6 +8416,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8185,6 +8444,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8212,6 +8472,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8239,6 +8500,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8268,6 +8530,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8297,6 +8560,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8326,6 +8590,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8355,6 +8620,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleAndBlendTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8384,6 +8650,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8411,6 +8678,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8438,6 +8706,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8465,6 +8734,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8492,6 +8762,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8519,6 +8790,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8548,6 +8820,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8577,6 +8850,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8606,6 +8880,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8635,6 +8910,7 @@
     }
   },
   {
+    "product": "animation",
     "case": "SampleOnlyTimingsDemo",
     "domain": "animation",
     "domain_flags": [
@@ -8661,6 +8937,4383 @@
       "id_expression": "MT_MIRRORED_SPLINE",
       "name_expression": "MT_STRING\" - Mirrored Spline\"",
       "resolved_name": true
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "DockingBlendDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Docking/DockingBlend/DockingBlendDemo.cpp",
+    "source_exists": true,
+    "line": 251,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "DockingBlendDemo",
+    "display_name": "DockingBlendDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "DockingBlendDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Docking/DockingBlend/DockingBlendDemo.cpp",
+    "source_exists": true,
+    "line": 252,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "DockingBlendDemo",
+    "display_name": "DockingBlendDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "DockingConstrainedMotionDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Docking/DockingConstrainedMotion/DockingConstrainedMotionDemo.cpp",
+    "source_exists": true,
+    "line": 343,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "DockingConstrainedMotionDemo",
+    "display_name": "DockingConstrainedMotionDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "DockingConstrainedMotionDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Docking/DockingConstrainedMotion/DockingConstrainedMotionDemo.cpp",
+    "source_exists": true,
+    "line": 344,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "DockingConstrainedMotionDemo",
+    "display_name": "DockingConstrainedMotionDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "DockingHangingDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Api/Docking/DockingHanging/DockingHangingDemo.cpp",
+    "source_exists": true,
+    "line": 609,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if !defined(HK_PLATFORM_PSVITA)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "DockingHangingDemo",
+    "display_name": "DockingHangingDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "DockingHangingDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Api/Docking/DockingHanging/DockingHangingDemo.cpp",
+    "source_exists": true,
+    "line": 613,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if !defined(HK_PLATFORM_PSVITA)",
+      "#if !defined(HK_PLATFORM_X64) && (HK_CONFIG_SIMD == HK_CONFIG_SIMD_ENABLED)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "DockingHangingDemo",
+    "display_name": "DockingHangingDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "DockingMovingTargetDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Docking/DockingMovingTarget/DockingMovingTargetDemo.cpp",
+    "source_exists": true,
+    "line": 396,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "DockingMovingTargetDemo",
+    "display_name": "DockingMovingTargetDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "DockingMovingTargetDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Docking/DockingMovingTarget/DockingMovingTargetDemo.cpp",
+    "source_exists": true,
+    "line": 397,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "DockingMovingTargetDemo",
+    "display_name": "DockingMovingTargetDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "DockingMultipleTargetsDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Docking/DockingMultipleTargets/DockingMultipleTargetsDemo.cpp",
+    "source_exists": true,
+    "line": 394,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "DockingMultipleTargetsDemo",
+    "display_name": "DockingMultipleTargetsDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "DockingMultipleTargetsDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Docking/DockingMultipleTargets/DockingMultipleTargetsDemo.cpp",
+    "source_exists": true,
+    "line": 395,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "DockingMultipleTargetsDemo",
+    "display_name": "DockingMultipleTargetsDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "name": "DockingReRootingDemo",
+    "display_name": "DockingReRootingDemo",
+    "case": "DockingReRootingDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "path": "Behavior/Api/Docking/DockingReRooting/DockingReRooting.cpp",
+    "source_exists": true,
+    "line": 111,
+    "macro": null,
+    "registration": "source_only_unregistered",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": false,
+    "variant_provenance": {
+      "kind": "none",
+      "reason": "stepDemo/stepBehaviorDemo implementation found without a registration macro"
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterControllerDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/CharacterControllerDriver/CharacterControllerDriverDemo.cpp",
+    "source_exists": true,
+    "line": 294,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Character Proxy",
+    "display_name": "Character Proxy",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "ProxyControlsDemoVariant",
+      "resolved": true,
+      "index": 0,
+      "name": "Character Proxy",
+      "raw_name_expression": "\"Character Proxy\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterControllerDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/CharacterControllerDriver/CharacterControllerDriverDemo.cpp",
+    "source_exists": true,
+    "line": 294,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Character Proxy With Jump",
+    "display_name": "Character Proxy With Jump",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "ProxyControlsDemoVariant",
+      "resolved": true,
+      "index": 2,
+      "name": "Character Proxy With Jump",
+      "raw_name_expression": "\"Character Proxy With Jump\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterControllerDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/CharacterControllerDriver/CharacterControllerDriverDemo.cpp",
+    "source_exists": true,
+    "line": 294,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Character Rigid Body",
+    "display_name": "Character Rigid Body",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "ProxyControlsDemoVariant",
+      "resolved": true,
+      "index": 1,
+      "name": "Character Rigid Body",
+      "raw_name_expression": "\"Character Rigid Body\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterControllerDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/CharacterControllerDriver/CharacterControllerDriverDemo.cpp",
+    "source_exists": true,
+    "line": 294,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Character Rigid Body With Jump",
+    "display_name": "Character Rigid Body With Jump",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "ProxyControlsDemoVariant",
+      "resolved": true,
+      "index": 3,
+      "name": "Character Rigid Body With Jump",
+      "raw_name_expression": "\"Character Rigid Body With Jump\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterControllerDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/CharacterControllerDriver/CharacterControllerDriverDemo.cpp",
+    "source_exists": true,
+    "line": 295,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Character Proxy",
+    "display_name": "Character Proxy",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "ProxyControlsDemoVariant",
+      "resolved": true,
+      "index": 0,
+      "name": "Character Proxy",
+      "raw_name_expression": "\"Character Proxy\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterControllerDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/CharacterControllerDriver/CharacterControllerDriverDemo.cpp",
+    "source_exists": true,
+    "line": 295,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Character Proxy With Jump",
+    "display_name": "Character Proxy With Jump",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "ProxyControlsDemoVariant",
+      "resolved": true,
+      "index": 2,
+      "name": "Character Proxy With Jump",
+      "raw_name_expression": "\"Character Proxy With Jump\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterControllerDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/CharacterControllerDriver/CharacterControllerDriverDemo.cpp",
+    "source_exists": true,
+    "line": 295,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Character Rigid Body",
+    "display_name": "Character Rigid Body",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "ProxyControlsDemoVariant",
+      "resolved": true,
+      "index": 1,
+      "name": "Character Rigid Body",
+      "raw_name_expression": "\"Character Rigid Body\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterControllerDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/CharacterControllerDriver/CharacterControllerDriverDemo.cpp",
+    "source_exists": true,
+    "line": 295,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Character Rigid Body With Jump",
+    "display_name": "Character Rigid Body With Jump",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "ProxyControlsDemoVariant",
+      "resolved": true,
+      "index": 3,
+      "name": "Character Rigid Body With Jump",
+      "raw_name_expression": "\"Character Rigid Body With Jump\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "FootIKDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/FootIkDriverDemo.cpp",
+    "source_exists": true,
+    "line": 388,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Foot Ik",
+    "display_name": "Foot Ik",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "FootIkControlsDemoVariant",
+      "resolved": true,
+      "index": 0,
+      "name": "Foot Ik",
+      "raw_name_expression": "\"Foot Ik\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "FootIKDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/FootIkDriverDemo.cpp",
+    "source_exists": true,
+    "line": 388,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Foot Ik With Character Proxy",
+    "display_name": "Foot Ik With Character Proxy",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "FootIkControlsDemoVariant",
+      "resolved": true,
+      "index": 1,
+      "name": "Foot Ik With Character Proxy",
+      "raw_name_expression": "\"Foot Ik With Character Proxy\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "FootIKDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/FootIkDriverDemo.cpp",
+    "source_exists": true,
+    "line": 388,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Foot Ik With Character Rigid Body",
+    "display_name": "Foot Ik With Character Rigid Body",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "FootIkControlsDemoVariant",
+      "resolved": true,
+      "index": 2,
+      "name": "Foot Ik With Character Rigid Body",
+      "raw_name_expression": "\"Foot Ik With Character Rigid Body\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "FootIKDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/FootIkDriverDemo.cpp",
+    "source_exists": true,
+    "line": 389,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Foot Ik",
+    "display_name": "Foot Ik",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "FootIkControlsDemoVariant",
+      "resolved": true,
+      "index": 0,
+      "name": "Foot Ik",
+      "raw_name_expression": "\"Foot Ik\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "FootIKDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/FootIkDriverDemo.cpp",
+    "source_exists": true,
+    "line": 389,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Foot Ik With Character Proxy",
+    "display_name": "Foot Ik With Character Proxy",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "FootIkControlsDemoVariant",
+      "resolved": true,
+      "index": 1,
+      "name": "Foot Ik With Character Proxy",
+      "raw_name_expression": "\"Foot Ik With Character Proxy\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "FootIKDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/FootIkDriverDemo.cpp",
+    "source_exists": true,
+    "line": 389,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Foot Ik With Character Rigid Body",
+    "display_name": "Foot Ik With Character Rigid Body",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "FootIkControlsDemoVariant",
+      "resolved": true,
+      "index": 2,
+      "name": "Foot Ik With Character Rigid Body",
+      "raw_name_expression": "\"Foot Ik With Character Rigid Body\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "QuadrupedDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/Quadruped/QuadrupedDemo.cpp",
+    "source_exists": true,
+    "line": 182,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "QuadrupedDemo",
+    "display_name": "QuadrupedDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "QuadrupedDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/Quadruped/QuadrupedDemo.cpp",
+    "source_exists": true,
+    "line": 183,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "QuadrupedDemo",
+    "display_name": "QuadrupedDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "QuadrupedOnSmoothNonPlanarTerrainDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/QuadrupedOnSmoothNonPlanarTerrain/QuadrupedOnSmoothNonPlanarTerrainDemo.cpp",
+    "source_exists": true,
+    "line": 182,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "QuadrupedOnSmoothNonPlanarTerrainDemo",
+    "display_name": "QuadrupedOnSmoothNonPlanarTerrainDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "QuadrupedOnSmoothNonPlanarTerrainDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/QuadrupedOnSmoothNonPlanarTerrain/QuadrupedOnSmoothNonPlanarTerrainDemo.cpp",
+    "source_exists": true,
+    "line": 183,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "QuadrupedOnSmoothNonPlanarTerrainDemo",
+    "display_name": "QuadrupedOnSmoothNonPlanarTerrainDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "QuadrupedWithRotatingPlatformDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/QuadrupedWithRotatingPlatform/QuadrupedWithRotatingPlatformDemo.cpp",
+    "source_exists": true,
+    "line": 228,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "QuadrupedWithRotatingPlatformDemo",
+    "display_name": "QuadrupedWithRotatingPlatformDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "QuadrupedWithRotatingPlatformDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/FootIkDriver/QuadrupedWithRotatingPlatform/QuadrupedWithRotatingPlatformDemo.cpp",
+    "source_exists": true,
+    "line": 229,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "QuadrupedWithRotatingPlatformDemo",
+    "display_name": "QuadrupedWithRotatingPlatformDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "HandIKDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/HandIkDriver/HandIkDriverDemo.cpp",
+    "source_exists": true,
+    "line": 370,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "HandIKDriverDemo",
+    "display_name": "HandIKDriverDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "HandIKDriverDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/HandIkDriver/HandIkDriverDemo.cpp",
+    "source_exists": true,
+    "line": 371,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "HandIKDriverDemo",
+    "display_name": "HandIKDriverDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "ControlPalettesDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/RagdollDriver/ControlPalettes/ControlPalettesDemo.cpp",
+    "source_exists": true,
+    "line": 144,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "ControlPalettesDemo",
+    "display_name": "ControlPalettesDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "ControlPalettesDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/RagdollDriver/ControlPalettes/ControlPalettesDemo.cpp",
+    "source_exists": true,
+    "line": 145,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "ControlPalettesDemo",
+    "display_name": "ControlPalettesDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "MultipleControllersDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/RagdollDriver/MultipleControllers/MultipleControllersDemo.cpp",
+    "source_exists": true,
+    "line": 207,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "MultipleControllersDemo",
+    "display_name": "MultipleControllersDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "MultipleControllersDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Drivers/RagdollDriver/MultipleControllers/MultipleControllersDemo.cpp",
+    "source_exists": true,
+    "line": 208,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "MultipleControllersDemo",
+    "display_name": "MultipleControllersDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "BlenderGeneratorDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Generators/BlenderGenerator/BlenderGeneratorDemo.cpp",
+    "source_exists": true,
+    "line": 220,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "BlenderGeneratorDemo",
+    "display_name": "BlenderGeneratorDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "ClipGeneratorModesDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Generators/ClipGenerator/ClipGeneratorModes/ClipGeneratorModesDemo.cpp",
+    "source_exists": true,
+    "line": 194,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "ClipGeneratorModesDemo",
+    "display_name": "ClipGeneratorModesDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "PingPongSyncDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Generators/ClipGenerator/PingPongSync/PingPongSyncDemo.cpp",
+    "source_exists": true,
+    "line": 135,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "PingPongSyncDemo",
+    "display_name": "PingPongSyncDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "PlaybackSpeedVsEnforcedDurationDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Generators/ClipGenerator/PlaybackSpeedVsEnforcedDuration/PlaybackSpeedVsEnforcedDurationDemo.cpp",
+    "source_exists": true,
+    "line": 132,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "PlaybackSpeedVsEnforcedDurationDemo",
+    "display_name": "PlaybackSpeedVsEnforcedDurationDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "ManualSelectorGeneratorDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Generators/ManualSelectorGenerator/ManualSelectorGeneratorDemo.cpp",
+    "source_exists": true,
+    "line": 121,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "ManualSelectorGeneratorDemo",
+    "display_name": "ManualSelectorGeneratorDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "ReferencePoseGeneratorDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Generators/ReferencePoseGenerator/ReferencePoseGeneratorDemo.cpp",
+    "source_exists": true,
+    "line": 58,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "ReferencePoseGeneratorDemo",
+    "display_name": "ReferencePoseGeneratorDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterToCharacterAttachmentDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Modifiers/AttachmentModifier/CharacterToCharacter/CharacterToCharacterAttachmentDemo.cpp",
+    "source_exists": true,
+    "line": 148,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "CharacterToCharacterAttachmentDemo",
+    "display_name": "CharacterToCharacterAttachmentDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterToCharacterAttachmentDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Modifiers/AttachmentModifier/CharacterToCharacter/CharacterToCharacterAttachmentDemo.cpp",
+    "source_exists": true,
+    "line": 149,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "CharacterToCharacterAttachmentDemo",
+    "display_name": "CharacterToCharacterAttachmentDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterToObjectAttachmentDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Modifiers/AttachmentModifier/CharacterToObject/CharacterToObjectAttachmentDemo.cpp",
+    "source_exists": true,
+    "line": 452,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Keyframe Attachments",
+    "display_name": "Keyframe Attachments",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "AttachmentDemoVariant",
+      "resolved": true,
+      "index": 0,
+      "name": "Keyframe Attachments",
+      "raw_name_expression": "\"Keyframe Attachments\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterToObjectAttachmentDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Modifiers/AttachmentModifier/CharacterToObject/CharacterToObjectAttachmentDemo.cpp",
+    "source_exists": true,
+    "line": 452,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Ragdoll Attachments",
+    "display_name": "Ragdoll Attachments",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "AttachmentDemoVariant",
+      "resolved": true,
+      "index": 1,
+      "name": "Ragdoll Attachments",
+      "raw_name_expression": "\"Ragdoll Attachments\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterToObjectAttachmentDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Modifiers/AttachmentModifier/CharacterToObject/CharacterToObjectAttachmentDemo.cpp",
+    "source_exists": true,
+    "line": 453,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Keyframe Attachments",
+    "display_name": "Keyframe Attachments",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "AttachmentDemoVariant",
+      "resolved": true,
+      "index": 0,
+      "name": "Keyframe Attachments",
+      "raw_name_expression": "\"Keyframe Attachments\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "CharacterToObjectAttachmentDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Modifiers/AttachmentModifier/CharacterToObject/CharacterToObjectAttachmentDemo.cpp",
+    "source_exists": true,
+    "line": 453,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Ragdoll Attachments",
+    "display_name": "Ragdoll Attachments",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "AttachmentDemoVariant",
+      "resolved": true,
+      "index": 1,
+      "name": "Ragdoll Attachments",
+      "raw_name_expression": "\"Ragdoll Attachments\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "LookAtModifierDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Api/Modifiers/LookAtModifier/LookAtModifierDemo.cpp",
+    "source_exists": true,
+    "line": 149,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "LookAtModifierDemo",
+    "display_name": "LookAtModifierDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "SequenceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/Sequence/SequenceDemo.cpp",
+    "source_exists": true,
+    "line": 134,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "SequenceDemo",
+    "display_name": "SequenceDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BlendingTransitionModesDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/StateMachine/BlendingTransitionModes/BlendingTransitionModesDemo.cpp",
+    "source_exists": true,
+    "line": 185,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "BlendingTransitionModesDemo",
+    "display_name": "BlendingTransitionModesDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "GeneratorTransitionDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/StateMachine/GeneratorTransition/GeneratorTransitionDemo.cpp",
+    "source_exists": true,
+    "line": 130,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "GeneratorTransitionDemo",
+    "display_name": "GeneratorTransitionDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "GlobalTransitionDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/StateMachine/GlobalTransition/GlobalTransitionDemo.cpp",
+    "source_exists": true,
+    "line": 159,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "GlobalTransitionDemo",
+    "display_name": "GlobalTransitionDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "RandomTransitionDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/StateMachine/RandomTransition/RandomTransitionDemo.cpp",
+    "source_exists": true,
+    "line": 102,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "RandomTransitionDemo",
+    "display_name": "RandomTransitionDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "ReturnToPreviousStateDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/StateMachine/ReturnToPreviousState/ReturnToPreviousStateDemo.cpp",
+    "source_exists": true,
+    "line": 143,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "ReturnToPreviousStateDemo",
+    "display_name": "ReturnToPreviousStateDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "SynchronizedStartStateDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Api/StateMachine/SynchronizedStartState/SynchronizedStartStateDemo.cpp",
+    "source_exists": true,
+    "line": 155,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "SynchronizedStartStateDemo",
+    "display_name": "SynchronizedStartStateDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "HeroDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Hero/HeroDemo.cpp",
+    "source_exists": true,
+    "line": 195,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "HeroDemo",
+    "display_name": "HeroDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "HeroDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Hero/HeroDemo.cpp",
+    "source_exists": true,
+    "line": 196,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "HeroDemo",
+    "display_name": "HeroDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 983,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 0,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#if defined(HK_PLATFORM_PS3_PPU)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 983,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 1,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#elif defined(HK_PLATFORM_RVL)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 983,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 2,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#else after #elif defined(HK_PLATFORM_RVL)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 984,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 0,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#if defined(HK_PLATFORM_PS3_PPU)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 984,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 1,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#elif defined(HK_PLATFORM_RVL)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 984,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 2,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#else after #elif defined(HK_PLATFORM_RVL)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "other",
+    "domain_flags": [
+      "other"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_OTHER"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_OTHER | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 986,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#else after #if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 0,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#if defined(HK_PLATFORM_PS3_PPU)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "other",
+    "domain_flags": [
+      "other"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_OTHER"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_OTHER | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 986,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#else after #if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 1,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#elif defined(HK_PLATFORM_RVL)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "other",
+    "domain_flags": [
+      "other"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_OTHER"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_OTHER | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 986,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#else after #if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 2,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#else after #elif defined(HK_PLATFORM_RVL)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "other",
+    "domain_flags": [
+      "other"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_OTHER"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_OTHER | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 987,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#else after #if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 0,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#if defined(HK_PLATFORM_PS3_PPU)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "other",
+    "domain_flags": [
+      "other"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_OTHER"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_OTHER | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 987,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#else after #if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 1,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#elif defined(HK_PLATFORM_RVL)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2010BehaviorDemo",
+    "domain": "other",
+    "domain_flags": [
+      "other"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_OTHER"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_OTHER | HK_DEMO_TYPE_NEEDS_REAL_RENDERER | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/ShowCase/Orcs/Gdc2010BehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 987,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#else after #if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Troll vs. Orcs",
+    "display_name": "Troll vs. Orcs",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "Gdc2010BehaviorDemo::g_variants",
+      "variant_struct": "Gdc2010BehaviorDemo::Variant",
+      "resolved": true,
+      "index": 2,
+      "name": "Troll vs. Orcs",
+      "raw_name_expression": "\"Troll vs. Orcs\"",
+      "source_condition": [
+        "#else after #elif defined(HK_PLATFORM_RVL)"
+      ],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_REGRESSION",
+    "path": "Behavior/Test/BehaviorPerformance/BehaviorPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 190,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[0].m_name",
+    "display_name": "g_variants[0].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "0",
+      "name_expression": "g_variants[0].m_name",
+      "resolved_name": false
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_REGRESSION",
+    "path": "Behavior/Test/BehaviorPerformance/BehaviorPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 191,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[1].m_name",
+    "display_name": "g_variants[1].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "1",
+      "name_expression": "g_variants[1].m_name",
+      "resolved_name": false
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_REGRESSION",
+    "path": "Behavior/Test/BehaviorPerformance/BehaviorPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 192,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[2].m_name",
+    "display_name": "g_variants[2].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "2",
+      "name_expression": "g_variants[2].m_name",
+      "resolved_name": false
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_REGRESSION",
+    "path": "Behavior/Test/BehaviorPerformance/BehaviorPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 193,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[3].m_name",
+    "display_name": "g_variants[3].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "3",
+      "name_expression": "g_variants[3].m_name",
+      "resolved_name": false
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_REGRESSION",
+    "path": "Behavior/Test/BehaviorPerformance/BehaviorPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 194,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[4].m_name",
+    "display_name": "g_variants[4].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "4",
+      "name_expression": "g_variants[4].m_name",
+      "resolved_name": false
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_REGRESSION | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Test/BehaviorPerformance/BehaviorPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 195,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[5].m_name",
+    "display_name": "g_variants[5].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "5",
+      "name_expression": "g_variants[5].m_name",
+      "resolved_name": false
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_REGRESSION",
+    "path": "Behavior/Test/BehaviorPerformance/BehaviorPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 196,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[6].m_name",
+    "display_name": "g_variants[6].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "6",
+      "name_expression": "g_variants[6].m_name",
+      "resolved_name": false
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_REGRESSION | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Test/BehaviorPerformance/BehaviorPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 197,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[7].m_name",
+    "display_name": "g_variants[7].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "7",
+      "name_expression": "g_variants[7].m_name",
+      "resolved_name": false
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_REGRESSION",
+    "path": "Behavior/Test/BehaviorPerformance/BehaviorPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 198,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[8].m_name",
+    "display_name": "g_variants[8].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "8",
+      "name_expression": "g_variants[8].m_name",
+      "resolved_name": false
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_REGRESSION | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Test/BehaviorPerformance/BehaviorPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 199,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[9].m_name",
+    "display_name": "g_variants[9].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "9",
+      "name_expression": "g_variants[9].m_name",
+      "resolved_name": false
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorProjectTesterDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/BehaviorProjectTester/BehaviorProjectTesterDemo.cpp",
+    "source_exists": true,
+    "line": 507,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_FEATURE_PRODUCT_PHYSICS) || defined(HK_FEATURE_PRODUCT_PHYSICS_2012)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "BehaviorProjectTesterDemo",
+    "display_name": "BehaviorProjectTesterDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorProjectTesterDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/BehaviorProjectTester/BehaviorProjectTesterDemo.cpp",
+    "source_exists": true,
+    "line": 508,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_FEATURE_PRODUCT_PHYSICS) || defined(HK_FEATURE_PRODUCT_PHYSICS_2012)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "BehaviorProjectTesterDemo",
+    "display_name": "BehaviorProjectTesterDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorProjectTesterDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/BehaviorProjectTester/BehaviorProjectTesterDemo.cpp",
+    "source_exists": true,
+    "line": 510,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#else after #if defined(HK_FEATURE_PRODUCT_PHYSICS) || defined(HK_FEATURE_PRODUCT_PHYSICS_2012)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "BehaviorProjectTesterDemo",
+    "display_name": "BehaviorProjectTesterDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "DeterminismDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Determinism/Determinism.cpp",
+    "source_exists": true,
+    "line": 168,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#ifdef HK_ENABLE_DETERMINISM_CHECKS"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Test Script",
+    "display_name": "Test Script",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "TEST_SCRIPT",
+      "name_expression": "\"Test Script\"",
+      "resolved_name": true
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "DeterminismDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Determinism/Determinism.cpp",
+    "source_exists": true,
+    "line": 169,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#ifdef HK_ENABLE_DETERMINISM_CHECKS"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Test Random Start State",
+    "display_name": "Test Random Start State",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "TEST_RANDOM_START_STATE",
+      "name_expression": "\"Test Random Start State\"",
+      "resolved_name": true
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "DeterminismDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Determinism/Determinism.cpp",
+    "source_exists": true,
+    "line": 170,
+    "macro": "HKB_DECLARE_DEMO_VARIANT",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#ifdef HK_ENABLE_DETERMINISM_CHECKS"
+    ],
+    "bootstrap_eligible": true,
+    "name": "Test Shared Event Queue",
+    "display_name": "Test Shared Event Queue",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "TEST_SHARED_EVENT_QUEUE",
+      "name_expression": "\"Test Shared Event Queue\"",
+      "resolved_name": true
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorDifferentShapesAndSizesCharactersDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Feature/AnimationRetargeting/DifferentShapesAndSizesCharacters/BehaviorDifferentShapesAndSizesCharactersDemo.cpp",
+    "source_exists": true,
+    "line": 216,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "BehaviorDifferentShapesAndSizesCharactersDemo",
+    "display_name": "BehaviorDifferentShapesAndSizesCharactersDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorDifferentShapesAndSizesCharactersDemo",
+    "domain": "other",
+    "domain_flags": [
+      "other"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_OTHER"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_OTHER",
+    "path": "Behavior/Test/Feature/AnimationRetargeting/DifferentShapesAndSizesCharacters/BehaviorDifferentShapesAndSizesCharactersDemo.cpp",
+    "source_exists": true,
+    "line": 218,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#else after #if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "BehaviorDifferentShapesAndSizesCharactersDemo",
+    "display_name": "BehaviorDifferentShapesAndSizesCharactersDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "SimilarTrunkDifferentLeafBonesCharactersDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Feature/AnimationRetargeting/SimilarTrunkDifferentLeafBonesCharacters/SimilarTrunkDifferentLeafBonesCharactersDemo.cpp",
+    "source_exists": true,
+    "line": 164,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "SimilarTrunkDifferentLeafBonesCharactersDemo",
+    "display_name": "SimilarTrunkDifferentLeafBonesCharactersDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "SimilarTrunkDifferentLeafBonesCharactersDemo",
+    "domain": "other",
+    "domain_flags": [
+      "other"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_OTHER"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_OTHER",
+    "path": "Behavior/Test/Feature/AnimationRetargeting/SimilarTrunkDifferentLeafBonesCharacters/SimilarTrunkDifferentLeafBonesCharactersDemo.cpp",
+    "source_exists": true,
+    "line": 166,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#else after #if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "SimilarTrunkDifferentLeafBonesCharactersDemo",
+    "display_name": "SimilarTrunkDifferentLeafBonesCharactersDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "SupersetSubsetBonesCharactersDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Feature/AnimationRetargeting/SupersetSubsetBonesCharacters/SupersetSubsetBonesCharactersDemo.cpp",
+    "source_exists": true,
+    "line": 159,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "SupersetSubsetBonesCharactersDemo",
+    "display_name": "SupersetSubsetBonesCharactersDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "SupersetSubsetBonesCharactersDemo",
+    "domain": "other",
+    "domain_flags": [
+      "other"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_OTHER"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_OTHER",
+    "path": "Behavior/Test/Feature/AnimationRetargeting/SupersetSubsetBonesCharacters/SupersetSubsetBonesCharactersDemo.cpp",
+    "source_exists": true,
+    "line": 161,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#else after #if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "SupersetSubsetBonesCharactersDemo",
+    "display_name": "SupersetSubsetBonesCharactersDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "AnimationTestDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Feature/AnimationTest/AnimationTestDemo.cpp",
+    "source_exists": true,
+    "line": 212,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "AnimationTestDemo",
+    "display_name": "AnimationTestDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "AuxiliaryAnimationTracksDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Feature/AuxiliaryAnimationTracks/AuxiliaryAnimationTracksDemo.cpp",
+    "source_exists": true,
+    "line": 65,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "AuxiliaryAnimationTracksDemo",
+    "display_name": "AuxiliaryAnimationTracksDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "MovingPlatforms",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Test/Feature/MovingPlatforms/MovingPlatforms.cpp",
+    "source_exists": true,
+    "line": 234,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "MovingPlatforms - Character Proxy",
+    "display_name": "MovingPlatforms - Character Proxy",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "0",
+      "name_expression": "\"MovingPlatforms - Character Proxy\"",
+      "resolved_name": true
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "MovingPlatforms",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Test/Feature/MovingPlatforms/MovingPlatforms.cpp",
+    "source_exists": true,
+    "line": 235,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "MovingPlatforms - Character Rigid Body",
+    "display_name": "MovingPlatforms - Character Rigid Body",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "1",
+      "name_expression": "\"MovingPlatforms - Character Rigid Body\"",
+      "resolved_name": true
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "MovingPlatforms",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Test/Feature/MovingPlatforms/MovingPlatforms.cpp",
+    "source_exists": true,
+    "line": 237,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "MovingPlatforms - Character Proxy",
+    "display_name": "MovingPlatforms - Character Proxy",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "0",
+      "name_expression": "\"MovingPlatforms - Character Proxy\"",
+      "resolved_name": true
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "MovingPlatforms",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Test/Feature/MovingPlatforms/MovingPlatforms.cpp",
+    "source_exists": true,
+    "line": 238,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "MovingPlatforms - Character Rigid Body",
+    "display_name": "MovingPlatforms - Character Rigid Body",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "1",
+      "name_expression": "\"MovingPlatforms - Character Rigid Body\"",
+      "resolved_name": true
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "NestedBehaviorsDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Feature/NestedBehaviors/NestedBehaviorsDemo.cpp",
+    "source_exists": true,
+    "line": 177,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "NestedBehaviorsDemo",
+    "display_name": "NestedBehaviorsDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "PartialAnimationDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Feature/PartialAnimation/PartialAnimationDemo.cpp",
+    "source_exists": true,
+    "line": 146,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "PartialAnimationDemo",
+    "display_name": "PartialAnimationDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "SaveBehaviorStateDemo",
+    "domain": "other",
+    "domain_flags": [
+      "other"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_OTHER"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_OTHER",
+    "path": "Behavior/Test/Feature/SaveBehaviorState/SaveBehaviorStateDemo.cpp",
+    "source_exists": true,
+    "line": 106,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "SaveBehaviorStateDemo",
+    "display_name": "SaveBehaviorStateDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "SimultaneousTransitionTestDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Feature/SimultaneousTransitionTest/SimultaneousTransitionTestDemo.cpp",
+    "source_exists": true,
+    "line": 158,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "SimultaneousTransitionTestDemo",
+    "display_name": "SimultaneousTransitionTestDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "SyncPointsDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Feature/SyncPoints/SyncPointsDemo.cpp",
+    "source_exists": true,
+    "line": 181,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "SyncPointsDemo",
+    "display_name": "SyncPointsDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "TransitionTestDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/Feature/TransitionTest/TransitionTestDemo.cpp",
+    "source_exists": true,
+    "line": 204,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "TransitionTestDemo",
+    "display_name": "TransitionTestDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 175,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "10 Characters",
+    "display_name": "10 Characters",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 0,
+      "name": "10 Characters",
+      "raw_name_expression": "\"10 Characters\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 175,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "100 Characters",
+    "display_name": "100 Characters",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 3,
+      "name": "100 Characters",
+      "raw_name_expression": "\"100 Characters\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 175,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "200 Characters",
+    "display_name": "200 Characters",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 4,
+      "name": "200 Characters",
+      "raw_name_expression": "\"200 Characters\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 175,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "200 Characters of 2 Types",
+    "display_name": "200 Characters of 2 Types",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 5,
+      "name": "200 Characters of 2 Types",
+      "raw_name_expression": "\"200 Characters of 2 Types\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 175,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "200 Characters of 3 Types",
+    "display_name": "200 Characters of 3 Types",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 6,
+      "name": "200 Characters of 3 Types",
+      "raw_name_expression": "\"200 Characters of 3 Types\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 175,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "200 Characters of 4 Types",
+    "display_name": "200 Characters of 4 Types",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 7,
+      "name": "200 Characters of 4 Types",
+      "raw_name_expression": "\"200 Characters of 4 Types\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 175,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "25 Characters",
+    "display_name": "25 Characters",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 1,
+      "name": "25 Characters",
+      "raw_name_expression": "\"25 Characters\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 175,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "50 Characters",
+    "display_name": "50 Characters",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 2,
+      "name": "50 Characters",
+      "raw_name_expression": "\"50 Characters\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 176,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "10 Characters",
+    "display_name": "10 Characters",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 0,
+      "name": "10 Characters",
+      "raw_name_expression": "\"10 Characters\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 176,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "100 Characters",
+    "display_name": "100 Characters",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 3,
+      "name": "100 Characters",
+      "raw_name_expression": "\"100 Characters\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 176,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "200 Characters",
+    "display_name": "200 Characters",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 4,
+      "name": "200 Characters",
+      "raw_name_expression": "\"200 Characters\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 176,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "200 Characters of 2 Types",
+    "display_name": "200 Characters of 2 Types",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 5,
+      "name": "200 Characters of 2 Types",
+      "raw_name_expression": "\"200 Characters of 2 Types\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 176,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "200 Characters of 3 Types",
+    "display_name": "200 Characters of 3 Types",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 6,
+      "name": "200 Characters of 3 Types",
+      "raw_name_expression": "\"200 Characters of 3 Types\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 176,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "200 Characters of 4 Types",
+    "display_name": "200 Characters of 4 Types",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 7,
+      "name": "200 Characters of 4 Types",
+      "raw_name_expression": "\"200 Characters of 4 Types\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 176,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "25 Characters",
+    "display_name": "25 Characters",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 1,
+      "name": "25 Characters",
+      "raw_name_expression": "\"25 Characters\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 176,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "50 Characters",
+    "display_name": "50 Characters",
+    "variant_provenance": {
+      "kind": "struct_table",
+      "table": "g_variants",
+      "variant_struct": "BehaviorCharacterDemoVariant",
+      "resolved": true,
+      "index": 2,
+      "name": "50 Characters",
+      "raw_name_expression": "\"50 Characters\"",
+      "source_condition": [],
+      "compile_disabled": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 178,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[g_criticalVariantId].m_name",
+    "display_name": "g_variants[g_criticalVariantId].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "g_criticalVariantId",
+      "name_expression": "g_variants[g_criticalVariantId].m_name",
+      "resolved_name": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SharedAssetsPerformanceDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/Test/SharedAssetsPerformance/SharedAssetsPerformanceDemo.cpp",
+    "source_exists": true,
+    "line": 179,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO_VARIANT",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "g_variants[g_criticalVariantId].m_name",
+    "display_name": "g_variants[g_criticalVariantId].m_name",
+    "variant_provenance": {
+      "kind": "explicit",
+      "id_expression": "g_criticalVariantId",
+      "name_expression": "g_variants[g_criticalVariantId].m_name",
+      "resolved_name": false
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO_VARIANT expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "AnimationSetDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/UseCase/AnimationSets/AnimationSetDemo.cpp",
+    "source_exists": true,
+    "line": 131,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "AnimationSetDemo",
+    "display_name": "AnimationSetDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "AnimationSetDemo",
+    "domain": "other",
+    "domain_flags": [
+      "other"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_OTHER"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_OTHER",
+    "path": "Behavior/UseCase/AnimationSets/AnimationSetDemo.cpp",
+    "source_exists": true,
+    "line": 133,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [
+      "#else after #if defined(HK_PLATFORM_WIN32)"
+    ],
+    "bootstrap_eligible": true,
+    "name": "AnimationSetDemo",
+    "display_name": "AnimationSetDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorAsynchronousSteppingDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/UseCase/AsynchronousStepping/BehaviorAsynchronousSteppingDemo.cpp",
+    "source_exists": true,
+    "line": 291,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "BehaviorAsynchronousSteppingDemo",
+    "display_name": "BehaviorAsynchronousSteppingDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorViewersDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/UseCase/BehaviorViewers/BehaviorViewersDemo.cpp",
+    "source_exists": true,
+    "line": 196,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "BehaviorViewersDemo",
+    "display_name": "BehaviorViewersDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorViewersDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/UseCase/BehaviorViewers/BehaviorViewersDemo.cpp",
+    "source_exists": true,
+    "line": 197,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "BehaviorViewersDemo",
+    "display_name": "BehaviorViewersDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "EditBehaviorDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/UseCase/EditBehavior/EditBehaviorDemo.cpp",
+    "source_exists": true,
+    "line": 107,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "EditBehaviorDemo",
+    "display_name": "EditBehaviorDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "Gdc2005MockupDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/UseCase/Gdc2005Mockup/Gdc2005MockupDemo.cpp",
+    "source_exists": true,
+    "line": 321,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "Gdc2005MockupDemo",
+    "display_name": "Gdc2005MockupDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "GunSweepDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/UseCase/GunSweep/GunSweepDemo.cpp",
+    "source_exists": true,
+    "line": 80,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "GunSweepDemo",
+    "display_name": "GunSweepDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "OnDemandAssetLoadingDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/UseCase/OnDemandAssetLoading/OnDemandAssetLoadingDemo.cpp",
+    "source_exists": true,
+    "line": 375,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "OnDemandAssetLoadingDemo",
+    "display_name": "OnDemandAssetLoadingDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "OnDemandAssetLoadingDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR | HK_DEMO_TYPE_CRITICAL",
+    "path": "Behavior/UseCase/OnDemandAssetLoading/OnDemandAssetLoadingDemo.cpp",
+    "source_exists": true,
+    "line": 376,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "OnDemandAssetLoadingDemo",
+    "display_name": "OnDemandAssetLoadingDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "StaggerDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/UseCase/Stagger/StaggerDemo.cpp",
+    "source_exists": true,
+    "line": 94,
+    "macro": "HKB_DECLARE_PHYSICS_2012_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "StaggerDemo",
+    "display_name": "StaggerDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS_2012",
+    "uses_physics_2012": true,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_2012_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS_2012 is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "StaggerDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/UseCase/Stagger/StaggerDemo.cpp",
+    "source_exists": true,
+    "line": 95,
+    "macro": "HKB_DECLARE_PHYSICS_DEMO",
+    "registration": "conditional_source_declaration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "StaggerDemo",
+    "display_name": "StaggerDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    },
+    "required_feature": "HK_FEATURE_PRODUCT_PHYSICS",
+    "uses_physics_2012": false,
+    "source_only_if_feature_unavailable": true,
+    "registration_condition": "HKB_DECLARE_PHYSICS_DEMO expands to a registration only when HK_FEATURE_PRODUCT_PHYSICS is defined"
+  },
+  {
+    "product": "behavior",
+    "case": "SwapSkinsDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/UseCase/SwapSkins/SwapSkinsDemo.cpp",
+    "source_exists": true,
+    "line": 174,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "SwapSkinsDemo",
+    "display_name": "SwapSkinsDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorSeededLinkingDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/UseCase/SymbolLinking/Seeded/BehaviorSeededLinkingDemo.cpp",
+    "source_exists": true,
+    "line": 145,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "BehaviorSeededLinkingDemo",
+    "display_name": "BehaviorSeededLinkingDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
+    }
+  },
+  {
+    "product": "behavior",
+    "case": "BehaviorUnseededLinkingDemo",
+    "domain": "behavior",
+    "domain_flags": [
+      "behavior"
+    ],
+    "type_flags": [
+      "HK_DEMO_TYPE_BEHAVIOR"
+    ],
+    "domain_expression": "HK_DEMO_TYPE_BEHAVIOR",
+    "path": "Behavior/UseCase/SymbolLinking/Unseeded/BehaviorUnseededLinkingDemo.cpp",
+    "source_exists": true,
+    "line": 155,
+    "macro": "HKB_DECLARE_DEMO",
+    "registration": "auto_registration",
+    "compile_disabled": false,
+    "source_condition": [],
+    "bootstrap_eligible": true,
+    "name": "BehaviorUnseededLinkingDemo",
+    "display_name": "BehaviorUnseededLinkingDemo",
+    "variant_provenance": {
+      "kind": "single",
+      "id": -1
     }
   }
 ]

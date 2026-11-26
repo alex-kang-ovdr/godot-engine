@@ -106,15 +106,20 @@ func run() -> void:
 
 	await process_frame
 
-	# Baseline: 200 AnimationPlayers advancing 65 bones each on main thread.
+	# Baseline: 200 AnimationPlayers advancing 65 bones each on main thread (pose-only and full skeleton update).
 	var base_ms: Array[float] = []
+	var base_full_ms: Array[float] = []
 	for tick in WARMUP_TICKS + MEASURE_TICKS:
 		var t0 := Time.get_ticks_usec()
 		for i in AGENTS:
 			players[i].advance(STEP)
-		var dt_ms := float(Time.get_ticks_usec() - t0) / 1000.0
+		var t1 := Time.get_ticks_usec()
+		for i in AGENTS:
+			skeletons[i].force_update_all_bone_transforms()
+		var t2 := Time.get_ticks_usec()
 		if tick >= WARMUP_TICKS:
-			base_ms.append(dt_ms)
+			base_ms.append(float(t1 - t0) / 1000.0)
+			base_full_ms.append(float(t2 - t0) / 1000.0)
 
 	# Disable AnimationPlayers so the extended path runs cleanly on the exact same 200 skeletons.
 	for i in AGENTS:
@@ -145,6 +150,8 @@ func run() -> void:
 
 	var base_p50 := _percentile(base_ms, 0.50)
 	var base_p95 := _percentile(base_ms, 0.95)
+	var base_full_p50 := _percentile(base_full_ms, 0.50)
+	var base_full_p95 := _percentile(base_full_ms, 0.95)
 	var gd_w_cpu_p50 := _percentile(gd_worker_cpu_ms, 0.50)
 	var gd_w_cpu_p95 := _percentile(gd_worker_cpu_ms, 0.95)
 	var gd_w_wait_p50 := _percentile(gd_worker_wait_ms, 0.50)
@@ -157,6 +164,7 @@ func run() -> void:
 	var perf_info := {
 		"bones": BONES, "agents": AGENTS, "measure_ticks": MEASURE_TICKS,
 		"baseline_main_p50_ms": base_p50, "baseline_main_p95_ms": base_p95,
+		"baseline_full_p50_ms": base_full_p50, "baseline_full_p95_ms": base_full_p95,
 		"gd_worker_cpu_p50_ms": gd_w_cpu_p50, "gd_worker_cpu_p95_ms": gd_w_cpu_p95,
 		"gd_worker_wait_p50_ms": gd_w_wait_p50, "gd_worker_wait_p95_ms": gd_w_wait_p95,
 		"gd_main_apply_p50_ms": gd_m_apply_p50, "gd_main_apply_p95_ms": gd_m_apply_p95,
@@ -172,15 +180,33 @@ func run() -> void:
 		var nat_worker_wait_ms: Array[float] = []
 		var nat_main_apply_ms: Array[float] = []
 		var nat_main_total_ms: Array[float] = []
+		var nat_full_ms: Array[float] = []
 		var nat_threads := 0
+		var prev_global := PackedVector3Array()
+		prev_global.resize(AGENTS * BONES)
+		var changed_global_bones := 0
 		for tick in WARMUP_TICKS + MEASURE_TICKS:
 			var stats := native_eval.step_parallel(STEP, skeletons)
+			var t_upd0 := Time.get_ticks_usec()
+			for i in AGENTS:
+				skeletons[i].force_update_all_bone_transforms()
+			var upd_ms := float(Time.get_ticks_usec() - t_upd0) / 1000.0
+			if tick == WARMUP_TICKS:
+				for a in AGENTS:
+					for b in BONES:
+						prev_global[a * BONES + b] = skeletons[a].get_bone_global_pose(b).origin
+			elif tick == WARMUP_TICKS + 1:
+				for a in AGENTS:
+					for b in BONES:
+						if skeletons[a].get_bone_global_pose(b).origin.distance_to(prev_global[a * BONES + b]) > 1e-6:
+							changed_global_bones += 1
 			nat_threads = int(stats.get("threads", 0))
 			if tick >= WARMUP_TICKS:
 				nat_worker_cpu_ms.append(stats.worker_cpu_ms)
 				nat_worker_wait_ms.append(stats.worker_wait_ms)
 				nat_main_apply_ms.append(stats.main_apply_ms)
 				nat_main_total_ms.append(stats.main_total_ms)
+				nat_full_ms.append(float(stats.main_total_ms) + upd_ms)
 
 		var max_pos_parity := 0.0
 		var max_rot_parity := 0.0
@@ -200,9 +226,12 @@ func run() -> void:
 		var nat_m_apply_p95 := _percentile(nat_main_apply_ms, 0.95)
 		var nat_m_total_p50 := _percentile(nat_main_total_ms, 0.50)
 		var nat_m_total_p95 := _percentile(nat_main_total_ms, 0.95)
+		var nat_full_p50 := _percentile(nat_full_ms, 0.50)
+		var nat_full_p95 := _percentile(nat_full_ms, 0.95)
 
 		perf_info["native_available"] = true
 		perf_info["native_threads"] = nat_threads
+		perf_info["native_changed_global_bones"] = changed_global_bones
 		perf_info["native_worker_cpu_p50_ms"] = nat_w_cpu_p50
 		perf_info["native_worker_cpu_p95_ms"] = nat_w_cpu_p95
 		perf_info["native_worker_wait_p50_ms"] = nat_w_wait_p50
@@ -211,17 +240,21 @@ func run() -> void:
 		perf_info["native_main_apply_p95_ms"] = nat_m_apply_p95
 		perf_info["native_main_total_p50_ms"] = nat_m_total_p50
 		perf_info["native_main_total_p95_ms"] = nat_m_total_p95
+		perf_info["native_full_p50_ms"] = nat_full_p50
+		perf_info["native_full_p95_ms"] = nat_full_p95
+		perf_info["speedup_pose_only"] = base_p50 / maxf(0.001, nat_m_total_p50)
+		perf_info["speedup_full_with_skeleton_update"] = base_full_p50 / maxf(0.001, nat_full_p50)
 		perf_info["meets_1_5ms_target"] = nat_m_total_p50 <= 1.5
 		perf_info["native_vs_gd_max_pos_mm"] = max_pos_parity * 1000.0
 		perf_info["native_vs_gd_max_rot_deg"] = rad_to_deg(max_rot_parity)
 
-		report("native C++ crowd evaluator matches GDScript poses within 0.01mm / 0.01deg",
-			max_pos_parity < 0.00001 and rad_to_deg(max_rot_parity) < 0.01,
-			{"max_pos_mm": max_pos_parity * 1000.0, "max_rot_deg": rad_to_deg(max_rot_parity)})
-		report("native C++ 65x200 crowd meets <= 1.5 ms main-thread p50 target",
-			nat_m_total_p50 <= 1.5,
-			{"native_main_p50_ms": nat_m_total_p50, "native_main_p95_ms": nat_m_total_p95,
-			"worker_wait_p50_ms": nat_w_wait_p50, "main_apply_p50_ms": nat_m_apply_p50, "threads": nat_threads})
+		report("native C++ crowd evaluator updates all 13,000 bones and matches GDScript within 0.01mm / 0.01deg",
+			changed_global_bones == AGENTS * BONES and max_pos_parity < 0.00001 and rad_to_deg(max_rot_parity) < 0.01,
+			{"changed_bones": changed_global_bones, "max_pos_mm": max_pos_parity * 1000.0, "max_rot_deg": rad_to_deg(max_rot_parity)})
+		report("native C++ 65x200 crowd meets <= 1.5 ms pose-eval/apply p50 and speeds up full skeleton update",
+			nat_m_total_p50 <= 1.5 and nat_full_p50 < base_full_p50 * 0.25,
+			{"native_main_p50_ms": nat_m_total_p50, "native_full_p50_ms": nat_full_p50,
+			"base_full_p50_ms": base_full_p50, "speedup_full": perf_info["speedup_full_with_skeleton_update"], "threads": nat_threads})
 
 	info("crowd_65x200_perf", perf_info)
 

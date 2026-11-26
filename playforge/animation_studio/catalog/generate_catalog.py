@@ -25,6 +25,14 @@ MACROS = {
     "HKA_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
     "HKA_DECLARE_PHYSICS_2012_DEMO", "HKA_DECLARE_PHYSICS_2012_DEMO_FACTORY",
     "HKA_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
+    "HKB_DECLARE_DEMO", "HKB_DECLARE_DEMO_RENAME", "HKB_DECLARE_DEMO_NO_REG",
+    "HKB_DECLARE_DEMO_SYMLINK", "HKB_DECLARE_DEMO_VARIANT",
+    "HKB_DECLARE_DEMO_VARIANT_RENAME", "HKB_DECLARE_DEMO_VARIANT_USING_STRUCT",
+    "HKB_DECLARE_DEMO_FACTORY",
+    "HKB_DECLARE_PHYSICS_DEMO", "HKB_DECLARE_PHYSICS_DEMO_FACTORY",
+    "HKB_DECLARE_PHYSICS_DEMO_VARIANT", "HKB_DECLARE_PHYSICS_DEMO_VARIANT_USING_STRUCT",
+    "HKB_DECLARE_PHYSICS_2012_DEMO", "HKB_DECLARE_PHYSICS_2012_DEMO_FACTORY",
+    "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT", "HKB_DECLARE_PHYSICS_2012_DEMO_VARIANT_USING_STRUCT",
 }
 DOMAIN_FLAGS = {
     "HK_DEMO_TYPE_ANIMATION": "animation",
@@ -111,7 +119,7 @@ def split_args(text: str) -> list[str]:
 
 
 def macro_calls(masked: str) -> Iterable[tuple[str, list[str], int]]:
-    pattern = re.compile(r"\b((?:HK_DECLARE_DEMO[A-Z0-9_]*|HKA_DECLARE_PHYSICS(?:_2012)?_DEMO[A-Z0-9_]*))\s*\(")
+    pattern = re.compile(r"\b((?:HK_DECLARE_DEMO[A-Z0-9_]*|HK[AB]_DECLARE_(?:PHYSICS(?:_2012)?_)?DEMO[A-Z0-9_]*))\s*\(")
     for match in pattern.finditer(masked):
         name = match.group(1)
         start = match.end()
@@ -312,22 +320,27 @@ def relative_demo_path(source: Path, sdk_root: Path) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("sdk_root", type=Path, help="Havok SDK root containing Demo/Demos/Animation")
+    parser.add_argument("sdk_root", type=Path, help="Havok SDK root containing Demo/Demos/Animation and Demo/Demos/Behavior")
+    parser.add_argument("--products", default="Animation,Behavior", help="Comma-separated SDK demo product directories")
     parser.add_argument("--output", type=Path, default=Path(__file__).with_name("catalog.json"))
     args = parser.parse_args()
     sdk_root = args.sdk_root.resolve()
-    animation_root = sdk_root / "Demo" / "Demos" / "Animation"
-    if not animation_root.is_dir():
-        parser.error(f"Animation source tree not found: {animation_root}")
+    products = [p.strip() for p in args.products.split(",") if p.strip()]
+    sources: list[Path] = []
+    for product in products:
+        prod_root = sdk_root / "Demo" / "Demos" / product
+        if not prod_root.is_dir():
+            parser.error(f"{product} source tree not found: {prod_root}")
+        sources.extend(sorted(path for path in prod_root.rglob("*") if path.suffix.lower() in {".cpp", ".h"}))
 
-    sources = sorted(path for path in animation_root.rglob("*") if path.suffix.lower() in {".cpp", ".h"})
-    source_text: dict[Path, str] = {}
     masked_text: dict[Path, str] = {}
     declarations: list[dict[str, object]] = []
     macros_seen: dict[str, int] = {}
     unknown_macros: list[tuple[str, str, int]] = []
 
     for source in sources:
+        rel_path = relative_demo_path(source, sdk_root)
+        product_name = rel_path.split("/")[0].lower()
         raw = source.read_text(encoding="utf-8", errors="replace")
         masked = mask_comments(raw)
         masked_text[source] = masked
@@ -337,25 +350,30 @@ def main() -> int:
             entry_start = len(path_entries)
             macros_seen[macro] = macros_seen.get(macro, 0) + 1
             if macro not in MACROS:
-                unknown_macros.append((macro, relative_demo_path(source, sdk_root), line))
+                unknown_macros.append((macro, rel_path, line))
             if len(argv) < 2:
                 continue
             class_name = argv[0].strip()
             type_expr = argv[1].strip()
             domain, domain_flags, type_flags = domain_info(type_expr, masked)
+            if domain == "unresolved" and product_name in ("animation", "behavior"):
+                domain = product_name
+                domain_flags = [product_name]
             conditions, compile_disabled = context_at_line(masked, line)
             registration_kind = macro_registration_kind(macro)
+            is_conditional_physics = macro.startswith("HKA_DECLARE_") or macro.startswith("HKB_DECLARE_PHYSICS")
             base = {
+                "product": product_name,
                 "case": class_name,
                 "domain": domain,
                 "domain_flags": domain_flags,
                 "type_flags": type_flags,
                 "domain_expression": type_expr,
-                "path": relative_demo_path(source, sdk_root),
+                "path": rel_path,
                 "source_exists": source.is_file(),
                 "line": line,
                 "macro": macro,
-                "registration": "conditional_source_declaration" if macro.startswith("HKA_DECLARE_") else registration_kind,
+                "registration": "conditional_source_declaration" if is_conditional_physics else registration_kind,
                 "compile_disabled": compile_disabled,
                 "source_condition": conditions,
                 "bootstrap_eligible": "HK_DEMO_TYPE_DONT_BOOTSTRAP" not in type_expr,
@@ -435,7 +453,7 @@ def main() -> int:
                         row["registered_path_exists"] = referenced.is_file()
                     else:
                         row["registered_path_exists"] = None
-            if macro.startswith("HKA_DECLARE_"):
+            if macro.startswith("HKA_DECLARE_") or macro.startswith("HKB_DECLARE_PHYSICS"):
                 feature = "HK_FEATURE_PRODUCT_PHYSICS_2012" if "_2012_" in macro else "HK_FEATURE_PRODUCT_PHYSICS"
                 for row in path_entries[entry_start:]:
                     row["required_feature"] = feature
@@ -448,29 +466,35 @@ def main() -> int:
         details = ", ".join(f"{name}@{path}:{line}" for name, path, line in unknown_macros)
         raise SystemExit(f"Unsupported demo registration macros found: {details}")
 
-    # Keep concrete demo implementations that have stepDemo() but no registration macro
+    # Keep concrete demo implementations that have stepDemo() or stepBehaviorDemo() but no registration macro
     # as explicitly source-only inventory rows. Helpers without a demo step are excluded.
-    class_step = re.compile(r"\b(?:hkDemo::Result|Result)\s+([A-Za-z_]\w*)::stepDemo\s*\(")
+    class_step = re.compile(r"\b(?:hkDemo::Result|Result)\s+([A-Za-z_]\w*)::(?:stepDemo|stepBehaviorDemo)\s*\(")
     registered_cases = {str(row["case"]) for row in declarations}
     for source, masked in masked_text.items():
+        rel_path = relative_demo_path(source, sdk_root)
+        product_name = rel_path.split("/")[0].lower()
         for class_name in sorted(set(class_step.findall(masked))):
             if class_name in registered_cases:
                 continue
+            step_pos = masked.find(f"{class_name}::stepDemo")
+            if step_pos < 0:
+                step_pos = masked.find(f"{class_name}::stepBehaviorDemo")
             row = {
+                "product": product_name,
                 "name": class_name,
                 "display_name": class_name,
                 "case": class_name,
-                "domain": "animation",
-                "domain_flags": ["animation"],
-                "path": relative_demo_path(source, sdk_root),
+                "domain": product_name,
+                "domain_flags": [product_name],
+                "path": rel_path,
                 "source_exists": source.is_file(),
-                "line": masked.count("\n", 0, masked.find(f"{class_name}::stepDemo")) + 1,
+                "line": masked.count("\n", 0, max(0, step_pos)) + 1,
                 "macro": None,
                 "registration": "source_only_unregistered",
                 "compile_disabled": False,
                 "source_condition": [],
                 "bootstrap_eligible": False,
-                "variant_provenance": {"kind": "none", "reason": "stepDemo implementation found without a registration macro"},
+                "variant_provenance": {"kind": "none", "reason": "stepDemo/stepBehaviorDemo implementation found without a registration macro"},
             }
             declarations.append(row)
 

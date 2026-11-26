@@ -9,6 +9,7 @@ var stage := Node3D.new()
 var listing := ItemList.new()
 var search := LineEdit.new()
 var back := Button.new()
+var products := OptionButton.new()
 var families := OptionButton.new()
 var heading := Label.new()
 var source_path := Label.new()
@@ -56,6 +57,11 @@ func _build_controls() -> void:
 	back.text = "← 모션 실험실"
 	sidebar.add_child(back)
 	back.pressed.connect(func(): get_tree().change_scene_to_file("res://demo/animation_lab.tscn"))
+	products.add_item("전체 제품 (Animation + Behavior)")
+	products.add_item("Animation")
+	products.add_item("Behavior")
+	sidebar.add_child(products)
+	products.item_selected.connect(func(_index: int): _filter(search.text))
 	families.add_item("전체 분야")
 	var categories: Array[String] = []
 	for entry in entries:
@@ -67,7 +73,7 @@ func _build_controls() -> void:
 		families.add_item(group)
 	sidebar.add_child(families)
 	families.item_selected.connect(func(_index: int): _filter(search.text))
-	search.placeholder_text = "애니메이션 사례 검색"
+	search.placeholder_text = "Animation · Behavior 사례 검색"
 	sidebar.add_child(search)
 	sidebar.add_child(count_text)
 	sidebar.add_child(listing)
@@ -127,15 +133,28 @@ func _build_controls() -> void:
 
 func _family(path: String) -> String:
 	var parts := path.split("/")
+	var prefix := parts[0] if not parts.is_empty() else "Animation"
 	var api := parts.find("Api")
-	return parts[api + 1] if api >= 0 and api + 1 < parts.size() else "Compression timings"
+	if api >= 0 and api + 1 < parts.size():
+		return "%s / %s" % [prefix, parts[api + 1]]
+	if prefix == "Behavior" and parts.size() >= 2:
+		return "Behavior / %s" % parts[1]
+	return "%s / Compression timings" % prefix
 
 
 func _filter(query: String) -> void:
 	listing.clear()
 	visible_indices.clear()
+	var selected_product := ""
+	if products.selected == 1:
+		selected_product = "animation"
+	elif products.selected == 2:
+		selected_product = "behavior"
 	for i in entries.size():
 		var entry: Dictionary = entries[i]
+		var prod := str(entry.get("product", "animation")).to_lower()
+		if not selected_product.is_empty() and prod != selected_product:
+			continue
 		if families.selected > 0 and _family(str(entry.path)) != families.get_item_text(families.selected):
 			continue
 		if query.is_empty() or query.to_lower() in (str(entry.name) + " " + str(entry.path)).to_lower():
@@ -175,8 +194,11 @@ func select_entry(index: int) -> void:
 	var entry: Dictionary = entries[index]
 	var path := str(entry.path)
 	var lower := path.to_lower()
+	var prod := str(entry.get("product", "animation")).to_lower()
 	var filename := "runtime_cases.gd"
-	if "/compression/timings/" in lower:
+	if prod == "behavior" or lower.begins_with("behavior/"):
+		filename = "behavior_cases.gd"
+	elif "/compression/timings/" in lower:
 		filename = "timing_cases.gd"
 	elif not "multithread" in lower:
 		if "/ragdoll/" in lower or "/inversekinematics/" in lower or "/skeletalmapping/" in lower or "/retargeting/" in lower:
@@ -185,7 +207,7 @@ func select_entry(index: int) -> void:
 			filename = "clip_cases.gd"
 	var script := load(BASE + filename) as Script
 	heading.text = _title(entry)
-	source_path.text = "%s · %s" % [entry.get("case", ""), path.get_base_dir().trim_prefix("Demo/Demos/Animation/")]
+	source_path.text = "%s · %s" % [entry.get("case", ""), path.get_base_dir()]
 	scope_text.text = "원본 사례의 핵심 동작을 재현합니다. SDK 고유 코덱·벤치마크 설정은 같은 계열의 Godot 실험을 공유합니다."
 	if entry.get("registration") == "source_only_unregistered":
 		scope_text.text += "  ·  SDK 미등록 소스"
