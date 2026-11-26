@@ -1,16 +1,20 @@
 @tool
 extends Control
-## Hero Locomotion State-Machine Studio & Virtual-Pointer Authoring Replay.
-## Mode 1 (Authoring Replay): Tappy-Chicken-style virtual pointer walks through
-##   building the Hero demo asset from an empty scene (assets -> rig -> skin ->
-##   terrain -> state machine -> Foot IK -> 255-tick trail) with full rewind.
-## Mode 2 (255-Tick Rewind): Direct 1..5 stage & 0..254 tick pose scrubbing.
+## NaturalMotion Morpheme Connect-style Animation Studio & Virtual-Pointer Authoring Replay.
+## Works seamlessly as a Godot Web Editor / Desktop Editor Main Screen Addon and standalone scene.
+## Layout:
+##   Top Ribbon   : Studio brand, Authoring vs 255-Tick Rewind mode, Live telemetry badge, Stage 1..5
+##   Left Dock    : Asset Manager, Scene Hierarchy (+Node), Control Parameters live gauges
+##   Center Split : Morpheme Animation Network Graph  |  3D Character Viewport
+##   Right Dock   : Attribute Editor (Inspector) + Role Authoring Event Log
+##   Bottom Dock  : 4-Track Event Timeline (Authoring / State / Blend / Foot IK) + Transport Bar
 
 const Hero := preload("res://hero/hero.gd")
 const HeroMotionData := preload("res://hero/hero_motion_data.gd")
 const Locomotion := preload("res://hero/locomotion.gd")
 const PoseBuffer := preload("res://addons/animation_studio/pose_buffer.gd")
 const HeroSMCanvas := preload("res://hero/hero_sm_canvas.gd")
+const MorphemeTimeline := preload("res://hero/morpheme_timeline_canvas.gd")
 const AuthoringReplay := preload("res://hero/authoring_replay.gd")
 const AuthoringCursorOverlay := preload("res://hero/authoring_cursor_overlay.gd")
 
@@ -44,7 +48,18 @@ const KEY_JUMPS := [
 	{"label": "t=202 정지", "tick": 202},
 ]
 
-# Optional callback installed by EditorPlugin to also drive the full Editor window cursor overlay.
+const NODE_ATTRS := {
+	"cp_stick": {"Node": "CP: MoveStick", "Type": "Vector2 Parameter", "DeadZone²": "0.10", "Response": "0.90"},
+	"cp_walk": {"Node": "CP: WalkTrigger", "Type": "Bool Parameter (LT)", "WalkWindow": "t=30..89", "Target": "LocomotionSM"},
+	"sm_idle": {"Node": "1. Idle", "Clip": "idle (hero_motion.res)", "Duration": "2.83 s", "Loop": "true"},
+	"sm_i2w": {"Node": "2. Idle→Walk", "Clip": "idle_to_walk", "BlendIn": "4 ticks", "Hold": "26 ticks"},
+	"sm_walk": {"Node": "2. Walking", "Clip": "walk", "BlendIn": "8 ticks Smoothstep", "YawGain": "2.0 rad/s"},
+	"sm_run": {"Node": "3. Running", "Clip": "run", "Walk→Run": "4t (gain 2.0)", "Run→Idle": "10t Smoothstep"},
+	"sm_cam": {"Node": "3. CameraLead", "FollowDist": "5.0 m", "LeadRate": "10 * dt", "XZDrift(215t)": "0.1 mm"},
+	"sm_ik": {"Node": "4. TwoBone Foot IK", "Feet": "Left/RightLegFoot", "SwingFade": "0.14..0.26 m", "Smooth": "4.0 m/s"},
+	"out_pose": {"Node": "Output Pose", "Bones": "85", "MeshVerts": "18,050", "Rate": "60 Hz Deterministic"},
+}
+
 var editor_cursor_callback: Callable = Callable()
 
 var data: Dictionary = {}
@@ -75,12 +90,13 @@ var camera: Camera3D
 var trail_mesh: ImmediateMesh
 var trail_inst: MeshInstance3D
 
-# UI controls & virtual-pointer targets
+# NaturalMotion Morpheme Studio UI controls & virtual-pointer targets
 var mode_authoring_btn: Button
 var mode_rewind_btn: Button
 var stage_option: OptionButton
 var stage_desc: Label
 var sm_canvas: HeroSMCanvas
+var morpheme_timeline: MorphemeTimeline
 var detail_label: Label
 var timeline: HSlider
 var tick_label: Label
@@ -88,12 +104,17 @@ var play_button: Button
 var speed_option: OptionButton
 var back_button: Button
 var jump_bar: HBoxContainer
-var authoring_dock_col: VBoxContainer
+var authoring_dock_col: Control
+var right_inspector_col: Control
 var scene_add_btn: Button
 var scene_tree_list: ItemList
 var asset_list: ItemList
 var inspector_label: Label
 var log_list: ItemList
+var cp_speed_bar: ProgressBar
+var cp_lead_bar: ProgressBar
+var cp_ik_bar: ProgressBar
+var cp_readout: Label
 var view_container: SubViewportContainer
 var bottom_controls_box: VBoxContainer
 var cursor_overlay: AuthoringCursorOverlay
@@ -101,7 +122,10 @@ var cursor_overlay: AuthoringCursorOverlay
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	custom_minimum_size = Vector2(820, 420)
+	clip_contents = true
+	custom_minimum_size = Vector2(480, 280)
+	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_build_ui()
 	_load_hero_assets()
 	if assets_ready:
@@ -110,34 +134,70 @@ func _ready() -> void:
 		seek_authoring(0.0, true)
 
 
+func _make_panel_box(bg_hex: String, border_hex: String, pad := 6) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(bg_hex)
+	sb.border_color = Color(border_hex)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(3)
+	sb.content_margin_left = pad
+	sb.content_margin_right = pad
+	sb.content_margin_top = pad
+	sb.content_margin_bottom = pad
+	return sb
+
+
+func _add_dock_header(parent: Control, title: String, accent_hex: String, extra_ctrl: Control = null) -> void:
+	var bar := PanelContainer.new()
+	bar.add_theme_stylebox_override("panel", _make_panel_box("#222732", "#313949", 4))
+	parent.add_child(bar)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	bar.add_child(row)
+	var chip := ColorRect.new()
+	chip.color = Color(accent_hex)
+	chip.custom_minimum_size = Vector2(3, 14)
+	row.add_child(chip)
+	var lbl := Label.new()
+	lbl.text = title
+	lbl.modulate = Color("#dce6f2")
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(lbl)
+	if extra_ctrl != null:
+		row.add_child(extra_ctrl)
+
+
 func _build_ui() -> void:
 	var bg := ColorRect.new()
-	bg.color = Color("#132021")
+	bg.color = Color("#12151b")
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
+	# Keep Godot Editor's built-in CJK/Hangul font on Web/Desktop Editor; only install SystemFont on standalone desktop.
 	var skin := Theme.new()
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(["Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Noto Sans"])
-	skin.default_font = font
-	skin.default_font_size = 13
+	if not Engine.is_editor_hint() and not OS.has_feature("web"):
+		var font := SystemFont.new()
+		font.font_names = PackedStringArray(["Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Noto Sans"])
+		skin.default_font = font
+	skin.default_font_size = 12
 	theme = skin
 
-	var margin := MarginContainer.new()
-	add_child(margin)
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 8)
-
 	var root_vbox := VBoxContainer.new()
-	root_vbox.add_theme_constant_override("separation", 6)
-	margin.add_child(root_vbox)
+	root_vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root_vbox.add_theme_constant_override("separation", 4)
+	add_child(root_vbox)
 
-	# Top bar
+	# ------------------------------------------------------------------
+	# 1. TOP NATURALMOTION MORPHEME STUDIO RIBBON
+	# ------------------------------------------------------------------
+	var ribbon_panel := PanelContainer.new()
+	ribbon_panel.add_theme_stylebox_override("panel", _make_panel_box("#1a1f28", "#2d3545", 5))
+	root_vbox.add_child(ribbon_panel)
+
 	var top_bar := HBoxContainer.new()
-	top_bar.add_theme_constant_override("separation", 6)
-	root_vbox.add_child(top_bar)
+	top_bar.add_theme_constant_override("separation", 8)
+	ribbon_panel.add_child(top_bar)
 
 	if not Engine.is_editor_hint():
 		back_button = Button.new()
@@ -145,24 +205,35 @@ func _build_ui() -> void:
 		back_button.pressed.connect(func(): get_tree().change_scene_to_file("res://demo/animation_lab.tscn"))
 		top_bar.add_child(back_button)
 
+	var brand := Label.new()
+	brand.text = "◆ MORPHEME STUDIO"
+	brand.modulate = Color("#f39c2b")
+	top_bar.add_child(brand)
+
 	mode_authoring_btn = Button.new()
-	mode_authoring_btn.text = "▶ 제작과정 가상포인터 다시보기"
+	mode_authoring_btn.text = "▶ 제작과정 가상포인터"
 	mode_authoring_btn.toggle_mode = true
 	mode_authoring_btn.pressed.connect(func(): set_authoring_mode(true))
 	top_bar.add_child(mode_authoring_btn)
 
 	mode_rewind_btn = Button.new()
-	mode_rewind_btn.text = "255틱 로코모션 Rewind"
+	mode_rewind_btn.text = "255틱 런타임 Rewind"
 	mode_rewind_btn.toggle_mode = true
 	mode_rewind_btn.pressed.connect(func(): set_authoring_mode(false))
 	top_bar.add_child(mode_rewind_btn)
+
+	var live_badge := Label.new()
+	live_badge.text = "● LIVE 60Hz · 85 Bones · Native GLB/RES"
+	live_badge.modulate = Color("#4ad689")
+	top_bar.add_child(live_badge)
 
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top_bar.add_child(spacer)
 
 	var stage_lbl := Label.new()
-	stage_lbl.text = "단계:"
+	stage_lbl.text = "Build Stage:"
+	stage_lbl.modulate = Color("#94a3b8")
 	top_bar.add_child(stage_lbl)
 
 	stage_option = OptionButton.new()
@@ -175,92 +246,112 @@ func _build_ui() -> void:
 	)
 	top_bar.add_child(stage_option)
 
-	# Center 3-column workspace:
-	# [Col 1: Mini Editor Docks (SceneTree + FileSystem + Inspector + Log)]
-	# [Col 2: State Machine Canvas + Metrics]
-	# [Col 3: 3D SubViewport]
-	var center_row := HBoxContainer.new()
-	center_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	center_row.add_theme_constant_override("separation", 8)
-	root_vbox.add_child(center_row)
+	# ------------------------------------------------------------------
+	# 2. MAIN HORIZONTAL SPLIT: [Left Dock] | [Center Network + 3D] | [Right Inspector]
+	# ------------------------------------------------------------------
+	var main_hsplit := HSplitContainer.new()
+	main_hsplit.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_hsplit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root_vbox.add_child(main_hsplit)
 
-	# Col 1: Virtual Editor Docks for authoring pointer targets
-	authoring_dock_col = VBoxContainer.new()
-	authoring_dock_col.custom_minimum_size.x = 250
-	authoring_dock_col.add_theme_constant_override("separation", 4)
-	center_row.add_child(authoring_dock_col)
+	# --- LEFT DOCK: Asset Manager + Scene Hierarchy + Control Parameters ---
+	var left_panel := PanelContainer.new()
+	left_panel.custom_minimum_size.x = 228
+	left_panel.add_theme_stylebox_override("panel", _make_panel_box("#171b22", "#2a3240", 5))
+	main_hsplit.add_child(left_panel)
+	authoring_dock_col = left_panel
 
-	var st_header := HBoxContainer.new()
-	authoring_dock_col.add_child(st_header)
-	var st_title := Label.new()
-	st_title.text = "씬 트리 (SceneTree)"
-	st_title.modulate = Color("#88d9ed")
-	st_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	st_header.add_child(st_title)
-	scene_add_btn = Button.new()
-	scene_add_btn.text = "+ 노드"
-	st_header.add_child(scene_add_btn)
+	var left_vbox := VBoxContainer.new()
+	left_vbox.add_theme_constant_override("separation", 5)
+	left_panel.add_child(left_vbox)
 
-	scene_tree_list = ItemList.new()
-	scene_tree_list.custom_minimum_size.y = 135
-	scene_tree_list.allow_reselect = false
-	authoring_dock_col.add_child(scene_tree_list)
-
-	var fs_title := Label.new()
-	fs_title.text = "파일시스템 (Hero 에셋)"
-	fs_title.modulate = Color("#46d1b6")
-	authoring_dock_col.add_child(fs_title)
-
+	_add_dock_header(left_vbox, "Asset Manager (Native)", "#2cc7b8")
 	asset_list = ItemList.new()
-	asset_list.custom_minimum_size.y = 54
+	asset_list.custom_minimum_size.y = 46
 	asset_list.add_item("hero/assets/hero_motion.res (85본·5클립)")
 	asset_list.add_item("hero/assets/hero_skin.glb (18,050정점)")
-	authoring_dock_col.add_child(asset_list)
+	left_vbox.add_child(asset_list)
 
-	var insp_title := Label.new()
-	insp_title.text = "인스펙터 (속성 변경)"
-	insp_title.modulate = Color("#dcadff")
-	authoring_dock_col.add_child(insp_title)
+	scene_add_btn = Button.new()
+	scene_add_btn.text = "+ 노드"
+	_add_dock_header(left_vbox, "Scene Hierarchy", "#559ef5", scene_add_btn)
+	scene_tree_list = ItemList.new()
+	scene_tree_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scene_tree_list.custom_minimum_size.y = 76
+	scene_tree_list.allow_reselect = false
+	left_vbox.add_child(scene_tree_list)
 
-	inspector_label = Label.new()
-	inspector_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	inspector_label.custom_minimum_size.y = 66
-	authoring_dock_col.add_child(inspector_label)
+	_add_dock_header(left_vbox, "Control Parameters", "#9b72f2")
+	var cp_box := VBoxContainer.new()
+	cp_box.add_theme_constant_override("separation", 3)
+	left_vbox.add_child(cp_box)
 
-	var log_title := Label.new()
-	log_title.text = "역할별 작업 로그"
-	log_title.modulate = Color("#f4a842")
-	authoring_dock_col.add_child(log_title)
+	cp_readout = Label.new()
+	cp_readout.text = "Stick (0.00, 0.00) · LT OFF"
+	cp_readout.modulate = Color("#c8d4e6")
+	cp_box.add_child(cp_readout)
 
-	log_list = ItemList.new()
-	log_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	authoring_dock_col.add_child(log_list)
+	cp_speed_bar = _add_param_gauge(cp_box, "MoveSpeed", 0.0, 1.0)
+	cp_lead_bar = _add_param_gauge(cp_box, "CameraLead", -30.0, 30.0)
+	cp_ik_bar = _add_param_gauge(cp_box, "FootIK mm", 0.0, 30.0)
 
-	# Col 2: State Machine Canvas + Readout
-	var mid_col := VBoxContainer.new()
-	mid_col.custom_minimum_size.x = 414
-	mid_col.add_theme_constant_override("separation", 6)
-	center_row.add_child(mid_col)
+	# --- CENTER + RIGHT SPLIT ---
+	var center_right_split := HSplitContainer.new()
+	center_right_split.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center_right_split.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_hsplit.add_child(center_right_split)
+
+	# Center Dual Workspace: Morpheme Animation Network Graph | 3D Character Viewport
+	var center_split := HSplitContainer.new()
+	center_split.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center_split.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	center_split.size_flags_stretch_ratio = 3.2
+	center_right_split.add_child(center_split)
+
+	# Center-Left: Morpheme Network Graph Canvas
+	var graph_panel := PanelContainer.new()
+	graph_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	graph_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	graph_panel.size_flags_stretch_ratio = 1.85
+	graph_panel.add_theme_stylebox_override("panel", _make_panel_box("#14181f", "#2a3240", 4))
+	center_split.add_child(graph_panel)
+
+	var graph_vbox := VBoxContainer.new()
+	graph_vbox.add_theme_constant_override("separation", 3)
+	graph_panel.add_child(graph_vbox)
 
 	stage_desc = Label.new()
 	stage_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	stage_desc.modulate = Color("#b8d1c8")
-	mid_col.add_child(stage_desc)
+	stage_desc.modulate = Color("#f3c778")
+	graph_vbox.add_child(stage_desc)
 
 	sm_canvas = HeroSMCanvas.new()
-	sm_canvas.custom_minimum_size = Vector2(412, 212)
-	mid_col.add_child(sm_canvas)
+	sm_canvas.custom_minimum_size = Vector2(320, 140)
+	sm_canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sm_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sm_canvas.node_selected.connect(_on_network_node_selected)
+	graph_vbox.add_child(sm_canvas)
 
-	detail_label = Label.new()
-	detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	mid_col.add_child(detail_label)
+	# Center-Right: Isolated 3D Character Viewport + Live HUD
+	var vp_panel := PanelContainer.new()
+	vp_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vp_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vp_panel.size_flags_stretch_ratio = 1.0
+	vp_panel.add_theme_stylebox_override("panel", _make_panel_box("#14181f", "#2a3240", 3))
+	center_split.add_child(vp_panel)
 
-	# Col 3: Isolated 3D SubViewport
+	var vp_vbox := VBoxContainer.new()
+	vp_vbox.add_theme_constant_override("separation", 3)
+	vp_panel.add_child(vp_vbox)
+
+	_add_dock_header(vp_vbox, "3D Character Viewport", "#4ad689")
+
 	view_container = SubViewportContainer.new()
 	view_container.stretch = true
+	view_container.custom_minimum_size = Vector2(200, 140)
 	view_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	view_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	center_row.add_child(view_container)
+	vp_vbox.add_child(view_container)
 
 	preview_viewport = SubViewport.new()
 	preview_viewport.own_world_3d = true
@@ -271,13 +362,56 @@ func _build_ui() -> void:
 	preview_viewport.add_child(preview_stage)
 	_build_3d_stage()
 
-	# Bottom timeline & rewind controls
+	detail_label = Label.new()
+	detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_label.modulate = Color("#b8cbe0")
+	vp_vbox.add_child(detail_label)
+
+	# --- RIGHT DOCK: Attribute Editor (Inspector) + Role Event Log ---
+	var right_panel := PanelContainer.new()
+	right_panel.custom_minimum_size.x = 225
+	right_panel.size_flags_stretch_ratio = 0.85
+	right_panel.add_theme_stylebox_override("panel", _make_panel_box("#171b22", "#2a3240", 5))
+	center_right_split.add_child(right_panel)
+	right_inspector_col = right_panel
+
+	var right_vbox := VBoxContainer.new()
+	right_vbox.add_theme_constant_override("separation", 5)
+	right_panel.add_child(right_vbox)
+
+	_add_dock_header(right_vbox, "Attribute Editor", "#c994ff")
+	var insp_box := PanelContainer.new()
+	insp_box.add_theme_stylebox_override("panel", _make_panel_box("#12161d", "#262f3e", 6))
+	right_vbox.add_child(insp_box)
+	inspector_label = Label.new()
+	inspector_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	inspector_label.custom_minimum_size.y = 84
+	inspector_label.modulate = Color("#dfe8f4")
+	insp_box.add_child(inspector_label)
+
+	_add_dock_header(right_vbox, "Authoring Event Log", "#f39c2b")
+	log_list = ItemList.new()
+	log_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_vbox.add_child(log_list)
+
+	# ------------------------------------------------------------------
+	# 3. BOTTOM DOCK: NaturalMotion Multi-Track Event Timeline + Transport
+	# ------------------------------------------------------------------
+	var bottom_panel := PanelContainer.new()
+	bottom_panel.add_theme_stylebox_override("panel", _make_panel_box("#171b22", "#2a3240", 4))
+	root_vbox.add_child(bottom_panel)
+
 	bottom_controls_box = VBoxContainer.new()
-	bottom_controls_box.add_theme_constant_override("separation", 4)
-	root_vbox.add_child(bottom_controls_box)
+	bottom_controls_box.add_theme_constant_override("separation", 3)
+	bottom_panel.add_child(bottom_controls_box)
+
+	morpheme_timeline = MorphemeTimeline.new()
+	morpheme_timeline.custom_minimum_size = Vector2(320, 74)
+	morpheme_timeline.scrub_requested.connect(_on_timeline_track_scrub)
+	bottom_controls_box.add_child(morpheme_timeline)
 
 	jump_bar = HBoxContainer.new()
-	jump_bar.add_theme_constant_override("separation", 6)
+	jump_bar.add_theme_constant_override("separation", 5)
 	bottom_controls_box.add_child(jump_bar)
 
 	play_button = Button.new()
@@ -328,8 +462,8 @@ func _build_ui() -> void:
 	jump_bar.add_child(speed_option)
 
 	var jump_sep := Label.new()
-	jump_sep.text = "  전이 점프:"
-	jump_sep.modulate = Color("#89a69d")
+	jump_sep.text = "  Events:"
+	jump_sep.modulate = Color("#8898ad")
 	jump_bar.add_child(jump_sep)
 
 	for j in KEY_JUMPS:
@@ -348,7 +482,7 @@ func _build_ui() -> void:
 	bottom_controls_box.add_child(slider_row)
 
 	tick_label = Label.new()
-	tick_label.custom_minimum_size.x = 185
+	tick_label.custom_minimum_size.x = 165
 	tick_label.text = "제작 1 / 14 (0.0s)"
 	slider_row.add_child(tick_label)
 
@@ -365,10 +499,59 @@ func _build_ui() -> void:
 			scrub_to(int(v))
 	)
 	slider_row.add_child(timeline)
+	# Compact bottom padding inside Godot Web/Desktop Editor so transport never clips behind bottom dock bar
+	if Engine.is_editor_hint():
+		slider_row.visible = false
+		morpheme_timeline.custom_minimum_size.y = 66
+		var compact_tick := Label.new()
+		compact_tick.custom_minimum_size.x = 150
+		compact_tick.modulate = Color("#f3c778")
+		jump_bar.add_child(compact_tick)
+		tick_label = compact_tick
 
-	# Virtual pointer overlay covering the entire studio control
+	# Virtual pointer overlay covering the entire Morpheme workspace
 	cursor_overlay = AuthoringCursorOverlay.new()
 	add_child(cursor_overlay)
+
+
+func _add_param_gauge(parent: Control, label_text: String, min_v: float, max_v: float) -> ProgressBar:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	parent.add_child(row)
+	var lbl := Label.new()
+	lbl.text = label_text
+	lbl.custom_minimum_size.x = 76
+	lbl.modulate = Color("#8fa0b5")
+	row.add_child(lbl)
+	var pb := ProgressBar.new()
+	pb.min_value = min_v
+	pb.max_value = max_v
+	pb.value = 0.0
+	pb.show_percentage = false
+	pb.custom_minimum_size.y = 12
+	pb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(pb)
+	return pb
+
+
+func _on_network_node_selected(node_id: String) -> void:
+	if not NODE_ATTRS.has(node_id):
+		return
+	var attrs: Dictionary = NODE_ATTRS[node_id]
+	var lines: Array[String] = ["선택 노드: " + str(attrs.get("Node", node_id))]
+	for k in attrs:
+		if k == "Node":
+			continue
+		lines.append("  %s = %s" % [k, str(attrs[k])])
+	inspector_label.text = "\n".join(lines)
+
+
+func _on_timeline_track_scrub(u: float) -> void:
+	set_playing(false)
+	if authoring_mode:
+		seek_authoring(u * AuthoringReplay.total_duration(), false)
+	else:
+		scrub_to(int(round(u * float(maxi(0, recorded_frames.size() - 1)))))
 
 
 func _build_3d_stage() -> void:
@@ -386,19 +569,18 @@ func _build_3d_stage() -> void:
 	var env_node := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("#213234")
+	env.background_color = Color("#1b232c")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color.WHITE
 	env.ambient_light_energy = 0.85
 	env_node.environment = env
 	preview_stage.add_child(env_node)
 
-	# Subtle dark reference grid visible even in an empty scene
 	var ref_plane := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(30, 30)
 	var pmat := StandardMaterial3D.new()
-	pmat.albedo_color = Color("#1c2b2d")
+	pmat.albedo_color = Color("#1d242e")
 	pmat.roughness = 1.0
 	pm.material = pmat
 	ref_plane.mesh = pm
@@ -408,10 +590,10 @@ func _build_3d_stage() -> void:
 	terrain_group = Node3D.new()
 	terrain_group.name = "Terrain"
 	preview_stage.add_child(terrain_group)
-	_add_terrain_box("LevelGround", Vector3(0.0, -0.12, 0.0), Vector3(30.0, 0.20, 30.0), Color("#4f615b"))
-	_add_terrain_box("FirstStep", Vector3(-0.1, 0.08, 0.92), Vector3(0.8, 0.16, 0.55), Color("#738279"))
-	_add_terrain_box("SecondStep", Vector3(0.15, 0.22, 1.47), Vector3(0.8, 0.12, 0.55), Color("#829087"))
-	var slope := _add_terrain_box("Slope", Vector3(0.8, 0.13, 1.05), Vector3(1.0, 0.22, 1.8), Color("#687a70"))
+	_add_terrain_box("LevelGround", Vector3(0.0, -0.12, 0.0), Vector3(30.0, 0.20, 30.0), Color("#3c4856"))
+	_add_terrain_box("FirstStep", Vector3(-0.1, 0.08, 0.92), Vector3(0.8, 0.16, 0.55), Color("#58687a"))
+	_add_terrain_box("SecondStep", Vector3(0.15, 0.22, 1.47), Vector3(0.8, 0.12, 0.55), Color("#6a7b8f"))
+	var slope := _add_terrain_box("Slope", Vector3(0.8, 0.13, 1.05), Vector3(1.0, 0.22, 1.8), Color("#4c5c6d"))
 	slope.rotation.z = deg_to_rad(-10.0)
 
 	trail_mesh = ImmediateMesh.new()
@@ -419,7 +601,7 @@ func _build_3d_stage() -> void:
 	trail_inst.mesh = trail_mesh
 	var trail_mat := StandardMaterial3D.new()
 	trail_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	trail_mat.albedo_color = Color("#f0a642")
+	trail_mat.albedo_color = Color("#f39c2b")
 	trail_inst.material_override = trail_mat
 	preview_stage.add_child(trail_inst)
 
@@ -431,13 +613,12 @@ func _build_3d_stage() -> void:
 	rig.name = "Rig"
 	motion_node.add_child(rig)
 
-	# Wireframe skeleton visualization shown during Step 3 (85-bone rig before skin binding)
 	bone_wire_mesh = ImmediateMesh.new()
 	bone_wire_inst = MeshInstance3D.new()
 	bone_wire_inst.mesh = bone_wire_mesh
 	var wire_mat := StandardMaterial3D.new()
 	wire_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	wire_mat.albedo_color = Color("#68e0c6")
+	wire_mat.albedo_color = Color("#2cc7b8")
 	bone_wire_inst.material_override = wire_mat
 	bone_wire_inst.visible = false
 	motion_node.add_child(bone_wire_inst)
@@ -483,16 +664,44 @@ func _load_hero_skin() -> void:
 	var doc := GLTFDocument.new()
 	var st := GLTFState.new()
 	st.use_named_skin_binds = true
-	if doc.append_from_file(skin_path, st) != OK:
+	st.handle_binary_image = GLTFState.HANDLE_BINARY_EMBED_AS_UNCOMPRESSED
+	var err := OK
+	if skin_path.ends_with(".glb"):
+		var bytes := FileAccess.get_file_as_bytes(skin_path)
+		err = doc.append_from_buffer(bytes, "", st)
+	else:
+		err = doc.append_from_file(skin_path, st)
+	if err != OK:
+		print("HERO_SKIN_LOAD_ERR err=%d path=%s" % [err, skin_path])
 		return
 	var scene := doc.generate_scene(st)
 	if scene == null:
+		print("HERO_SKIN_SCENE_NULL")
 		return
-	for src: MeshInstance3D in scene.find_children("*", "MeshInstance3D", true, false):
-		if src.mesh == null or src.skin == null:
+	var mesh_nodes: Array[Node] = scene.find_children("*", "MeshInstance3D", true, false)
+	mesh_nodes.append_array(scene.find_children("*", "ImporterMeshInstance3D", true, false))
+	for src in mesh_nodes:
+		var src_mesh: Mesh = null
+		var src_skin: Skin = null
+		var src_skel_path := NodePath()
+		if src is MeshInstance3D:
+			src_mesh = src.mesh
+			src_skin = src.skin
+			src_skel_path = src.skeleton
+		elif src.is_class("ImporterMeshInstance3D"):
+			var imp_mesh = src.get("mesh")
+			if imp_mesh != null and imp_mesh.has_method("get_mesh"):
+				src_mesh = imp_mesh.call("get_mesh")
+			src_skin = src.get("skin") as Skin
+			src_skel_path = src.get("skeleton_path") as NodePath
+		if src_mesh == null or src_skin == null:
 			continue
-		var src_rig := src.get_node_or_null(src.skeleton) as Skeleton3D
-		var skin := src.skin.duplicate() as Skin
+		var src_rig := src.get_node_or_null(src_skel_path) as Skeleton3D
+		if src_rig == null:
+			var skels := scene.find_children("*", "Skeleton3D", true, false)
+			if not skels.is_empty():
+				src_rig = skels[0] as Skeleton3D
+		var skin := src_skin.duplicate() as Skin
 		var valid := true
 		for i in skin.get_bind_count():
 			var bname := skin.get_bind_name(i)
@@ -508,12 +717,13 @@ func _load_hero_skin() -> void:
 			continue
 		var vis := MeshInstance3D.new()
 		vis.name = src.name
-		vis.mesh = src.mesh
+		vis.mesh = src_mesh
 		vis.skin = skin
 		vis.skeleton = ^".."
 		rig.add_child(vis)
 		skin_meshes.append(vis)
 	scene.free()
+	print("HERO_SKIN_LOADED meshes=%d web=%s" % [skin_meshes.size(), OS.has_feature("web")])
 
 
 func set_authoring_mode(enabled: bool) -> void:
@@ -522,15 +732,12 @@ func set_authoring_mode(enabled: bool) -> void:
 		mode_authoring_btn.set_pressed_no_signal(authoring_mode)
 	if mode_rewind_btn:
 		mode_rewind_btn.set_pressed_no_signal(not authoring_mode)
-	if authoring_dock_col:
-		authoring_dock_col.visible = authoring_mode
 	if authoring_mode:
 		timeline.min_value = 0.0
 		timeline.max_value = AuthoringReplay.total_duration()
 		timeline.step = 0.05
 		seek_authoring(authoring_time, true)
 	else:
-		# Restore full visibility in direct 255-tick rewind mode
 		_apply_scene_visibility(true, true, true, true)
 		if cursor_overlay:
 			cursor_overlay.present(false, "assets", "search", "", Rect2(), "", 0.0, true)
@@ -643,29 +850,30 @@ func seek_authoring(time_sec: float, instant_cursor := false) -> Dictionary:
 	last_authoring_snapshot = snap
 	var step: Dictionary = snap.step
 
-	# Ensure the required build stage is baked and active
 	var target_stage: int = int(step.stage)
 	if build_stage != target_stage or recorded_frames.is_empty():
 		set_build_stage(target_stage)
 
-	# Apply deterministic scene visibility (empty -> wireframe rig -> skin -> terrain -> trail)
 	_apply_scene_visibility(bool(step.has_rig), bool(step.has_skin), bool(step.has_terrain), bool(step.has_trail))
 
-	# Scrub 3D Hero rig & state machine to the step's preview tick
-	var frame := scrub_to(int(snap.preview_tick))
+	scrub_to(int(snap.preview_tick))
 	if bool(step.has_rig) and not bool(step.has_skin):
 		_rebuild_bone_wireframe()
 
-	# Update virtual editor docks (SceneTree, Inspector, Action Log)
+	# Highlight matching Morpheme Network node when targeted
+	var tgt := str(step.target)
+	if sm_canvas:
+		sm_canvas.set_selected_node(tgt if tgt.begins_with("sm_") else "")
+
 	scene_tree_list.clear()
 	for node_line: String in step.nodes:
 		scene_tree_list.add_item(node_line)
 	if scene_tree_list.item_count > 0:
 		scene_tree_list.select(scene_tree_list.item_count - 1)
 
-	if str(step.target) == "asset_motion":
+	if tgt == "asset_motion":
 		asset_list.select(0)
-	elif str(step.target) == "asset_skin":
+	elif tgt == "asset_skin":
 		asset_list.select(1)
 
 	var insp_lines: Array[String] = ["선택 노드: " + str(step.selected_node)]
@@ -687,9 +895,9 @@ func seek_authoring(time_sec: float, instant_cursor := false) -> Dictionary:
 		tick_label.text = "제작 %d/%d (%.1f / %.0fs)" % [
 			int(snap.step_index) + 1, AuthoringReplay.step_count(), authoring_time, AuthoringReplay.total_duration()
 		]
+	_sync_morpheme_timeline()
 
-	# Resolve target UI widget rectangle in local coordinates and drive virtual pointer
-	var target_rect := _resolve_target_rect(str(step.target))
+	var target_rect := _resolve_target_rect(tgt)
 	if cursor_overlay:
 		cursor_overlay.present(
 			true,
@@ -704,6 +912,14 @@ func seek_authoring(time_sec: float, instant_cursor := false) -> Dictionary:
 	if editor_cursor_callback.is_valid():
 		editor_cursor_callback.call(true, snap)
 	return snap
+
+
+func _sync_morpheme_timeline() -> void:
+	if morpheme_timeline:
+		morpheme_timeline.set_timeline_state(
+			authoring_mode, authoring_time, AuthoringReplay.total_duration(),
+			AuthoringReplay.STEPS, recorded_frames, current_tick
+		)
 
 
 func _apply_scene_visibility(has_rig: bool, has_skin: bool, has_terrain: bool, has_trail: bool) -> void:
@@ -747,37 +963,23 @@ func _resolve_target_rect(target_id: String) -> Rect2:
 			return ctrl_rect.call(scene_add_btn)
 		"scene_row_rig", "scene_row_terrain":
 			var r: Rect2 = ctrl_rect.call(scene_tree_list)
-			var row_y := minf(r.size.y - 24.0, maxf(4.0, float(maxi(0, scene_tree_list.item_count - 1)) * 22.0))
-			return Rect2(r.position + Vector2(4.0, row_y), Vector2(maxf(80.0, r.size.x - 8.0), 22.0))
+			var row_y := minf(r.size.y - 24.0, maxf(4.0, float(maxi(0, scene_tree_list.item_count - 1)) * 21.0))
+			return Rect2(r.position + Vector2(4.0, row_y), Vector2(maxf(80.0, r.size.x - 8.0), 21.0))
 		"asset_motion":
 			var r: Rect2 = ctrl_rect.call(asset_list)
-			return Rect2(r.position + Vector2(4.0, 2.0), Vector2(maxf(80.0, r.size.x - 8.0), 22.0))
+			return Rect2(r.position + Vector2(4.0, 2.0), Vector2(maxf(80.0, r.size.x - 8.0), 21.0))
 		"asset_skin":
 			var r: Rect2 = ctrl_rect.call(asset_list)
-			return Rect2(r.position + Vector2(4.0, 24.0), Vector2(maxf(80.0, r.size.x - 8.0), 22.0))
-		"sm_idle":
+			return Rect2(r.position + Vector2(4.0, 24.0), Vector2(maxf(80.0, r.size.x - 8.0), 21.0))
+		"sm_idle", "sm_i2w", "sm_walk", "sm_run", "sm_cam", "sm_ik":
 			var r: Rect2 = ctrl_rect.call(sm_canvas)
-			return Rect2(r.position + Vector2(14, 16), Vector2(114, 46))
-		"sm_i2w":
-			var r: Rect2 = ctrl_rect.call(sm_canvas)
-			return Rect2(r.position + Vector2(158, 16), Vector2(128, 46))
-		"sm_walk":
-			var r: Rect2 = ctrl_rect.call(sm_canvas)
-			return Rect2(r.position + Vector2(158, 88), Vector2(128, 46))
-		"sm_run":
-			var r: Rect2 = ctrl_rect.call(sm_canvas)
-			return Rect2(r.position + Vector2(14, 88), Vector2(114, 46))
-		"sm_cam":
-			var r: Rect2 = ctrl_rect.call(sm_canvas)
-			return Rect2(r.position + Vector2(14, 156), Vector2(128, 42))
-		"sm_ik":
-			var r: Rect2 = ctrl_rect.call(sm_canvas)
-			return Rect2(r.position + Vector2(158, 156), Vector2(128, 42))
+			var nr := sm_canvas.get_node_rect(target_id)
+			return Rect2(r.position + nr.position, nr.size)
 		"timeline_bar":
-			return ctrl_rect.call(timeline)
+			return ctrl_rect.call(morpheme_timeline)
 		_:
 			var r: Rect2 = ctrl_rect.call(view_container)
-			return Rect2(r.position + Vector2(16, 16), Vector2(maxf(80.0, r.size.x - 32.0), maxf(80.0, r.size.y - 32.0)))
+			return Rect2(r.position + Vector2(14, 14), Vector2(maxf(80.0, r.size.x - 28.0), maxf(80.0, r.size.y - 28.0)))
 
 
 func _analytic_terrain_height(x: float, z: float) -> float:
@@ -855,14 +1057,26 @@ func scrub_to(tick: int) -> Dictionary:
 
 	if sm_canvas:
 		sm_canvas.set_display(build_stage, frame)
+	if cp_readout:
+		var st: Vector2 = frame.stick
+		cp_readout.text = "Stick (%+.2f, %+.2f) · LT %s" % [st.x, st.y, "ON" if bool(frame.walk_modifier) else "OFF"]
+	if cp_speed_bar:
+		cp_speed_bar.value = (frame.stick as Vector2).length()
+	if cp_lead_bar:
+		cp_lead_bar.value = clampf(float(frame.camera_lead_deg), -30.0, 30.0)
+	if cp_ik_bar:
+		cp_ik_bar.value = clampf(float(frame.ik_offset_mm), 0.0, 30.0)
+
 	if not authoring_mode:
 		if timeline:
 			timeline.set_value_no_signal(current_tick)
 		if tick_label:
 			tick_label.text = "틱 %d / %d (%.2fs)" % [current_tick, recorded_frames.size() - 1, float(current_tick) * STEP]
+	_sync_morpheme_timeline()
+
 	if detail_label:
 		var p: Vector3 = frame.root_transform.origin
-		detail_label.text = "상태: %s  ·  클립: %s (%.2fs)\n루트: (%.2f, %.2f, %.2f) m  ·  Yaw: %.1f°\n카메라 리드: %+.1f°  ·  발 IK 보정: %.1f mm" % [
+		detail_label.text = "State: %s (%s %.2fs) · Root (%.2f, %.2f, %.2f)m · Yaw %.1f° · Lead %+.1f° · IK %.1fmm" % [
 			frame.state, frame.clip, float(frame.clip_time),
 			p.x, p.y, p.z, float(frame.yaw_deg),
 			float(frame.camera_lead_deg), float(frame.ik_offset_mm),

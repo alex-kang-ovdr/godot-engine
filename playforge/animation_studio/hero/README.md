@@ -1,6 +1,22 @@
-# Hero 85본 로코모션 & 가상 포인터 제작 과정 다시보기
+# Hero 85본 로코모션 & NaturalMotion Morpheme 스타일 웹 에디터 애드온
 
-[Animation Studio](../project.godot)를 Godot 에디터로 열면 상단 메뉴 **프로젝트 → 도구 → Hero 제작 과정 가상 포인터 다시보기** 또는 하단 패널 **Hero 상태머신**에서 데모 에셋을 빈 씬에서 단계별로 조립하는 가상 포인터 제작 과정 다시보기(14단계, `0.0~14.0s`)와 1~5단계·255틱 로코모션 Rewind를 바로 조작할 수 있다. 에디터 실행 시 실제 `SceneTreeDock`·`FileSystemDock`·`InspectorDock`·3D 뷰포트 위에도 역할별 가상 포인터와 대상 강조 박스가 함께 표시된다. F5 실행 시 **Hero 상태머신 · 제작과정 다시보기 →** 또는 **Hero 85본 · 클립 & 발 IK →**을 선택하거나 [Hero 씬](hero.tscn) · [Hero 상태머신 스튜디오](hero_locomotion_studio.tscn)를 F6로 실행할 수 있다.
+[Animation Studio](../project.godot)의 에디터 애드온([editor_plugin.gd](../addons/animation_studio/editor_plugin.gd))은 **Godot 웹 에디터(WASM)**와 **데스크톱 Godot 에디터** 양쪽에 메인 화면 워크스페이스 **`Morpheme Studio`**(`2D | 3D | 스크립트 | 게임 | Morpheme Studio`)와 **프로젝트 → 도구 → Hero 제작 과정 가상 포인터 다시보기** 메뉴를 등록한다.
+
+## Godot 웹 에디터 실행
+
+```powershell
+node playforge/animation_studio/web_editor/serve_web_editor.cjs --port 4792
+```
+
+브라우저에서 `http://127.0.0.1:4792/`를 열면 COOP/COEP 격리 헤더와 함께 Godot 4.7.2 웹 에디터 WASM이 부팅되고, 내재화된 `hero_motion.res`·`hero_skin.glb`와 `addons/animation_studio`가 자동 마운트되어 **`Morpheme Studio`** 메인 화면으로 즉시 진입한다.
+
+## NaturalMotion Morpheme 스타일 레이아웃
+
+- **좌측 도크**: `Asset Manager (Native)`(`hero_motion.res`, `hero_skin.glb`) · `Scene Hierarchy` · `Control Parameters`(`MoveSpeed`, `CameraLead`, `FootIK mm` 실시간 게이지)
+- **중앙 분할**: `Morpheme Animation Network Graph`([hero_sm_canvas.gd](hero_sm_canvas.gd) — `CP: MoveStick`/`CP: WalkTrigger` → `LocomotionSM` 상태머신 그룹 → `CameraLead` → `TwoBone Foot IK` → `Output Pose` 3차 베지어 와이어·노드 클릭 선택) | `3D Character Viewport`(85본 와이어프레임 → 18,050정점 텍스처 스킨 → 공유 지형 → 255틱 황금 궤적)
+- **우측 도크**: `Attribute Editor`(선택 노드 속성 표) · `Authoring Event Log`(역할별 타임라인 로그)
+- **하단 도크**: `Event Tracks` 4트랙 타임라인([morpheme_timeline_canvas.gd](morpheme_timeline_canvas.gd) — `Authoring (14)` · `State Strip` · `Blend / Events` · `Foot IK L/R` 직접 드래그 스크러빙) + 재생·이전/다음·속도·전이 점프 바
+- **런타임 실행**: F5 실행 후 **Hero 상태머신 · 제작과정 다시보기 →** 또는 **Hero 85본 · 클립 & 발 IK →** 선택, 또는 [hero_locomotion_studio.tscn](hero_locomotion_studio.tscn) 직접 실행(F6).
 
 ## 내재화된 Godot 네이티브 에셋 (`.hkt` / SDK 의존성 없음)
 

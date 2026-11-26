@@ -125,7 +125,13 @@ func load_skin() -> void:
 	var document := GLTFDocument.new()
 	var state := GLTFState.new()
 	state.use_named_skin_binds = true
-	if document.append_from_file(file, state) != OK:
+	state.handle_binary_image = GLTFState.HANDLE_BINARY_EMBED_AS_UNCOMPRESSED
+	var err := OK
+	if file.ends_with(".glb"):
+		err = document.append_from_buffer(FileAccess.get_file_as_bytes(file), "", state)
+	else:
+		err = document.append_from_file(file, state)
+	if err != OK:
 		skin_problem = "스킨 읽기 실패"
 		return
 	var scene := document.generate_scene(state)

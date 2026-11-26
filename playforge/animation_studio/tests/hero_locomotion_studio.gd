@@ -21,12 +21,15 @@ func report(label: String, valid: bool, details: Dictionary = {}) -> void:
 func run() -> void:
 	print("PFTEST ", JSON.stringify({"status": "START", "engine": Engine.get_version_info().hash}))
 
-	# 1. Verify editor plugin manifest and @tool scripts load cleanly.
+	# 1. Verify editor plugin manifest, main-screen registration, and @tool scripts load cleanly.
 	var cfg_ok := FileAccess.file_exists("res://addons/animation_studio/plugin.cfg")
 	var plugin_script := load("res://addons/animation_studio/editor_plugin.gd") as Script
 	var overlay_script := load("res://hero/authoring_cursor_overlay.gd") as Script
-	report("editor plugin manifest and virtual cursor overlay load cleanly",
-		cfg_ok and plugin_script != null and plugin_script.is_tool() and overlay_script != null and overlay_script.is_tool())
+	var timeline_script := load("res://hero/morpheme_timeline_canvas.gd") as Script
+	report("editor plugin manifest, Morpheme timeline, and virtual cursor overlay load cleanly",
+		cfg_ok and plugin_script != null and plugin_script.is_tool()
+			and overlay_script != null and overlay_script.is_tool()
+			and timeline_script != null and timeline_script.is_tool())
 
 	# 2. Load the shared studio scene (mounted in Editor bottom panel & runtime).
 	change_scene_to_file("res://hero/hero_locomotion_studio.tscn")
@@ -78,6 +81,14 @@ func run() -> void:
 		and studio.log_list.item_count == 3 and studio.scene_tree_list.item_count == 3
 	report("authoring replay rewinds cleanly from completion back to wireframe rig step", rewind_authoring_ok,
 		{"logs": studio.log_list.item_count, "nodes": studio.scene_tree_list.item_count, "skin": studio.skin_meshes[0].visible})
+
+	# Verify NaturalMotion Morpheme network node selection & multi-track timeline scrub
+	studio.sm_canvas.node_selected.emit("sm_ik")
+	var attr_ok: bool = "TwoBone Foot IK" in studio.inspector_label.text
+	studio.morpheme_timeline.scrub_requested.emit(0.75)
+	var track_scrub_ok: bool = studio.authoring_time > 10.0 and studio.authoring_time < 11.0
+	report("Morpheme network selection updates Attribute Editor and multi-track timeline scrubs",
+		attr_ok and track_scrub_ok, {"attr_ok": attr_ok, "authoring_time": studio.authoring_time})
 
 	# 4. Verify direct 255-tick mode & authoring stages 1..5.
 	studio.set_authoring_mode(false)
