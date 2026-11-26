@@ -43,6 +43,7 @@ func _box(color: Color, radius: int, horizontal: int, vertical: int) -> StyleBox
 
 func bind(director: Node3D) -> void:
 	lab = director
+	%HeroSample.pressed.connect(func(): get_tree().change_scene_to_file("res://hero/hero.tscn"))
 	%Gallery.pressed.connect(func(): get_tree().change_scene_to_file("res://catalog/gallery.tscn"))
 	for i in FOCUS_NAMES.size():
 		var button := _choice(FOCUS_NAMES[i], %Views)

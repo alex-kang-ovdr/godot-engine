@@ -46,6 +46,7 @@ SUITES = [
     ("jolt_contacts", "res://jolt/jolt_contacts.tscn", ["--fixed-fps", "60"], [], 120, "c9050da1"),
     ("animation_coexistence", "res://tests/coexistence.tscn", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
     ("animation_havok_demo", "res://tests/havok_demo.gd", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
+    ("animation_hero_parity", "res://tests/hero_parity.gd", ["--fixed-fps", "60"], [], 90, "Havok Hero SDK", ANIMATION_PROJECT),
     ("animation_gallery", "res://tests/animation_gallery.gd", ["--fixed-fps", "60"], [], 120, "Animation Studio", ANIMATION_PROJECT),
     ("animation_pose_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
     ("animation_compressed_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], ["--compressed"], 30, "Animation Studio", ANIMATION_PROJECT),
@@ -215,6 +216,9 @@ def main() -> int:
     det_runs = []
     for rep in range(max(1, args.repeat)):
         for name, scene, eargs, uargs, timeout, guards, *project in SUITES:
+            if name == "animation_hero_parity" and only is None and not (ANIMATION_PROJECT / "hero/generated/motion.json").is_file():
+                print("[skip] animation_hero_parity requires locally converted Havok Hero assets")
+                continue
             if only and name not in only:
                 continue
             uargs = list(uargs) + (["--quick"] if args.quick and name == "hide_budget" else [])

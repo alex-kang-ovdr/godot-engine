@@ -1,5 +1,7 @@
 # Animation Studio 포즈 재생
 
+[Havok Hero 원본 재생과 포즈 검증](hero/README.md)에서는 SDK 캐릭터의 스킨과 이동 클립을 Godot에서 재생하고 같은 시각의 SDK 본 포즈와 비교한다.
+
 Godot 4.7용 런타임 애드온이다. 한 캐릭터의 선택한 본 트랙을 첫 번째 `SkeletonModifier3D`에서 평가한다. 같은 `AnimationPlayer`가 재생 시계, 루트 모션, 이벤트와 나머지 트랙을 담당한다. Windows x64 디버그 빌드에서는 C++ GDExtension으로 한 캐릭터의 트랙들을 한 번에 평가할 수 있다. 확장을 설치하지 않은 프로젝트는 GDScript로 같은 경로를 실행한다.
 
 ## 모션 데모 실행

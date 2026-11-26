@@ -32,6 +32,10 @@ unique_name_in_owner = true
 unique_name_in_owner = true
 text = "애니메이션 사례 목록 →"
 
+[node name="HeroSample" type="Button" parent="Layout/Header/Info"]
+unique_name_in_owner = true
+text = "Havok Hero · 원본 클립 →"
+
 [node name="Metrics" type="PanelContainer" parent="Layout"]
 anchor_left = 1.0
 anchor_right = 1.0
