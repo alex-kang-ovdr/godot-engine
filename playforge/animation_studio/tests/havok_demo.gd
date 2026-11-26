@@ -44,17 +44,21 @@ func run() -> void:
 	if packed == null:
 		_finish()
 		return
-	demo = packed.instantiate() as Node3D
+	if change_scene_to_packed(packed) != OK:
+		_check(false, "demo scene activation succeeded")
+		_finish()
+		return
+	await scene_changed
+	demo = current_scene as Node3D
 	_check(demo != null, "demo root is Node3D")
 	if demo == null:
 		_finish()
 		return
-	root.add_child(demo)
-	current_scene = demo
 	# The scene starts live. Pause immediately before yielding so the fixture
 	# controls every subsequent advance through the public step_tick API.
 	demo.call("set_running", false)
 	await process_frame
+	_check(root.get_camera_3d() == demo.get_node("Camera3D"), "demo camera retains ownership after platform scene startup")
 	character = demo.get("character") as Node3D
 	tool = character.call("get_tool") as Node3D if character and character.has_method("get_tool") else null
 	skeleton = character.get_node_or_null("Rig") as Skeleton3D if character else null

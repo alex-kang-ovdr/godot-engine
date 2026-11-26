@@ -10,6 +10,9 @@ var _rates: Array[Button] = []
 
 
 func _ready() -> void:
+	# The engine fork reserves the upper-left corner for its platform controls.
+	if Engine.has_singleton("PlayForgePlatform"):
+		$Layout/Header.position.y = 68
 	var font := SystemFont.new()
 	font.font_names = PackedStringArray(["Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Noto Sans"])
 	var skin := Theme.new()
