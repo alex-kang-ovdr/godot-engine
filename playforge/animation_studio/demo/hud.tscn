@@ -1,0 +1,128 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://demo/hud.gd" id="1"]
+[ext_resource type="Script" path="res://demo/phase_strip.gd" id="2"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1")
+
+[node name="Layout" type="Control" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Header" type="PanelContainer" parent="Layout"]
+offset_left = 24.0
+offset_top = 20.0
+
+[node name="Info" type="VBoxContainer" parent="Layout/Header"]
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="Layout/Header/Info"]
+unique_name_in_owner = true
+text = "Animation Studio"
+
+[node name="Views" type="HBoxContainer" parent="Layout/Header/Info"]
+unique_name_in_owner = true
+
+[node name="Description" type="Label" parent="Layout/Header/Info"]
+unique_name_in_owner = true
+
+[node name="Metrics" type="PanelContainer" parent="Layout"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -243.0
+offset_top = 20.0
+offset_right = -24.0
+
+[node name="Grid" type="GridContainer" parent="Layout/Metrics"]
+columns = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 5
+
+[node name="DistanceLabel" type="Label" parent="Layout/Metrics/Grid"]
+text = "이동 거리"
+theme_override_colors/font_color = Color(0.66, 0.75, 0.72, 1)
+
+[node name="Distance" type="Label" parent="Layout/Metrics/Grid"]
+unique_name_in_owner = true
+
+[node name="HeadingLabel" type="Label" parent="Layout/Metrics/Grid"]
+text = "진행 방향"
+theme_override_colors/font_color = Color(0.66, 0.75, 0.72, 1)
+
+[node name="Heading" type="Label" parent="Layout/Metrics/Grid"]
+unique_name_in_owner = true
+
+[node name="ContactsLabel" type="Label" parent="Layout/Metrics/Grid"]
+text = "발 디딤"
+theme_override_colors/font_color = Color(0.66, 0.75, 0.72, 1)
+
+[node name="Contacts" type="Label" parent="Layout/Metrics/Grid"]
+unique_name_in_owner = true
+
+[node name="SocketLabel" type="Label" parent="Layout/Metrics/Grid"]
+unique_name_in_owner = true
+text = "소켓 위치 오차"
+theme_override_colors/font_color = Color(0.66, 0.75, 0.72, 1)
+
+[node name="SocketError" type="Label" parent="Layout/Metrics/Grid"]
+unique_name_in_owner = true
+
+[node name="Controls" type="PanelContainer" parent="Layout"]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -341.0
+offset_top = -125.0
+offset_right = 341.0
+offset_bottom = -20.0
+
+[node name="Rows" type="VBoxContainer" parent="Layout/Controls"]
+theme_override_constants/separation = 10
+
+[node name="Timeline" type="HBoxContainer" parent="Layout/Controls/Rows"]
+theme_override_constants/separation = 12
+
+[node name="Clip" type="Label" parent="Layout/Controls/Rows/Timeline"]
+text = "Stride"
+
+[node name="Phase" type="Control" parent="Layout/Controls/Rows/Timeline"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+mouse_filter = 2
+script = ExtResource("2")
+
+[node name="Clock" type="Label" parent="Layout/Controls/Rows/Timeline"]
+unique_name_in_owner = true
+
+[node name="Transport" type="HBoxContainer" parent="Layout/Controls/Rows"]
+theme_override_constants/separation = 5
+
+[node name="Play" type="Button" parent="Layout/Controls/Rows/Transport"]
+unique_name_in_owner = true
+text = "일시정지"
+tooltip_text = "Space · 재생 / 일시정지"
+
+[node name="Step" type="Button" parent="Layout/Controls/Rows/Transport"]
+unique_name_in_owner = true
+text = "한 틱"
+tooltip_text = "N · 1/60초 진행"
+
+[node name="Reset" type="Button" parent="Layout/Controls/Rows/Transport"]
+unique_name_in_owner = true
+text = "처음부터"
+tooltip_text = "R · 위치와 이벤트 초기화"
+
+[node name="Turn" type="Button" parent="Layout/Controls/Rows/Transport"]
+unique_name_in_owner = true
+text = "90° 회전"
+tooltip_text = "캐릭터의 진행 방향 회전"
+
+[node name="Spacer" type="Control" parent="Layout/Controls/Rows/Transport"]
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Rates" type="HBoxContainer" parent="Layout/Controls/Rows/Transport"]
+unique_name_in_owner = true

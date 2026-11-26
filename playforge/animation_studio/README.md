@@ -2,6 +2,18 @@
 
 Godot 4.7용 런타임 애드온이다. 한 캐릭터의 선택한 본 트랙을 첫 번째 `SkeletonModifier3D`에서 평가한다. 같은 `AnimationPlayer`가 재생 시계, 루트 모션, 이벤트와 나머지 트랙을 담당한다. Windows x64 디버그 빌드에서는 C++ GDExtension으로 한 캐릭터의 트랙들을 한 번에 평가할 수 있다. 확장을 설치하지 않은 프로젝트는 GDScript로 같은 경로를 실행한다.
 
+## 모션 데모 실행
+
+Godot 4.7.2에서 이 폴더의 [project.godot](project.godot)를 열고 **F5**를 누른다. [기본 씬](demo/animation_lab.tscn)은 로봇의 1초 보행 클립을 반복 재생한다. Godot 실행 파일이 PATH에 있으면 저장소 루트에서 `godot --path playforge/animation_studio`로도 실행할 수 있다.
+
+| 보기 | 직접 확인할 동작 |
+| --- | --- |
+| 루트 이동 · **1** | 한 주기를 걸으면 이동 거리가 1.2 m 증가한다. **90° 회전**을 누르면 다음 변위가 새 진행 방향을 따른다. |
+| 발 디딤 · **2** | 한 주기의 0.25초와 0.75초에 L·R 카운터가 각각 증가한다. 타임라인의 두 눈금과 바닥 표식으로 이벤트 순서를 확인한다. |
+| 손 소켓 · **3** | 카메라가 손 공구를 따라간다. 팔이 움직여도 공구의 장착 위치와 각도는 손을 기준으로 유지된다. |
+
+**Space**로 재생·일시정지, **N**으로 한 물리 틱 진행, **R**로 처음부터 재생 위치를 초기화한다. 속도 버튼은 클립 시계만 0.5배·1배·2배로 바꾼다. Havok SDK는 실행에 필요하지 않다. [SDK 데모와 테스트 대응표](demo/HAVOK_CASES.md)
+
 ## 캐릭터에 적용
 
 1. 이 프로젝트의 `addons/animation_studio`를 게임 프로젝트의 같은 경로에 둔다.
@@ -40,7 +52,7 @@ py -3 -m SCons -C playforge/animation_studio/native platform=windows target=temp
 저장소 루트에서 `GODOT_BIN`을 Godot 편집기 실행 파일로 지정한다.
 
 ```powershell
-python playforge/tests/run.py --only animation_coexistence,animation_pose_parity,animation_compressed_parity
+python playforge/tests/run.py --only animation_havok_demo,animation_coexistence,animation_pose_parity,animation_compressed_parity
 python playforge/animation_studio/tests/reimport/run_gltf_reimport.py
 ```
 

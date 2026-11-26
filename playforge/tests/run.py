@@ -45,6 +45,7 @@ SUITES = [
     ("jolt_determinism", "res://jolt/jolt_determinism.tscn", ["--fixed-fps", "60"], [], 300, "83f5f345 c9050da1 e7a83dd7"),
     ("jolt_contacts", "res://jolt/jolt_contacts.tscn", ["--fixed-fps", "60"], [], 120, "c9050da1"),
     ("animation_coexistence", "res://tests/coexistence.tscn", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
+    ("animation_havok_demo", "res://tests/havok_demo.gd", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
     ("animation_pose_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
     ("animation_compressed_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], ["--compressed"], 30, "Animation Studio", ANIMATION_PROJECT),
 ]

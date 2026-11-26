@@ -1,0 +1,110 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://demo/character/character.gd" id="1_character"]
+[ext_resource type="Script" path="res://addons/animation_studio/pose_modifier.gd" id="2_pose"]
+
+[node name="Courier" type="Node3D"]
+script = ExtResource("1_character")
+
+[node name="Player" type="AnimationPlayer" parent="."]
+root_node = NodePath("..")
+root_motion_track = NodePath("Rig:Root")
+root_motion_local = true
+
+[node name="Rig" type="Skeleton3D" parent="."]
+bones/0/name = "Root"
+bones/0/parent = -1
+bones/0/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86, 0)
+bones/1/name = "Spine"
+bones/1/parent = 0
+bones/1/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+bones/2/name = "Neck"
+bones/2/parent = 1
+bones/2/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+bones/3/name = "Head"
+bones/3/parent = 2
+bones/3/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+bones/4/name = "ShoulderLeft"
+bones/4/parent = 1
+bones/4/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, -0.25)
+bones/5/name = "ElbowLeft"
+bones/5/parent = 4
+bones/5/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, 0)
+bones/6/name = "HandLeft"
+bones/6/parent = 5
+bones/6/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.27, 0)
+bones/7/name = "ShoulderRight"
+bones/7/parent = 1
+bones/7/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0.25)
+bones/8/name = "ElbowRight"
+bones/8/parent = 7
+bones/8/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, 0)
+bones/9/name = "Hand.R"
+bones/9/parent = 8
+bones/9/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.27, 0)
+bones/10/name = "HipLeft"
+bones/10/parent = 0
+bones/10/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.14, -0.14)
+bones/11/name = "KneeLeft"
+bones/11/parent = 10
+bones/11/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.31, 0)
+bones/12/name = "FootLeft"
+bones/12/parent = 11
+bones/12/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, 0)
+bones/13/name = "HipRight"
+bones/13/parent = 0
+bones/13/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.14, 0.14)
+bones/14/name = "KneeRight"
+bones/14/parent = 13
+bones/14/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.31, 0)
+bones/15/name = "FootRight"
+bones/15/parent = 14
+bones/15/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, 0)
+
+[node name="Pose" type="SkeletonModifier3D" parent="Rig"]
+script = ExtResource("2_pose")
+
+[node name="BodyMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "Spine"
+
+[node name="HeadMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "Head"
+
+[node name="ShoulderLeftMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "ShoulderLeft"
+
+[node name="ElbowLeftMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "ElbowLeft"
+
+[node name="HandLeftMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "HandLeft"
+
+[node name="ShoulderRightMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "ShoulderRight"
+
+[node name="ElbowRightMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "ElbowRight"
+
+[node name="HandRightMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "Hand.R"
+
+[node name="ToolSocket" type="BoneAttachment3D" parent="Rig"]
+bone_name = "Hand.R"
+
+[node name="HipLeftMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "HipLeft"
+
+[node name="KneeLeftMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "KneeLeft"
+
+[node name="FootLeftMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "FootLeft"
+
+[node name="HipRightMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "HipRight"
+
+[node name="KneeRightMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "KneeRight"
+
+[node name="FootRightMount" type="BoneAttachment3D" parent="Rig"]
+bone_name = "FootRight"
