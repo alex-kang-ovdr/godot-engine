@@ -92,19 +92,46 @@ func compare_native(frames: Array[Dictionary]) -> void:
 	if not available:
 		return
 	var state_differences := 0
-	var max_root := 0.0
-	var max_feet := 0.0
 	var same_inputs := true
+	var godot_transitions: Array[Dictionary] = []
+	var havok_transitions: Array[Dictionary] = []
+	var position_errors: Array[Dictionary] = []
+	var channels := ["root", "left_ankle", "right_ankle"]
+	for channel in channels:
+		position_errors.append({"max_m": 0.0, "peak_tick": 0, "sum_squared": 0.0})
 	for i in TICKS:
 		var actual := frames[i]
 		var expected: Dictionary = raw.frames[i]
 		same_inputs = same_inputs and actual.stick.is_equal_approx(Vector2(expected.stick[0], expected.stick[1]))
 		same_inputs = same_inputs and is_equal_approx(actual.trigger, float(expected.get("trigger", -1.0)))
 		state_differences += int(actual.state != expected.state)
-		max_root = maxf(max_root, actual.root.distance_to(Hero.vector(expected.root)))
-		for leg in 2:
-			max_feet = maxf(max_feet, actual.feet[leg].distance_to(Hero.vector(expected.feet[leg])))
+		record_transition(godot_transitions, actual.state, i)
+		record_transition(havok_transitions, expected.state, i)
+		var actual_points: Array[Vector3] = [actual.root, actual.feet[0], actual.feet[1]]
+		var expected_points := [expected.root, expected.feet[0], expected.feet[1]]
+		for channel in channels.size():
+			var distance := actual_points[channel].distance_to(Hero.vector(expected_points[channel]))
+			var stats := position_errors[channel]
+			stats.sum_squared += distance * distance
+			if distance > stats.max_m:
+				stats.max_m = distance
+				stats.peak_tick = i
+			if i == TICKS - 1:
+				var point := actual_points[channel]
+				stats.final_m = distance
+				stats.godot_final = [point.x, point.y, point.z]
+				stats.havok_final = expected_points[channel]
 	report("same per-tick inputs as Havok", same_inputs)
-	report("same movement states as Havok", state_differences == 0, {"different_ticks": state_differences})
-	report("Havok root position parity", max_root <= POSITION_TOLERANCE, {"max_m": max_root})
-	report("Havok ankle position parity", max_feet <= POSITION_TOLERANCE, {"max_m": max_feet})
+	report("same movement states as Havok", state_differences == 0, {
+		"different_ticks": state_differences, "godot_transitions": godot_transitions, "havok_transitions": havok_transitions
+	})
+	for channel in channels.size():
+		var stats := position_errors[channel]
+		stats.rms_m = sqrt(stats.sum_squared / TICKS)
+		stats.erase("sum_squared")
+		report(channels[channel] + " position parity", stats.max_m <= POSITION_TOLERANCE, stats)
+
+
+func record_transition(transitions: Array[Dictionary], state: String, tick: int) -> void:
+	if transitions.is_empty() or transitions.back().state != state:
+		transitions.append({"state": state, "tick": tick})
