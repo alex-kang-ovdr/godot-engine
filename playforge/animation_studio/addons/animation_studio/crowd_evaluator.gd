@@ -31,8 +31,8 @@ class QuantizedClip extends RefCounted:
 		var clip := QuantizedClip.new()
 		clip.bone_count = skeleton.get_bone_count()
 		clip.duration = anim.length
-		clip.sample_rate = fps
-		clip.key_count = maxi(2, int(round(anim.length * fps)) + 1)
+		clip.key_count = maxi(2, int(ceil(anim.length * fps - 1e-4)) + 1)
+		clip.sample_rate = float(clip.key_count - 1) / maxf(1e-6, anim.length)
 
 		var pos_tracks: PackedInt32Array = PackedInt32Array()
 		var rot_tracks: PackedInt32Array = PackedInt32Array()
@@ -64,7 +64,7 @@ class QuantizedClip extends RefCounted:
 		var pmax := Vector3(-INF, -INF, -INF)
 		var motion_scale := skeleton.motion_scale
 		for k in clip.key_count:
-			var t := minf(anim.length, float(k) / fps)
+			var t := anim.length * float(k) / float(clip.key_count - 1)
 			var base := k * clip.bone_count
 			for b in clip.bone_count:
 				var rest := skeleton.get_bone_rest(b)

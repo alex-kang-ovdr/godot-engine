@@ -8,16 +8,20 @@ extends EditorPlugin
 
 const HeroStudioScene := preload("res://hero/hero_locomotion_studio.tscn")
 const QuadrupedStudioScene := preload("res://quadruped/quadruped_locomotor_studio.tscn")
+const SoldierDemoScene := preload("res://soldier/soldier_demo.tscn")
 const CursorOverlay := preload("res://hero/authoring_cursor_overlay.gd")
 const PLUGIN_MAIN_SCREEN_NAME := "Morpheme Studio"
 const TOOL_MENU_QUADRUPED := "4족 절차적 Locomotor 제작 과정 다시보기"
 const TOOL_MENU_HERO := "Hero 제작 과정 가상 포인터 다시보기"
+const TOOL_MENU_SOLDIER := "Soldier 114본 · M4 데모 비교 열기"
 
 var _root_shell: VBoxContainer = null
 var _quad_panel: Control = null
 var _hero_panel: Control = null
+var _soldier_panel: Control = null
 var _btn_quad: Button = null
 var _btn_hero: Button = null
+var _btn_soldier: Button = null
 var _active_tab: String = "quadruped"
 var _editor_overlay: CursorOverlay = null
 var _docks: Dictionary = {}
@@ -67,6 +71,12 @@ func _enter_tree() -> void:
 	_btn_hero.pressed.connect(func(): _select_tab("hero"))
 	switcher.add_child(_btn_hero)
 
+	_btn_soldier = Button.new()
+	_btn_soldier.text = "Soldier 114본 · M4 데모 비교 (GLB/RES)"
+	_btn_soldier.toggle_mode = true
+	_btn_soldier.pressed.connect(func(): _select_tab("soldier"))
+	switcher.add_child(_btn_soldier)
+
 	var content_host := Control.new()
 	content_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -75,12 +85,15 @@ func _enter_tree() -> void:
 
 	_quad_panel = QuadrupedStudioScene.instantiate()
 	_hero_panel = HeroStudioScene.instantiate()
+	_soldier_panel = SoldierDemoScene.instantiate()
 	content_host.add_child(_quad_panel)
 	content_host.add_child(_hero_panel)
+	content_host.add_child(_soldier_panel)
 
 	EditorInterface.get_editor_main_screen().add_child(_root_shell)
 	add_tool_menu_item(TOOL_MENU_QUADRUPED, _open_quadruped_replay)
 	add_tool_menu_item(TOOL_MENU_HERO, _open_hero_replay)
+	add_tool_menu_item(TOOL_MENU_SOLDIER, _open_soldier_compare)
 	_setup_editor_overlay()
 
 	if _quad_panel.has_method("set_authoring_mode"):
@@ -97,6 +110,7 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	remove_tool_menu_item(TOOL_MENU_QUADRUPED)
 	remove_tool_menu_item(TOOL_MENU_HERO)
+	remove_tool_menu_item(TOOL_MENU_SOLDIER)
 	if is_instance_valid(_editor_overlay):
 		_editor_overlay.queue_free()
 	_editor_overlay = null
@@ -106,21 +120,41 @@ func _exit_tree() -> void:
 	_root_shell = null
 	_quad_panel = null
 	_hero_panel = null
+	_soldier_panel = null
 
 
 func _select_tab(tab: String) -> void:
 	_active_tab = tab
 	var is_quad := tab == "quadruped"
+	var is_hero := tab == "hero"
+	var is_soldier := tab == "soldier"
 	if is_instance_valid(_btn_quad):
 		_btn_quad.set_pressed_no_signal(is_quad)
 	if is_instance_valid(_btn_hero):
-		_btn_hero.set_pressed_no_signal(not is_quad)
+		_btn_hero.set_pressed_no_signal(is_hero)
+	if is_instance_valid(_btn_soldier):
+		_btn_soldier.set_pressed_no_signal(is_soldier)
 	if is_instance_valid(_quad_panel):
 		_quad_panel.visible = is_quad
 		_quad_panel.call("set_playing", is_quad)
 	if is_instance_valid(_hero_panel):
-		_hero_panel.visible = not is_quad
-		_hero_panel.call("set_playing", not is_quad)
+		_hero_panel.visible = is_hero
+		_hero_panel.call("set_playing", is_hero)
+	if is_instance_valid(_soldier_panel):
+		_soldier_panel.visible = is_soldier
+		_soldier_panel.call("set_playing", is_soldier)
+
+
+func _open_soldier_compare() -> void:
+	if not is_instance_valid(_root_shell):
+		return
+	if OS.has_feature("web"):
+		EditorInterface.set_distraction_free_mode(true)
+	EditorInterface.set_main_screen_editor(PLUGIN_MAIN_SCREEN_NAME)
+	_root_shell.visible = true
+	_select_tab("soldier")
+	_soldier_panel.call("set_compare_mode", true)
+	_soldier_panel.call("set_playing", true)
 
 
 func _open_quadruped_replay() -> void:
