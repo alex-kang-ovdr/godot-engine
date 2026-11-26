@@ -56,6 +56,7 @@ SUITES = [
     ("animation_hero_studio", "res://tests/hero_locomotion_studio.gd", ["--fixed-fps", "60"], [], 60, "Hero Editor State-Machine Rewind", ANIMATION_PROJECT),
     ("animation_quadruped_locomotor", "res://tests/quadruped_locomotor.gd", ["--fixed-fps", "60"], [], 60, "Procedural Quadruped Locomotor", ANIMATION_PROJECT),
     ("animation_soldier_compare", "res://tests/soldier_demo_compare.gd", ["--fixed-fps", "60"], [], 90, "Soldier 114-Bone Native & Compare", ANIMATION_PROJECT),
+    ("animation_character_roster", "res://tests/character_roster_verify.gd", ["--fixed-fps", "60"], [], 120, "All 28 Havok Characters Native Roster", ANIMATION_PROJECT),
     ("animation_gallery", "res://tests/animation_gallery.gd", ["--fixed-fps", "60"], [], 120, "Animation Studio", ANIMATION_PROJECT),
     ("animation_pose_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
     ("animation_compressed_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], ["--compressed"], 30, "Animation Studio", ANIMATION_PROJECT),

@@ -137,3 +137,16 @@ Havok SDK 2015.1.0-r1의 `US_Leader_Pack_2.hkt`(Maya Y-up 114본 + M4 소총 3�
   - **위치 (Havok SDK `oracle.json` 2,850 본 포즈 대조)**: `AnimationPlayer` 로컬 **`0.000106 mm` / `0.0030°`**, 말단(머리·양손·M4 `receiver`·양발) **`0.0176 mm`**; `QuantizedClip` 로컬 **`0.473 mm` / `0.704°`**, 말단 **`2.326 mm`**(`crowd_evaluator.gd`의 비정수 60 Hz 클립 끝단 샘플링 경계 보정 반영).
   - **성능 (동일 114본 `run` × 200체 = 22,800본/틱)**: `AnimationPlayer` 포즈 p50 `18.982 ms` / 전체 `22.354 ms` vs C++ `AnimationStudioCrowdEvaluator`(8T, 22,613본 전수 갱신) 포즈 p50 **`1.183 ms`** (**16.0배 빠름**) / 전체 **`4.221 ms`** (**5.30배 빠름**), 메모리 **73.1% 절감**.
   - **비주얼 (GPU 실렌더링 `run @ 0.40s`, 886×616)**: `AnimationPlayer` vs `QuantizedClip` **MAE `0.0709 / 255`**, **PSNR `47.30 dB`**(`walk`·`vault` 나란히 실렌더링 검수 완료).
+
+## 전체 Havok SDK 캐릭터 28종 내재화 및 통합 로스터 데모 포팅 · 2026-11-27
+
+Havok SDK 2015.1.0-r1 전체(`Behavior/GameAssets`, `Animation/ShowCase`, `Animation/Ragdoll`, `Animation/Retargeting`)의 애니메이션 캐릭터 에셋 **26종을 추가 추출·내재화**해 기존 `Hero`·`Soldier`와 합쳐 **총 28종(1,863본 · 119메시 · 225,471정점 · 83클립)** 전체 캐릭터 로스터를 `.hkt`/SDK 의존성 없이 Godot 네이티브(`.glb` + 압축 `HeroMotionData` `.res`)로 포팅했다.
+
+- **내재화 자산 & 범용 파이프라인** (신규 26종 52파일: GLB `12.29 MB` + RES `6.10 MB` = 총 `18.39 MB`, `.hkt`/SDK 경로 문자열 0건):
+  - `hkaPredictiveCompressedAnimation` 및 `hkaQuantizedAnimation`의 `--skeleton` 바인딩을 지원해 Orc 3종(`Orc Captain`, `Orc Grunt`, `Orc Troll`)을 포함한 전 클립을 정확히 샘플링했다.
+  - `hkxVertexDescription.decls` 기반 인터리브·플래너 버텍스 스트림, `uint8`/`uint16` 조인트, `INT16` 양자화 UV, `hkaMeshBinding`(무 `hkxSkinBinding` 포함), `hkaBoneAttachment` 무기 파츠, `hkxTextureInplace` 인라인 텍스처(PNG/TGA) 및 외부 텍스처를 512px JPEG/PNG로 내장했다.
+  - `FetidHulk`의 `hkxSkinBinding.nodeNames`(37개) vs `hkaSkeleton`(43본) 중복 리맵 문제를 감지·보정해 28종 전수 GPU 컨택트 시트 육안 검수를 통과했다.
+- **통합 데모 쇼케이스 & 에디터 통합**: [catalog.json](animation_studio/characters/catalog.json), [character_store.gd](animation_studio/characters/character_store.gd), [character_showcase.tscn](animation_studio/characters/character_showcase.tscn), [character_showcase.gd](animation_studio/characters/character_showcase.gd).
+  - 카테고리 필터(`전체 28` / `전투·액션 7` / `크리처 6` / `쇼케이스 6` / `리타게팅 9`), 3가지 보기 모드(**나란히 비교 `Float32 vs 16-bit C++`** / **단독 클로즈업** / **단체 퍼레이드**), 자동 포즈 AABB 프레이밍, 실시간 200체 C++ 벤치마크 버튼을 제공한다.
+  - `Morpheme Studio` 메인 화면 4번째 탭(`전체 캐릭터 로스터 (28종 GLB/RES)`), 도구 메뉴 및 메인 런처 HUD 진입 버튼을 연동했다.
+- **검증**: `animation_character_roster` **5/5 PASS**(28종 × 83클립 전수 로드·정합 최대 `2.13 mm` / `2.03°`, 최소 메모리 절감 **`72.9%`**, 9체 단체 퍼레이드 전환), `animation_soldier_compare` 7/7, `animation_hero_same_asset` 5/5, `animation_crowd_benchmark` 5/5, `animation_quadruped_locomotor` 12/12, `animation_hero_studio` 13/13 전체 통과.

@@ -48,6 +48,10 @@ text = "4족 Locomotor · 절차적 보행 & 제작과정 →"
 unique_name_in_owner = true
 text = "Soldier 114본 · M4 데모 비교 →"
 
+[node name="CharacterRoster" type="Button" parent="Layout/Header/Info"]
+unique_name_in_owner = true
+text = "전체 캐릭터 로스터 (28종 GLB/RES) →"
+
 [node name="GraphStudio" type="Button" parent="Layout/Header/Info"]
 unique_name_in_owner = true
 text = "그래프 · 관성 · Rewind →"

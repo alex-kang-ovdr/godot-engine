@@ -1,0 +1,647 @@
+{
+  "schema_version": 1,
+  "characters": [
+    {
+      "id": "hero",
+      "name": "Hero · 브로드소드 & 단검",
+      "category": "combat",
+      "bones": 85,
+      "meshes": 6,
+      "textured_meshes": 6,
+      "textures": 3,
+      "vertices": 18050,
+      "clips": [
+        "idle",
+        "walk",
+        "idle_to_walk",
+        "run",
+        "turn"
+      ],
+      "durations": {
+        "idle": 3.0,
+        "walk": 1.12,
+        "idle_to_walk": 1.32,
+        "run": 0.68,
+        "turn": 1.04
+      },
+      "glb_path": "res://hero/assets/hero_skin.glb",
+      "motion_path": "res://hero/assets/hero_motion.res",
+      "glb_kb": 4519.8
+    },
+    {
+      "id": "soldier",
+      "name": "Soldier · M4 소총",
+      "category": "combat",
+      "bones": 114,
+      "meshes": 9,
+      "textured_meshes": 9,
+      "textures": 3,
+      "vertices": 51170,
+      "clips": [
+        "idle",
+        "walk",
+        "jog",
+        "run",
+        "vault"
+      ],
+      "durations": {
+        "idle": 5.55,
+        "walk": 1.55,
+        "jog": 3.308,
+        "run": 1.3,
+        "vault": 3.45
+      },
+      "glb_path": "res://soldier/assets/soldier_skin.glb",
+      "motion_path": "res://soldier/assets/soldier_motion.res",
+      "glb_kb": 5650.6
+    },
+    {
+      "id": "orc_captain",
+      "name": "Orc Captain · 브로드소드",
+      "category": "combat",
+      "bones": 73,
+      "meshes": 6,
+      "textured_meshes": 6,
+      "textures": 2,
+      "vertices": 13557,
+      "clips": [
+        "idle",
+        "walk",
+        "jog",
+        "slash",
+        "taunt"
+      ],
+      "durations": {
+        "idle": 2.0,
+        "walk": 1.6,
+        "jog": 1.12,
+        "slash": 2.0,
+        "taunt": 3.2
+      },
+      "glb_path": "res://characters/assets/orc_captain.glb",
+      "motion_path": "res://characters/assets/orc_captain_motion.res",
+      "glb_kb": 968.3
+    },
+    {
+      "id": "orc_grunt",
+      "name": "Orc Grunt · 곤봉",
+      "category": "combat",
+      "bones": 73,
+      "meshes": 6,
+      "textured_meshes": 6,
+      "textures": 2,
+      "vertices": 11382,
+      "clips": [
+        "idle",
+        "walk",
+        "jog",
+        "slash",
+        "taunt"
+      ],
+      "durations": {
+        "idle": 2.0,
+        "walk": 1.6,
+        "jog": 1.2,
+        "slash": 2.0,
+        "taunt": 2.8
+      },
+      "glb_path": "res://characters/assets/orc_grunt.glb",
+      "motion_path": "res://characters/assets/orc_grunt_motion.res",
+      "glb_kb": 851.0
+    },
+    {
+      "id": "orc_troll",
+      "name": "Orc Troll · 대형 해머",
+      "category": "combat",
+      "bones": 90,
+      "meshes": 19,
+      "textured_meshes": 17,
+      "textures": 3,
+      "vertices": 9240,
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "slam",
+        "roar"
+      ],
+      "durations": {
+        "idle": 2.0,
+        "walk": 2.0,
+        "run": 1.28,
+        "slam": 2.72,
+        "roar": 2.84
+      },
+      "glb_path": "res://characters/assets/orc_troll.glb",
+      "motion_path": "res://characters/assets/orc_troll_motion.res",
+      "glb_kb": 935.9
+    },
+    {
+      "id": "ninja_blue",
+      "name": "Ninja Blue · 격투",
+      "category": "combat",
+      "bones": 69,
+      "meshes": 5,
+      "textured_meshes": 3,
+      "textures": 6,
+      "vertices": 19166,
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "jump",
+        "kick"
+      ],
+      "durations": {
+        "idle": 2.0,
+        "walk": 1.967,
+        "run": 0.767,
+        "jump": 0.967,
+        "kick": 1.133
+      },
+      "glb_path": "res://characters/assets/ninja_blue.glb",
+      "motion_path": "res://characters/assets/ninja_blue_motion.res",
+      "glb_kb": 1360.4
+    },
+    {
+      "id": "ninja_staff",
+      "name": "Ninja · 봉술",
+      "category": "combat",
+      "bones": 95,
+      "meshes": 5,
+      "textured_meshes": 5,
+      "textures": 6,
+      "vertices": 20712,
+      "clips": [
+        "swing"
+      ],
+      "durations": {
+        "swing": 4.3
+      },
+      "glb_path": "res://characters/assets/ninja_staff.glb",
+      "motion_path": "res://characters/assets/ninja_staff_motion.res",
+      "glb_kb": 1518.5
+    },
+    {
+      "id": "fetid_hulk",
+      "name": "Fetid Hulk",
+      "category": "creature",
+      "bones": 43,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 2780,
+      "clips": [
+        "neutral",
+        "walk",
+        "slam",
+        "spit"
+      ],
+      "durations": {
+        "neutral": 2.0,
+        "walk": 1.2,
+        "slam": 1.333,
+        "spit": 1.333
+      },
+      "glb_path": "res://characters/assets/fetid_hulk.glb",
+      "motion_path": "res://characters/assets/fetid_hulk_motion.res",
+      "glb_kb": 246.5
+    },
+    {
+      "id": "flying_imp",
+      "name": "Flying Imp",
+      "category": "creature",
+      "bones": 66,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 3107,
+      "clips": [
+        "idle",
+        "fly",
+        "sword",
+        "shoot"
+      ],
+      "durations": {
+        "idle": 1.667,
+        "fly": 1.667,
+        "sword": 1.067,
+        "shoot": 1.067
+      },
+      "glb_path": "res://characters/assets/flying_imp.glb",
+      "motion_path": "res://characters/assets/flying_imp_motion.res",
+      "glb_kb": 249.7
+    },
+    {
+      "id": "siege_fiend",
+      "name": "Siege Fiend",
+      "category": "creature",
+      "bones": 34,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 2130,
+      "clips": [
+        "neutral",
+        "move",
+        "turn_left",
+        "turn_right"
+      ],
+      "durations": {
+        "neutral": 2.0,
+        "move": 1.4,
+        "turn_left": 1.333,
+        "turn_right": 1.333
+      },
+      "glb_path": "res://characters/assets/siege_fiend.glb",
+      "motion_path": "res://characters/assets/siege_fiend_motion.res",
+      "glb_kb": 198.3
+    },
+    {
+      "id": "hivequeen",
+      "name": "Hivequeen Discharger",
+      "category": "creature",
+      "bones": 14,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 2658,
+      "clips": [
+        "discharge"
+      ],
+      "durations": {
+        "discharge": 0.667
+      },
+      "glb_path": "res://characters/assets/hivequeen.glb",
+      "motion_path": "res://characters/assets/hivequeen_motion.res",
+      "glb_kb": 207.7
+    },
+    {
+      "id": "shulgoth",
+      "name": "Shulgoth",
+      "category": "creature",
+      "bones": 76,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 2959,
+      "clips": [
+        "walk"
+      ],
+      "durations": {
+        "walk": 1.333
+      },
+      "glb_path": "res://characters/assets/shulgoth.glb",
+      "motion_path": "res://characters/assets/shulgoth_motion.res",
+      "glb_kb": 262.9
+    },
+    {
+      "id": "creature",
+      "name": "Creature · 크리처",
+      "category": "creature",
+      "bones": 52,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 2104,
+      "clips": [
+        "walk"
+      ],
+      "durations": {
+        "walk": 1.2
+      },
+      "glb_path": "res://characters/assets/creature.glb",
+      "motion_path": "res://characters/assets/creature_motion.res",
+      "glb_kb": 214.1
+    },
+    {
+      "id": "havok_girl",
+      "name": "Havok Girl",
+      "category": "showcase",
+      "bones": 89,
+      "meshes": 8,
+      "textured_meshes": 8,
+      "textures": 3,
+      "vertices": 7386,
+      "clips": [
+        "run",
+        "talk",
+        "wave"
+      ],
+      "durations": {
+        "run": 0.867,
+        "talk": 6.4,
+        "wave": 1.333
+      },
+      "glb_path": "res://characters/assets/havok_girl.glb",
+      "motion_path": "res://characters/assets/havok_girl_motion.res",
+      "glb_kb": 629.6
+    },
+    {
+      "id": "firefighter",
+      "name": "Firefighter",
+      "category": "showcase",
+      "bones": 38,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 2562,
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "jump",
+        "dive"
+      ],
+      "durations": {
+        "idle": 3.0,
+        "walk": 1.133,
+        "run": 0.667,
+        "jump": 1.333,
+        "dive": 2.5
+      },
+      "glb_path": "res://characters/assets/firefighter.glb",
+      "motion_path": "res://characters/assets/firefighter_motion.res",
+      "glb_kb": 219.8
+    },
+    {
+      "id": "desert_dan",
+      "name": "Desert Dan · 사막 대원",
+      "category": "showcase",
+      "bones": 38,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 2070,
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "jump"
+      ],
+      "durations": {
+        "idle": 3.0,
+        "walk": 1.133,
+        "run": 0.667,
+        "jump": 1.333
+      },
+      "glb_path": "res://characters/assets/desert_dan.glb",
+      "motion_path": "res://characters/assets/desert_dan_motion.res",
+      "glb_kb": 203.2
+    },
+    {
+      "id": "jungle_joe",
+      "name": "Jungle Joe · 정글 대원",
+      "category": "showcase",
+      "bones": 38,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 2070,
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "jump"
+      ],
+      "durations": {
+        "idle": 3.0,
+        "walk": 1.133,
+        "run": 0.667,
+        "jump": 1.333
+      },
+      "glb_path": "res://characters/assets/jungle_joe.glb",
+      "motion_path": "res://characters/assets/jungle_joe_motion.res",
+      "glb_kb": 189.9
+    },
+    {
+      "id": "snow_sam",
+      "name": "Snow Sam · 설원 대원",
+      "category": "showcase",
+      "bones": 38,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 2070,
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "jump"
+      ],
+      "durations": {
+        "idle": 3.0,
+        "walk": 1.133,
+        "run": 0.667,
+        "jump": 1.333
+      },
+      "glb_path": "res://characters/assets/snow_sam.glb",
+      "motion_path": "res://characters/assets/snow_sam_motion.res",
+      "glb_kb": 190.4
+    },
+    {
+      "id": "zombie",
+      "name": "Zombie",
+      "category": "showcase",
+      "bones": 89,
+      "meshes": 15,
+      "textured_meshes": 15,
+      "textures": 3,
+      "vertices": 12679,
+      "clips": [
+        "walk",
+        "agrowalk"
+      ],
+      "durations": {
+        "walk": 1.967,
+        "agrowalk": 1.3
+      },
+      "glb_path": "res://characters/assets/zombie.glb",
+      "motion_path": "res://characters/assets/zombie_motion.res",
+      "glb_kb": 875.3
+    },
+    {
+      "id": "bigbad",
+      "name": "BigBad",
+      "category": "retargeting",
+      "bones": 89,
+      "meshes": 7,
+      "textured_meshes": 7,
+      "textures": 7,
+      "vertices": 11594,
+      "clips": [
+        "yell"
+      ],
+      "durations": {
+        "yell": 3.3
+      },
+      "glb_path": "res://characters/assets/bigbad.glb",
+      "motion_path": "res://characters/assets/bigbad_motion.res",
+      "glb_kb": 1137.7
+    },
+    {
+      "id": "boy",
+      "name": "Boy",
+      "category": "retargeting",
+      "bones": 64,
+      "meshes": 4,
+      "textured_meshes": 4,
+      "textures": 1,
+      "vertices": 2491,
+      "clips": [
+        "runjump"
+      ],
+      "durations": {
+        "runjump": 1.367
+      },
+      "glb_path": "res://characters/assets/boy.glb",
+      "motion_path": "res://characters/assets/boy_motion.res",
+      "glb_kb": 221.2
+    },
+    {
+      "id": "girl",
+      "name": "Girl",
+      "category": "retargeting",
+      "bones": 64,
+      "meshes": 3,
+      "textured_meshes": 3,
+      "textures": 1,
+      "vertices": 3479,
+      "clips": [
+        "dive",
+        "jumpturn"
+      ],
+      "durations": {
+        "dive": 1.333,
+        "jumpturn": 1.667
+      },
+      "glb_path": "res://characters/assets/girl.glb",
+      "motion_path": "res://characters/assets/girl_motion.res",
+      "glb_kb": 288.7
+    },
+    {
+      "id": "female_dress",
+      "name": "Female · 드레스",
+      "category": "retargeting",
+      "bones": 96,
+      "meshes": 2,
+      "textured_meshes": 2,
+      "textures": 1,
+      "vertices": 3573,
+      "clips": [
+        "walk",
+        "walk_back"
+      ],
+      "durations": {
+        "walk": 1.0,
+        "walk_back": 1.2
+      },
+      "glb_path": "res://characters/assets/female_dress.glb",
+      "motion_path": "res://characters/assets/female_dress_motion.res",
+      "glb_kb": 285.2
+    },
+    {
+      "id": "female_ponytail",
+      "name": "Female · 포니테일",
+      "category": "retargeting",
+      "bones": 82,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 3615,
+      "clips": [
+        "walk",
+        "walk_turn",
+        "walk_back"
+      ],
+      "durations": {
+        "walk": 1.0,
+        "walk_turn": 1.333,
+        "walk_back": 1.2
+      },
+      "glb_path": "res://characters/assets/female_ponytail.glb",
+      "motion_path": "res://characters/assets/female_ponytail_motion.res",
+      "glb_kb": 268.9
+    },
+    {
+      "id": "male_cape",
+      "name": "Male · 망토",
+      "category": "retargeting",
+      "bones": 93,
+      "meshes": 2,
+      "textured_meshes": 2,
+      "textures": 1,
+      "vertices": 3547,
+      "clips": [
+        "walk"
+      ],
+      "durations": {
+        "walk": 1.0
+      },
+      "glb_path": "res://characters/assets/male_cape.glb",
+      "motion_path": "res://characters/assets/male_cape_motion.res",
+      "glb_kb": 271.1
+    },
+    {
+      "id": "male_nocape",
+      "name": "Male · 어드벤처",
+      "category": "retargeting",
+      "bones": 78,
+      "meshes": 3,
+      "textured_meshes": 3,
+      "textures": 2,
+      "vertices": 2911,
+      "clips": [
+        "walk",
+        "walk_slow",
+        "look"
+      ],
+      "durations": {
+        "walk": 1.0,
+        "walk_slow": 1.333,
+        "look": 4.0
+      },
+      "glb_path": "res://characters/assets/male_nocape.glb",
+      "motion_path": "res://characters/assets/male_nocape_motion.res",
+      "glb_kb": 260.3
+    },
+    {
+      "id": "singer",
+      "name": "Singer · 싱어",
+      "category": "retargeting",
+      "bones": 66,
+      "meshes": 7,
+      "textured_meshes": 7,
+      "textures": 2,
+      "vertices": 4363,
+      "clips": [
+        "sing"
+      ],
+      "durations": {
+        "sing": 5.3
+      },
+      "glb_path": "res://characters/assets/singer.glb",
+      "motion_path": "res://characters/assets/singer_motion.res",
+      "glb_kb": 347.1
+    },
+    {
+      "id": "gingerbread",
+      "name": "Gingerbread",
+      "category": "retargeting",
+      "bones": 17,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 1,
+      "vertices": 2046,
+      "clips": [
+        "walk"
+      ],
+      "durations": {
+        "walk": 1.0
+      },
+      "glb_path": "res://characters/assets/gingerbread.glb",
+      "motion_path": "res://characters/assets/gingerbread_motion.res",
+      "glb_kb": 179.3
+    }
+  ]
+}
