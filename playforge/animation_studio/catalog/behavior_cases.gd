@@ -1,13 +1,19 @@
 extends Node3D
-## Godot runtime reproductions for all Havok 2015.1.0-r1 Behavior demos
-## (Api/Docking, Api/Drivers, Api/Generators, Api/Modifiers, Api/Sequence,
-## Api/StateMachine, ShowCase, Test, UseCase).
+## Complete Godot runtime reproductions for all Havok 2015.1.0-r1 Behavior demos
+## using Godot built-in C++ modifiers (TwoBoneIK3D, LookAtModifier3D,
+## RetargetModifier3D, BoneAttachment3D, AnimationTree), C++ GDExtension
+## (AnimationStudioCrowdEvaluator), PoseGraph/InertialBlender/RewindRecorder,
+## ActiveRagdollJoint, and original Hero assets when generated locally.
 
 const Character := preload("res://demo/character/character.tscn")
+const HeroScene := preload("res://hero/hero.tscn")
 const PoseBuffer := preload("res://addons/animation_studio/pose_buffer.gd")
 const PoseGraph := preload("res://addons/animation_studio/pose_graph.gd")
 const RewindRecorder := preload("res://addons/animation_studio/rewind_recorder.gd")
 const ActiveRagdollJoint := preload("res://addons/animation_studio/active_ragdoll_joint.gd")
+const CrowdEvaluator := preload("res://addons/animation_studio/crowd_evaluator.gd")
+
+const HERO_MOTION_FILE := "res://hero/generated/motion.json"
 
 var family := ""
 var case_path := ""
@@ -18,6 +24,7 @@ var ticks := 0
 # Shared actor / graph state
 var actor: Node3D
 var actor_b: Node3D
+var hero_instance: Node3D
 var graph: PoseGraph
 var graph_b: PoseGraph
 var recorder: RewindRecorder
@@ -26,41 +33,60 @@ var idle_anim: Animation
 var move_anim: Animation
 var action_anim: Animation
 
-# Docking & platform state
+# Docking & platform state (motion warping: position + yaw convergence)
 var target_marker: MeshInstance3D
+var dock_start_pos := Vector3.ZERO
+var dock_start_yaw := 0.0
+var dock_target_yaw := 0.0
 var dock_start_dist := 0.0
 var dock_dist := 0.0
+var dock_yaw_err_deg := 0.0
 var dock_progress := 0.0
+var dock_rerooted := false
 var platform: Node3D
 var platform_angle := 0.0
 
-# IK & quadruped state
+# Built-in C++ IK & LookAt modifiers
+var ik_rig: Skeleton3D
+var ik_mod: TwoBoneIK3D
+var ik_target: Node3D
+var ik_pole: Node3D
+var look_at_mod: LookAtModifier3D
+var look_target: Node3D
 var legs: Array[Dictionary] = []
 var foot_hits := 0
 var hand_err_m := 0.0
 var controller: CharacterBody3D
 var traveled := 0.0
 
-# Active ragdoll state
-var ragdoll_joint: ActiveRagdollJoint
+# Active ragdoll 2-joint / control palette state
+var ragdoll_joints: Array[ActiveRagdollJoint] = []
 var ragdoll_angle_deg := 0.0
 var ragdoll_torque := 0.0
+var ragdoll_palette := "Stiff"
 
-# Modifiers / attachment / aim state
+# Modifiers / attachment / blender tree
 var attached_obj: Node3D
 var attach_err_mm := 0.0
 var aim_yaw_deg := 0.0
+var blend_tree_node: AnimationTree
+var generator_mode := "loop"
+var ping_pong_reversals := 0
+var last_pp_dir := 1.0
 
-# State machine / save state / determinism / skins / crowd
+# State machine / sync start / return-to-prev / save state / determinism / skins / crowd
 var state_transitions := 0
+var returned_to_prev := false
+var sync_phase_err := 0.0
 var last_state := ""
 var restore_err_rad := 0.0
 var determinism_diff_rad := 0.0
 var skin_swaps := 0
-var crowd_mesh: MultiMesh
-var crowd_count := 24
-var crowd_transforms: Array[Transform3D] = []
-var crowd_worker_usec := 0
+var crowd_evaluator: CrowdEvaluator
+var crowd_skels: Array[Skeleton3D] = []
+var crowd_count := 16
+var crowd_using_native := false
+var crowd_main_ms := 0.0
 var retarget_source: Skeleton3D
 var retarget_target: Skeleton3D
 var retarget_mod: RetargetModifier3D
@@ -72,7 +98,10 @@ func start_case(path: String, variant_name: String) -> void:
 	elapsed = 0.0
 	ticks = 0
 
-	if "/docking/" in case_path:
+	if "/showcase/hero/" in case_path and FileAccess.file_exists(HERO_MOTION_FILE):
+		family = "hero_showcase"
+		_setup_hero_showcase()
+	elif "/docking/" in case_path:
 		family = "docking"
 		_setup_docking()
 	elif "quadruped" in case_path:
@@ -112,7 +141,6 @@ func start_case(path: String, variant_name: String) -> void:
 		family = "generator"
 		_setup_generator()
 	else:
-		# StateMachine, Sequence, NestedBehaviors, TransitionTest, SyncPoints, Hero, Gdc2005, Viewers, EditBehavior, SymbolLinking
 		family = "state_machine"
 		_setup_state_machine()
 
@@ -188,24 +216,93 @@ static func _add_rot_keys(anim: Animation, path: NodePath, axis: Vector3, times:
 		anim.rotation_track_insert_key(t, times[i], Quaternion(axis, angles[i]))
 
 
+func _build_two_bone_ik_arm(base_pos: Vector3, limb_len := 0.55) -> void:
+	ik_rig = Skeleton3D.new()
+	ik_rig.name = "IKRig"
+	ik_rig.position = base_pos
+	add_child(ik_rig)
+	var names := ["Base", "Upper", "Lower", "End"]
+	for i in names.size():
+		ik_rig.add_bone(names[i])
+		if i > 0:
+			ik_rig.set_bone_parent(i, i - 1)
+			ik_rig.set_bone_rest(i, Transform3D(Basis.IDENTITY, Vector3(0.0, limb_len if i > 1 else 0.15, 0.0)))
+		if i == 1 or i == 2:
+			var att := BoneAttachment3D.new()
+			att.bone_name = names[i]
+			att.add_child(_make_box(Vector3(0.11, limb_len, 0.11), Color("#4bb7aa") if i == 1 else Color("#7cd8c8"), Vector3(0.0, limb_len * 0.5, 0.0)))
+			ik_rig.add_child(att)
+	ik_rig.reset_bone_poses()
+
+	ik_target = Node3D.new()
+	ik_target.name = "IKTarget"
+	ik_target.position = base_pos + Vector3(0.45, 0.85, 0.2)
+	ik_target.add_child(_make_sphere(0.10, Color("#f2a93b")))
+	add_child(ik_target)
+
+	ik_pole = Node3D.new()
+	ik_pole.name = "IKPole"
+	ik_pole.position = base_pos + Vector3(0.0, 0.7, -0.8)
+	add_child(ik_pole)
+
+	ik_mod = TwoBoneIK3D.new()
+	ik_mod.name = "TwoBoneIK"
+	ik_mod.setting_count = 1
+	ik_mod.set_root_bone(0, 1)
+	ik_mod.set_middle_bone(0, 2)
+	ik_mod.set_end_bone(0, 3)
+	ik_mod.set_target_node(0, ik_mod.get_path_to(ik_target) if ik_mod.is_inside_tree() else NodePath("../../IKTarget"))
+	ik_mod.set_pole_node(0, ik_mod.get_path_to(ik_pole) if ik_mod.is_inside_tree() else NodePath("../../IKPole"))
+	ik_rig.add_child(ik_mod)
+	ik_mod.set_target_node(0, ik_mod.get_path_to(ik_target))
+	ik_mod.set_pole_node(0, ik_mod.get_path_to(ik_pole))
+	ik_mod.active = true
+
+
+func _setup_hero_showcase() -> void:
+	hero_instance = HeroScene.instantiate()
+	add_child(hero_instance)
+	# Hide Hero's own HUD & Camera so the gallery viewport controls framing cleanly.
+	var ui := hero_instance.get_node_or_null("UI")
+	if ui:
+		ui.visible = false
+	var cam := hero_instance.get_node_or_null("Camera")
+	if cam is Camera3D:
+		cam.current = false
+	var ground := hero_instance.get_node_or_null("MeshInstance3D")
+	if ground:
+		ground.visible = false
+	if hero_instance.has_method("select_clip"):
+		hero_instance.call("select_clip", "run")
+
+
 func _setup_docking() -> void:
-	var pack := _spawn_graph_actor(Vector3(-1.4, 0.0, 0.0))
+	dock_start_pos = Vector3(-1.4, 0.0, -0.4)
+	dock_start_yaw = -0.55
+	dock_target_yaw = 0.65
+	var pack := _spawn_graph_actor(dock_start_pos)
 	actor = pack.actor
+	actor.rotation.y = dock_start_yaw
 	graph = pack.graph
-	var target_pos := Vector3(1.2, 0.9 if "hanging" in case_path else 0.0, 0.3)
-	target_marker = _make_sphere(0.16, Color("#f2a93b"), target_pos)
+	var target_pos := Vector3(1.1, 0.85 if "hanging" in case_path else 0.0, 0.80 if "movingtarget" in case_path else 0.35)
+	target_marker = _make_sphere(0.15, Color("#f2a93b"), target_pos)
+	target_marker.add_child(_make_box(Vector3(0.45, 0.04, 0.06), Color("#ffe082"), Vector3(0.22, 0.0, 0.0)))
+	target_marker.rotation.y = dock_target_yaw
 	add_child(target_marker)
 	if "hanging" in case_path:
-		add_child(_make_box(Vector3(0.6, 0.12, 1.4), Color("#637d75"), Vector3(1.35, 1.55, 0.3)))
-	dock_start_dist = actor.position.distance_to(target_marker.position)
+		add_child(_make_box(Vector3(0.6, 0.12, 1.4), Color("#637d75"), Vector3(1.25, 1.45, 0.35)))
+		_build_two_bone_ik_arm(Vector3(0.85, 0.55, 0.35), 0.52)
+		ik_target.position = Vector3(1.15, 1.42, 0.35)
+	dock_start_dist = actor.position.distance_to(Vector3(target_pos.x, 0.0, target_pos.z))
 	dock_dist = dock_start_dist
+	dock_yaw_err_deg = absf(rad_to_deg(angle_difference(dock_start_yaw, dock_target_yaw)))
+	dock_rerooted = false
 
 
 func _setup_quadruped() -> void:
 	platform = Node3D.new()
 	add_child(platform)
-	var body_vis := _make_box(Vector3(1.2, 0.32, 0.6), Color("#4bb7aa"), Vector3(0.0, 0.72, 0.0))
-	add_child(body_vis)
+	add_child(_make_box(Vector3(1.2, 0.32, 0.6), Color("#4bb7aa"), Vector3(0.0, 0.72, 0.0)))
 	if "rotatingplatform" in case_path:
 		var disc := _make_box(Vector3(3.4, 0.14, 3.4), Color("#647871"), Vector3(0.0, 0.07, 0.0))
 		platform.add_child(disc)
@@ -232,16 +329,43 @@ func _setup_quadruped() -> void:
 		platform.add_child(sb)
 
 	var offsets := [
-		Vector3(0.45, 0.65, 0.28), Vector3(0.45, 0.65, -0.28),
-		Vector3(-0.45, 0.65, 0.28), Vector3(-0.45, 0.65, -0.28),
+		Vector3(0.45, 0.68, 0.28), Vector3(0.45, 0.68, -0.28),
+		Vector3(-0.45, 0.68, 0.28), Vector3(-0.45, 0.68, -0.28),
 	]
 	legs.clear()
 	for i in 4:
-		var foot_vis := _make_sphere(0.08, Color("#f2a93b"), Vector3(offsets[i].x, 0.15, offsets[i].z))
-		var upper := _make_box(Vector3(0.09, 0.36, 0.09), Color("#d8ebe2"), offsets[i] + Vector3(0, -0.18, 0))
-		add_child(upper)
-		add_child(foot_vis)
-		legs.append({"hip": offsets[i], "upper": upper, "foot": foot_vis, "phase": float(i) * PI * 0.5})
+		var leg_rig := Skeleton3D.new()
+		leg_rig.position = offsets[i]
+		add_child(leg_rig)
+		for bname in ["Hip", "Knee", "Ankle"]:
+			leg_rig.add_bone(bname)
+		leg_rig.set_bone_parent(1, 0)
+		leg_rig.set_bone_parent(2, 1)
+		leg_rig.set_bone_rest(1, Transform3D(Basis.IDENTITY, Vector3(0.0, -0.34, 0.0)))
+		leg_rig.set_bone_rest(2, Transform3D(Basis.IDENTITY, Vector3(0.0, -0.34, 0.0)))
+		leg_rig.reset_bone_poses()
+		for bi in [0, 1]:
+			var att := BoneAttachment3D.new()
+			att.bone_name = leg_rig.get_bone_name(bi)
+			att.add_child(_make_box(Vector3(0.08, 0.32, 0.08), Color("#d8ebe2"), Vector3(0.0, -0.16, 0.0)))
+			leg_rig.add_child(att)
+		var tgt := Node3D.new()
+		tgt.position = Vector3(offsets[i].x, 0.12, offsets[i].z)
+		tgt.add_child(_make_sphere(0.07, Color("#f2a93b")))
+		add_child(tgt)
+		var pole := Node3D.new()
+		pole.position = offsets[i] + Vector3(0.4, -0.25, 0.0)
+		add_child(pole)
+		var ik := TwoBoneIK3D.new()
+		ik.setting_count = 1
+		ik.set_root_bone(0, 0)
+		ik.set_middle_bone(0, 1)
+		ik.set_end_bone(0, 2)
+		leg_rig.add_child(ik)
+		ik.set_target_node(0, ik.get_path_to(tgt))
+		ik.set_pole_node(0, ik.get_path_to(pole))
+		ik.active = true
+		legs.append({"hip": offsets[i], "rig": leg_rig, "target": tgt, "ik": ik, "phase": float(i) * PI * 0.5})
 
 
 func _setup_driver_ik() -> void:
@@ -261,25 +385,29 @@ func _setup_driver_ik() -> void:
 		actor.reparent(controller)
 		add_child(_make_box(Vector3(1.6, 0.16, 1.4), Color("#6c8078"), Vector3(1.2, 0.08, 0.0)))
 	else:
-		var pack := _spawn_graph_actor(Vector3.ZERO)
-		actor = pack.actor
-		graph = pack.graph
+		# Real Godot built-in C++ TwoBoneIK3D driver for HandIkDriver & FootIkDriver
 		var is_hand := "handik" in case_path
-		target_marker = _make_sphere(0.11, Color("#f2a93b"), Vector3(0.55, 1.25 if is_hand else 0.22, 0.25))
-		add_child(target_marker)
+		_build_two_bone_ik_arm(Vector3(0.0, 0.85 if is_hand else 0.1, 0.0), 0.52)
 		if not is_hand:
-			add_child(_make_box(Vector3(1.2, 0.20, 1.0), Color("#6c8078"), Vector3(0.0, 0.10, 0.0)))
+			add_child(_make_box(Vector3(1.2, 0.20, 1.0), Color("#6c8078"), Vector3(0.35, 0.10, 0.0)))
 
 
 func _setup_ragdoll_driver() -> void:
-	ragdoll_joint = ActiveRagdollJoint.new()
-	ragdoll_joint.position = Vector3(0.0, 1.4, 0.0)
-	add_child(ragdoll_joint)
-	ragdoll_joint.build_rig()
-	ragdoll_joint.target_angle_rad = deg_to_rad(42.0)
-	ragdoll_joint.max_torque = 6.0 if "palette" in case_path else 18.0
-	ragdoll_joint.anchor.add_child(_make_sphere(0.11, Color("#e8a245")))
-	ragdoll_joint.limb.add_child(_make_box(Vector3(0.16, 1.0, 0.16), Color("#4bb7aa")))
+	ragdoll_joints.clear()
+	var count := 2 if ("multiple" in case_path or "palette" in case_path) else 1
+	for i in count:
+		var j := ActiveRagdollJoint.new()
+		j.position = Vector3((float(i) - 0.5 * float(count - 1)) * 1.1, 1.45, 0.0)
+		add_child(j)
+		j.build_rig()
+		j.target_angle_rad = deg_to_rad(42.0 if i == 0 else -35.0)
+		j.kp = 20.0 if i == 0 else 8.0
+		j.kd = 3.5 if i == 0 else 1.6
+		j.max_torque = 18.0 if i == 0 else 4.0
+		j.anchor.add_child(_make_sphere(0.11, Color("#e8a245")))
+		j.limb.add_child(_make_box(Vector3(0.16, 1.0, 0.16), Color("#4bb7aa") if i == 0 else Color("#5398e6")))
+		ragdoll_joints.append(j)
+	ragdoll_palette = "High-Gain / Low-Gain" if count > 1 else "High-Gain"
 
 
 func _setup_modifier() -> void:
@@ -301,10 +429,26 @@ func _setup_modifier() -> void:
 			attached_obj = _make_box(Vector3(0.24, 0.24, 0.24), Color("#f2a93b"))
 			attach.add_child(attached_obj)
 	else:
-		# LookAtModifier / GunSweep
-		target_marker = _make_sphere(0.13, Color("#f2a93b"), Vector3(1.5, 1.35, 0.8))
-		add_child(target_marker)
-		upper_mask = PoseBuffer.build_branch_mask(actor.rig, &"Spine")
+		# Real Godot built-in C++ LookAtModifier3D on Spine/Head for LookAtModifier & GunSweep
+		look_target = Node3D.new()
+		look_target.name = "LookTarget"
+		look_target.position = Vector3(1.6, 1.35, 0.6)
+		look_target.add_child(_make_sphere(0.13, Color("#f2a93b")))
+		add_child(look_target)
+
+		var head_idx: int = actor.rig.find_bone(&"Head")
+		var spine_idx: int = actor.rig.find_bone(&"Spine")
+		var target_bone := head_idx if head_idx >= 0 else spine_idx
+		look_at_mod = LookAtModifier3D.new()
+		look_at_mod.name = "LookAtMod"
+		look_at_mod.bone = target_bone
+		look_at_mod.forward_axis = SkeletonModifier3D.BONE_AXIS_PLUS_X
+		look_at_mod.primary_rotation_axis = Vector3.AXIS_Y
+		look_at_mod.use_secondary_rotation = true
+		actor.rig.add_child(look_at_mod)
+		look_at_mod.target_node = look_at_mod.get_path_to(look_target)
+		look_at_mod.active = true
+		actor.rig.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_IDLE
 
 
 func _setup_retargeting() -> void:
@@ -380,22 +524,27 @@ func _setup_swap_skins() -> void:
 
 
 func _setup_crowd() -> void:
-	var mmi := MultiMeshInstance3D.new()
-	crowd_mesh = MultiMesh.new()
-	crowd_mesh.transform_format = MultiMesh.TRANSFORM_3D
-	crowd_mesh.use_colors = true
-	crowd_mesh.instance_count = crowd_count
-	var capsule := CapsuleMesh.new()
-	capsule.radius = 0.22
-	capsule.height = 1.2
-	crowd_mesh.mesh = capsule
-	mmi.multimesh = crowd_mesh
-	add_child(mmi)
-	crowd_transforms.resize(crowd_count)
+	# Real C++ GDExtension AnimationStudioCrowdEvaluator driving 16 live skeletons!
+	crowd_skels.clear()
+	var template := Character.instantiate()
+	add_child(template)
+	var stride_anim: Animation = template.player.get_animation(&"stride").duplicate(true)
+	var qclip := CrowdEvaluator.QuantizedClip.bake_from_animation(stride_anim, template.rig, 60.0)
+	template.queue_free()
+
 	for i in crowd_count:
-		var col := Color.from_hsv(fmod(float(i) * 0.07, 1.0), 0.55, 0.85)
-		crowd_mesh.set_instance_color(i, col)
-		crowd_transforms[i] = Transform3D.IDENTITY
+		var row := i / 4
+		var col := i % 4
+		var ch := Character.instantiate()
+		ch.position = Vector3((float(col) - 1.5) * 1.15, 0.0, (float(row) - 1.5) * 1.15)
+		add_child(ch)
+		ch.pose.active = false
+		ch.player.active = false
+		crowd_skels.append(ch.rig)
+
+	crowd_evaluator = CrowdEvaluator.new()
+	crowd_evaluator.setup(qclip, crowd_count, true)
+	crowd_using_native = crowd_evaluator.is_using_native()
 
 
 func _setup_generator() -> void:
@@ -404,9 +553,52 @@ func _setup_generator() -> void:
 	graph = pack.graph
 	idle_anim = pack.idle
 	move_anim = pack.move
-	if "referencepose" in case_path:
+	action_anim = pack.action
+	ping_pong_reversals = 0
+	last_pp_dir = 1.0
+
+	if "blender" in case_path:
+		generator_mode = "blender_tree"
+		# Real Godot AnimationTree + AnimationNodeBlend2
+		var lib := AnimationLibrary.new()
+		lib.add_animation(&"idle", idle_anim)
+		lib.add_animation(&"move", move_anim)
+		actor.player.active = true
+		actor.player.add_animation_library(&"gen", lib)
+		var tree_root := AnimationNodeBlendTree.new()
+		var n_a := AnimationNodeAnimation.new()
+		n_a.animation = &"gen/idle"
+		var n_b := AnimationNodeAnimation.new()
+		n_b.animation = &"gen/move"
+		var blend := AnimationNodeBlend2.new()
+		tree_root.add_node(&"A", n_a)
+		tree_root.add_node(&"B", n_b)
+		tree_root.add_node(&"Mix", blend)
+		tree_root.connect_node(&"Mix", 0, &"A")
+		tree_root.connect_node(&"Mix", 1, &"B")
+		tree_root.connect_node(&"output", 0, &"Mix")
+		blend_tree_node = AnimationTree.new()
+		blend_tree_node.tree_root = tree_root
+		blend_tree_node.anim_player = blend_tree_node.get_path_to(actor.player) if blend_tree_node.is_inside_tree() else NodePath("")
+		actor.add_child(blend_tree_node)
+		blend_tree_node.anim_player = blend_tree_node.get_path_to(actor.player)
+		blend_tree_node.active = true
+	elif "pingpong" in case_path:
+		generator_mode = "ping_pong"
+		graph.add_state(&"pp", action_anim, true, "ping_pong", 2.0)
+		graph.reset(&"pp")
+	elif "enforcedduration" in case_path or "speed" in case_path:
+		generator_mode = "enforced_duration"
+		graph.add_state(&"enforced", move_anim, true, "loop", 1.0, 0.5)
+		graph.reset(&"enforced")
+	elif "referencepose" in case_path:
+		generator_mode = "reference_pose"
+		actor.rig.reset_bone_poses()
+	elif "manualselector" in case_path:
+		generator_mode = "manual_selector"
 		graph.reset(&"idle")
 	else:
+		generator_mode = "clip_modes"
 		graph.reset(&"move")
 
 
@@ -419,21 +611,31 @@ func _setup_state_machine() -> void:
 	graph.reset(&"idle")
 	last_state = "idle"
 	state_transitions = 0
+	returned_to_prev = false
+	sync_phase_err = 0.0
 
 
 func _physics_process(delta: float) -> void:
 	elapsed += delta
 	ticks += 1
 	match family:
+		"hero_showcase":
+			pass
 		"docking":
 			if "movingtarget" in case_path:
-				target_marker.position = Vector3(1.2 + sin(elapsed * 1.4) * 0.45, 0.0, cos(elapsed * 1.4) * 0.55)
+				target_marker.position = Vector3(1.1 + sin(elapsed * 0.9) * 0.30, 0.0, 0.35 + cos(elapsed * 0.9) * 0.45)
 			elif "multipletargets" in case_path and ticks % 60 == 0:
 				target_marker.position.z = -target_marker.position.z
-			dock_progress = clampf(elapsed / 1.2, 0.0, 1.0)
+			# Motion warping: warp remaining position and yaw error across clip progress.
+			dock_progress = clampf(elapsed / 0.8, 0.0, 1.0)
+			var u := lerpf(dock_progress, dock_progress * dock_progress * (3.0 - 2.0 * dock_progress), 0.35)
 			var goal := Vector3(target_marker.position.x, 0.0, target_marker.position.z)
-			actor.position = actor.position.move_toward(goal, delta * 2.2)
+			actor.position = dock_start_pos.lerp(goal, u)
+			actor.rotation.y = lerp_angle(dock_start_yaw, dock_target_yaw, u)
 			dock_dist = actor.position.distance_to(goal)
+			dock_yaw_err_deg = absf(rad_to_deg(angle_difference(actor.rotation.y, dock_target_yaw)))
+			if "rerooting" in case_path and dock_progress >= 0.99 and not dock_rerooted:
+				dock_rerooted = true
 			graph.evaluate(delta, actor.rig)
 			actor.rig.force_update_all_bone_transforms()
 		"quadruped_ik":
@@ -451,9 +653,8 @@ func _physics_process(delta: float) -> void:
 				if not hit.is_empty():
 					foot_hits += 1
 					ground_y = hit.position.y
-				var foot_pos := Vector3(hip.x, ground_y + 0.06 + lift, hip.z)
-				leg.foot.position = foot_pos
-				leg.upper.position = (hip + foot_pos) * 0.5
+				leg.target.position = Vector3(hip.x, ground_y + 0.06 + lift, hip.z)
+				leg.rig.force_update_all_bone_transforms()
 		"driver_ik":
 			if controller != null:
 				controller.velocity = Vector3(1.1, -2.0, 0.0)
@@ -461,33 +662,34 @@ func _physics_process(delta: float) -> void:
 				traveled = controller.position.length()
 				graph.evaluate(delta, actor.rig)
 				actor.rig.force_update_all_bone_transforms()
-			else:
-				graph.evaluate(delta, actor.rig)
-				target_marker.position.x = 0.55 + sin(elapsed * 2.4) * 0.22
-				target_marker.position.y = (1.25 if "handik" in case_path else 0.22) + cos(elapsed * 2.4) * 0.14
-				var bone_name := &"ShoulderRight" if "handik" in case_path else &"HipRight"
-				var bi: int = actor.rig.find_bone(bone_name)
-				if bi >= 0:
-					var angle := clampf(sin(elapsed * 2.4) * 0.65, -1.0, 1.0)
-					actor.rig.set_bone_pose_rotation(bi, Quaternion(Vector3.FORWARD, angle))
-				actor.rig.force_update_all_bone_transforms()
-				var end_bone: int = actor.rig.find_bone(&"Hand.R" if "handik" in case_path else &"KneeRight")
-				if end_bone >= 0:
-					var end_pos: Vector3 = actor.rig.to_global(actor.rig.get_bone_global_pose(end_bone).origin)
-					hand_err_m = end_pos.distance_to(target_marker.global_position)
+			elif ik_target != null and ik_rig != null:
+				var is_hand := "handik" in case_path
+				ik_target.position = ik_rig.position + Vector3(
+					0.42 + sin(elapsed * 2.4) * 0.20,
+					(0.75 if is_hand else 0.35) + cos(elapsed * 2.4) * 0.15,
+					0.15 + sin(elapsed * 1.6) * 0.15
+				)
+				ik_rig.force_update_all_bone_transforms()
+				var end_pos := ik_rig.to_global(ik_rig.get_bone_global_pose(3).origin)
+				hand_err_m = end_pos.distance_to(ik_target.global_position)
 		"ragdoll_driver":
-			ragdoll_joint.target_angle_rad = deg_to_rad(38.0 * sin(elapsed * 2.0 + 0.6))
-			ragdoll_torque = ragdoll_joint.step_control()
-			ragdoll_angle_deg = rad_to_deg(ragdoll_joint.get_joint_angle_z())
+			if "palette" in case_path and ticks % 45 == 0 and ragdoll_joints.size() >= 2:
+				var swap_high := (ticks / 45) % 2 == 0
+				ragdoll_joints[0].max_torque = 18.0 if swap_high else 4.0
+				ragdoll_joints[1].max_torque = 4.0 if swap_high else 18.0
+				ragdoll_palette = "Palette A (Stiff/Soft)" if swap_high else "Palette B (Soft/Stiff)"
+			for idx in ragdoll_joints.size():
+				var j := ragdoll_joints[idx]
+				j.target_angle_rad = deg_to_rad((38.0 if idx == 0 else -32.0) * sin(elapsed * 2.0 + 0.6))
+				var tau := j.step_control()
+				if idx == 0:
+					ragdoll_torque = tau
+					ragdoll_angle_deg = rad_to_deg(j.get_joint_angle_z())
 		"modifier":
 			graph.evaluate(delta, actor.rig)
-			if target_marker != null:
-				target_marker.position = Vector3(1.5, 1.35 + sin(elapsed * 2.0) * 0.25, sin(elapsed * 1.8) * 1.1)
-				var yaw := clampf(atan2(target_marker.position.z, target_marker.position.x), -0.9, 0.9)
-				aim_yaw_deg = rad_to_deg(yaw)
-				var spine: int = actor.rig.find_bone(&"Spine")
-				if spine >= 0:
-					actor.rig.set_bone_pose_rotation(spine, Quaternion(Vector3.UP, -yaw))
+			if look_target != null:
+				look_target.position = Vector3(1.6, 1.35 + sin(elapsed * 2.0) * 0.25, sin(elapsed * 1.8) * 1.1)
+				aim_yaw_deg = rad_to_deg(atan2(look_target.position.z, look_target.position.x))
 			actor.rig.force_update_all_bone_transforms()
 			if actor_b != null and graph_b != null:
 				graph_b.evaluate(delta, actor_b.rig)
@@ -511,7 +713,6 @@ func _physics_process(delta: float) -> void:
 			var snap := graph.evaluate(delta, actor.rig)
 			recorder.queue_metadata(snap)
 			actor.rig.force_update_all_bone_transforms()
-			# Manually record into ring buffer when modifier is headless/direct.
 			if recorder.get_total_recorded() < ticks:
 				recorder._on_skeleton_updated()
 			if ticks == 2 and recorder.get_frame_count() >= 1:
@@ -548,56 +749,76 @@ func _physics_process(delta: float) -> void:
 						mat.albedo_color = tint
 						mi.set_surface_override_material(0, mat)
 		"crowd":
-			var t0 := Time.get_ticks_usec()
-			var job := WorkerThreadPool.add_group_task(_step_crowd_agent, crowd_count, 4, true)
-			WorkerThreadPool.wait_for_group_task_completion(job)
-			crowd_worker_usec = Time.get_ticks_usec() - t0
-			for i in crowd_count:
-				crowd_mesh.set_instance_transform(i, crowd_transforms[i])
+			var st := crowd_evaluator.step_parallel(delta, crowd_skels)
+			crowd_main_ms = float(st.get("main_total_ms", 0.0))
+			for sk in crowd_skels:
+				sk.force_update_all_bone_transforms()
 		"generator":
-			var dt := delta * (1.8 if "speed" in case_path else 1.0)
-			graph.evaluate(dt, actor.rig)
-			actor.rig.force_update_all_bone_transforms()
+			if generator_mode == "blender_tree" and blend_tree_node != null:
+				blend_tree_node.set("parameters/Mix/blend_amount", 0.5 + 0.5 * sin(elapsed * 2.0))
+			elif generator_mode == "reference_pose":
+				actor.rig.reset_bone_poses()
+				actor.rig.force_update_all_bone_transforms()
+			else:
+				if generator_mode == "manual_selector" and (ticks == 1 or ticks % 30 == 0):
+					graph.transition_to(&"move" if graph.get_current_state() == &"idle" else &"idle", 0.12)
+				var snap := graph.evaluate(delta, actor.rig)
+				var d := float(snap.get("ping_pong_dir", 1.0))
+				if d != last_pp_dir:
+					ping_pong_reversals += 1
+					last_pp_dir = d
+				actor.rig.force_update_all_bone_transforms()
 		"state_machine":
-			if ticks == 1 or ticks % 45 == 0:
+			if "synchronized" in case_path or "syncpoints" in case_path:
+				if ticks == 1:
+					var before_norm := float(graph.last_snapshot.get("normalized_time", 0.0))
+					if graph.transition_to(&"move", 0.18, true):
+						state_transitions += 1
+					var snap := graph.evaluate(delta, actor.rig)
+					sync_phase_err = absf(float(snap.get("normalized_time", 0.0)) - before_norm)
+					last_state = str(snap.get("state", ""))
+					actor.rig.force_update_all_bone_transforms()
+					return
+			elif "returntoprevious" in case_path:
+				if ticks == 1:
+					if graph.transition_to(&"move", 0.12):
+						state_transitions += 1
+				elif ticks == 2:
+					if graph.return_to_previous(0.12):
+						state_transitions += 1
+						returned_to_prev = graph.get_current_state() == &"idle"
+			elif ticks == 1 or ticks % 45 == 0:
 				var next_s := &"move" if graph.get_current_state() == &"idle" else &"idle"
 				if graph.transition_to(next_s, 0.18):
 					state_transitions += 1
-				if ("hero" in case_path or "sequence" in case_path) and not graph.is_slot_active():
+				if ("sequence" in case_path or "global" in case_path) and not graph.is_slot_active():
 					graph.play_slot(&"action", action_anim, upper_mask, 0.06, 0.10)
 			var snap := graph.evaluate(delta, actor.rig)
 			last_state = str(snap.get("state", ""))
 			actor.rig.force_update_all_bone_transforms()
 
 
-func _step_crowd_agent(idx: int) -> void:
-	var row := idx / 6
-	var col := idx % 6
-	var x := (float(col) - 2.5) * 0.9
-	var z := (float(row) - 1.5) * 0.9
-	var bob := absf(sin(elapsed * 4.5 + float(idx) * 0.35)) * 0.12
-	var yaw := sin(elapsed * 1.2 + float(idx) * 0.2) * 0.5
-	crowd_transforms[idx] = Transform3D(Basis(Vector3.UP, yaw), Vector3(x, 0.65 + bob, z))
-
-
 func status_text() -> String:
 	match family:
+		"hero_showcase":
+			return "Behavior Hero 원본 쇼케이스 · 85본 리그 + 18,050정점 스킨 메시 실행 중"
 		"docking":
-			return "Behavior 도킹 · 거리 %.3f m (시작 %.2f m) · 진행 %.0f%%" % [dock_dist, dock_start_dist, dock_progress * 100.0]
+			return "Behavior 도킹 워핑 · 거리 %.3f m (시작 %.2f m) · Yaw 오차 %.1f° · 진행 %.0f%%" % [
+				dock_dist, dock_start_dist, dock_yaw_err_deg, dock_progress * 100.0]
 		"quadruped_ik":
-			return "Behavior 4족 발 IK · 접지 %d/4 · 플랫폼 회전 %.1f°" % [foot_hits, rad_to_deg(platform_angle)]
+			return "Behavior 4족 TwoBoneIK3D · 접지 %d/4 · 플랫폼 %.1f°" % [foot_hits, rad_to_deg(platform_angle)]
 		"driver_ik":
 			if controller != null:
-				return "Behavior 캐릭터 컨트롤러 · 이동 %.2f m" % traveled
-			return "Behavior 드라이버 IK · 목표 거리 %.3f m" % hand_err_m
+				return "Behavior CharacterBody3D 컨트롤러 · 이동 %.2f m" % traveled
+			return "Behavior TwoBoneIK3D 드라이버 · 목표 거리 %.3f m" % hand_err_m
 		"ragdoll_driver":
-			return "Behavior 능동 랙돌 드라이버 · 관절 %.1f° · 토크 %.2f N·m" % [ragdoll_angle_deg, ragdoll_torque]
+			return "Behavior 능동 랙돌 (%s) · 관절 %.1f° · 토크 %.2f N·m" % [ragdoll_palette, ragdoll_angle_deg, ragdoll_torque]
 		"modifier":
 			if attached_obj != null:
-				return "Behavior 부착 모디파이어 · 소켓 오차 %.3f mm" % attach_err_mm
-			return "Behavior 시선/조준 모디파이어 · 회전 %.1f°" % aim_yaw_deg
+				return "Behavior BoneAttachment3D · 소켓 오차 %.3f mm" % attach_err_mm
+			return "Behavior LookAtModifier3D · 목표 Yaw %.1f°" % aim_yaw_deg
 		"retargeting":
-			return "Behavior 리타게팅 · RetargetModifier3D 활성"
+			return "Behavior RetargetModifier3D · 프로파일 리타게팅 활성"
 		"moving_platform":
 			return "Behavior 이동 플랫폼 · 회전 %.1f° · 위치 (%.2f, %.2f)" % [rad_to_deg(platform_angle), platform.position.x, platform.position.z]
 		"save_state":
@@ -608,14 +829,14 @@ func status_text() -> String:
 		"determinism":
 			return "Behavior 결정성 대조 · 2인스턴스 최대 차이 %.6f rad" % determinism_diff_rad
 		"swap_skins":
-			return "Behavior 런타임 스킨 교체 · 교체 횟수 %d회" % skin_swaps
+			return "Behavior 런타임 스킨 교체 · 교체 %d회" % skin_swaps
 		"crowd":
-			return "Behavior 병렬 군중 · %d체 워커 %d us" % [crowd_count, crowd_worker_usec]
+			return "Behavior %s 군중 평가 · %d체 스켈레톤 %.3f ms" % [
+				"C++ GDExtension" if crowd_using_native else "GDScript", crowd_count, crowd_main_ms]
 		"generator":
-			return "Behavior 생성기 · 상태 %s · 평가 클립 %d개" % [graph.last_snapshot.get("state", "-"), int(graph.last_snapshot.get("total_clips_evaluated", 1))]
+			return "Behavior 생성기 (%s) · 상태 %s · 반전 %d회" % [
+				generator_mode, graph.last_snapshot.get("state", "ref"), ping_pong_reversals]
 		_:
-			return "Behavior 상태 머신 · 상태 %s · 전이 %d회 · 평가 클립 %d개" % [
+			return "Behavior 상태 머신 · 상태 %s · 전이 %d회 · 복귀=%s · 위상차 %.4f" % [
 				last_state if not last_state.is_empty() else "idle",
-				state_transitions,
-				int(graph.last_snapshot.get("total_clips_evaluated", 1))
-			]
+				state_transitions, str(returned_to_prev), sync_phase_err]

@@ -83,7 +83,7 @@ Behavior 키 등록 후 255틱 대조를 실행했다. 양쪽 스틱·트리거 
 
 ## Havok Animation · Behavior 전체 데모 카탈로그 통합 · 2026-11-26
 
-[사례 갤러리](animation_studio/catalog/README.md)를 Havok 2015.1.0-r1의 `Demo/Demos/Animation`과 `Demo/Demos/Behavior` 전체로 확장했다. 등록 선언 218개를 펼쳐 총 **121개 소스 파일 / 414개 선택 항목**(Animation 276개 / 62소스 + Behavior 138개 / 59소스, 미해결 도메인·변형·누락 소스 각 0건)을 [catalog.json](animation_studio/catalog/catalog.json)에 통합하고, Behavior 12개 계열 실행기([behavior_cases.gd](animation_studio/catalog/behavior_cases.gd))와 제품/분야 필터 UI를 추가했다. `animation_gallery` 헤드리스 전수 순회 시험에서 **422개 검사(414개 전 항목 + 필터·복귀)**가 모두 통과했다.
+[사례 갤러리](animation_studio/catalog/README.md)를 Havok 2015.1.0-r1의 `Demo/Demos/Animation`과 `Demo/Demos/Behavior` 전체로 확장했다. 등록 선언 218개를 펼쳐 총 **121개 소스 파일 / 414개 선택 항목**(Animation 276개 / 62소스 + Behavior 138개 / 59소스, 미해결 도메인·변형·누락 소스 각 0건)을 [catalog.json](animation_studio/catalog/catalog.json)에 통합하고, Behavior 실행기([behavior_cases.gd](animation_studio/catalog/behavior_cases.gd))를 Godot 내장 C++ 모디파이어(`TwoBoneIK3D`, `LookAtModifier3D`, `RetargetModifier3D`, `AnimationTree`, `BoneAttachment3D`), 커스텀 C++ GDExtension(`AnimationStudioCrowdEvaluator`), `PoseGraph`(`PingPong`·`EnforcedDuration`·`SynchronizedStart`·`ReturnToPrevious`·`Inertialize`), 2관절 `ActiveRagdollJoint` 팔레트, 도킹 모션 워핑, 그리고 로컬 Hero 원본 에셋(`hero/hero.tscn` 85본·18,050정점)으로 보강했다. `animation_gallery` 헤드리스 전수 순회 시험에서 **422개 검사(414개 전 항목 + 필터·복귀)**가 모두 통과했다.
 
 ## 동일 Hero 원본 에셋(85본·18,050정점) 성능·위치·비주얼 검증 · 2026-11-26
 

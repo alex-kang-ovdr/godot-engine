@@ -46,12 +46,18 @@ func run() -> void:
 		if ok and script_path.ends_with("/behavior_cases.gd"):
 			var probe = lab.probe
 			match probe.family:
+				"hero_showcase":
+					ok = probe.hero_instance != null and probe.hero_instance.rig.get_bone_count() == 85
 				"docking":
 					ok = probe.dock_dist < probe.dock_start_dist
 				"quadruped_ik":
-					ok = probe.foot_hits >= 2
+					ok = probe.foot_hits >= 2 and not probe.find_children("*", "TwoBoneIK3D", true, false).is_empty()
+				"driver_ik":
+					ok = probe.controller != null or not probe.find_children("*", "TwoBoneIK3D", true, false).is_empty()
 				"ragdoll_driver":
-					ok = probe.ragdoll_joint != null and absf(probe.ragdoll_torque) > 0.01
+					ok = not probe.ragdoll_joints.is_empty() and absf(probe.ragdoll_torque) > 0.01
+				"modifier":
+					ok = probe.attached_obj != null or not probe.find_children("*", "LookAtModifier3D", true, false).is_empty()
 				"retargeting":
 					ok = not probe.find_children("*", "RetargetModifier3D", true, false).is_empty()
 				"save_state":
@@ -61,9 +67,11 @@ func run() -> void:
 				"swap_skins":
 					ok = probe.skin_swaps >= 1
 				"crowd":
-					ok = probe.crowd_transforms.size() == probe.crowd_count
+					ok = probe.crowd_skels.size() == probe.crowd_count and probe.crowd_evaluator != null
+				"generator":
+					ok = probe.generator_mode != "" and (probe.generator_mode != "blender_tree" or not probe.find_children("*", "AnimationTree", true, false).is_empty())
 				"state_machine":
-					ok = probe.state_transitions >= 1
+					ok = probe.state_transitions >= 1 and (not ("returntoprevious" in source) or probe.returned_to_prev)
 				"partial_stagger":
 					ok = probe.graph != null and probe.graph.is_slot_active()
 		else:

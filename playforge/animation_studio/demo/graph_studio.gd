@@ -82,6 +82,17 @@ func toggle_state() -> void:
 	_refresh_ui()
 
 
+func toggle_state_synced() -> void:
+	var next_state := &"idle" if graph.get_current_state() == &"move" else &"move"
+	graph.transition_to(next_state, 0.20, true)
+	_refresh_ui()
+
+
+func return_previous_state() -> void:
+	graph.return_to_previous(0.18)
+	_refresh_ui()
+
+
 func trigger_attack() -> void:
 	graph.play_slot(&"attack", attack_anim, upper_mask, 0.08, 0.12)
 	_refresh_ui()
@@ -236,6 +247,16 @@ func _build_ui() -> void:
 	_state_btn.text = "Idle ↔ Move (관성 전환)"
 	_state_btn.pressed.connect(toggle_state)
 	actions.add_child(_state_btn)
+
+	var sync_btn := Button.new()
+	sync_btn.text = "동기화 전환 (SyncStart)"
+	sync_btn.pressed.connect(toggle_state_synced)
+	actions.add_child(sync_btn)
+
+	var prev_btn := Button.new()
+	prev_btn.text = "이전 상태 복귀"
+	prev_btn.pressed.connect(return_previous_state)
+	actions.add_child(prev_btn)
 
 	var atk_btn := Button.new()
 	atk_btn.text = "상체 공격 (Slot)"
