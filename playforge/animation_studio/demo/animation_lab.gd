@@ -148,7 +148,7 @@ func _process(_delta: float) -> void:
 func _measure_socket() -> void:
 	# BoneAttachment3D has applied the final pose at this signal. Reading this
 	# after the skeleton restores its base pose would report a spurious error.
-	if _hand_bone >= 0:
+	if _hand_bone >= 0 and skeleton.is_inside_tree() and character.get_tool().is_inside_tree():
 		var hand := skeleton.global_transform * skeleton.get_bone_global_pose(_hand_bone)
 		var expected: Transform3D = hand * character.get_tool_offset()
 		socket_error_mm = expected.origin.distance_to(character.get_tool().global_position) * 1000.0
