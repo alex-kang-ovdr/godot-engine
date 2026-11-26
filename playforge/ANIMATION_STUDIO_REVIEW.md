@@ -84,3 +84,13 @@ Behavior 키 등록 후 255틱 대조를 실행했다. 양쪽 스틱·트리거 
 ## Havok Animation · Behavior 전체 데모 카탈로그 통합 · 2026-11-26
 
 [사례 갤러리](animation_studio/catalog/README.md)를 Havok 2015.1.0-r1의 `Demo/Demos/Animation`과 `Demo/Demos/Behavior` 전체로 확장했다. 등록 선언 218개를 펼쳐 총 **121개 소스 파일 / 414개 선택 항목**(Animation 276개 / 62소스 + Behavior 138개 / 59소스, 미해결 도메인·변형·누락 소스 각 0건)을 [catalog.json](animation_studio/catalog/catalog.json)에 통합하고, Behavior 12개 계열 실행기([behavior_cases.gd](animation_studio/catalog/behavior_cases.gd))와 제품/분야 필터 UI를 추가했다. `animation_gallery` 헤드리스 전수 순회 시험에서 **422개 검사(414개 전 항목 + 필터·복귀)**가 모두 통과했다.
+
+## 동일 Hero 원본 에셋(85본·18,050정점) 성능·위치·비주얼 검증 · 2026-11-26
+
+합성 리그가 아닌 Havok 원본 Hero(`Rig.hkt` 85본, `hero_skin.gltf` 18,050정점·10표면·6텍스처, `Idle_0`/`Walk_0`/`Run_0`/`Idle_To_Run_90.hkt`) 단일 에셋으로 성능·위치·비주얼을 함께 대조했다([hero_same_asset_verify.gd](animation_studio/tests/hero_same_asset_verify.gd)).
+
+| 검증 항목 | 측정 결과 |
+| --- | --- |
+| 위치 (Havok `oracle.json` 1,530 본 포즈 대조) | 기본 `AnimationPlayer`는 로컬 0.00012 mm / 0.0184°, 말단(Head·양손·양발) 모델 공간 **0.0172 mm**였다. C++ `QuantizedClip` 경로는 로컬 0.00955 mm / 0.0178°, 말단 모델 공간 **0.0834 mm**였다. |
+| 성능 (동일 Hero 85본 `Run_0.hkt` × 200체 = 17,000본/틱) | Havok SDK 2015.1.0-r1 네이티브(1T, O2)는 샘플링 p50 **0.079 ms** / 모델 행렬 전파 포함 **0.174 ms**였다. Godot 기본 `AnimationPlayer` 200체는 포즈 p50 **11.931 ms** / `force_update_all_bone_transforms()` 포함 **13.758 ms**였다. Godot C++ `AnimationStudioCrowdEvaluator`(8T, 16,800 비루트 본 전수 변경 확인)는 포즈 p50 **0.681 ms**(대기 0.122 + 적용 0.508 ms, 기본 대비 **17.5배 빠름**) / 행렬 전파 포함 **2.082 ms**(기본 대비 **6.6배 빠름**)였다. `Run_0` 상주 메모리는 73.0% 절감(46,474 B vs 비압축 추정 172,380 B)했다. |
+| 비주얼 (`hero_skin.gltf` GPU 실렌더링, `run @ 0.25s`, 864×540) | 동일 카메라·조명에서 `AnimationPlayer`와 C++ `AnimationStudioCrowdEvaluator` 렌더링 픽셀 차이는 **MAE 0.0146 / 255**, **PSNR 57.06 dB**였으며 중앙 분할 비교 이미지에서 스키닝·텍스처·그림자 경계 불일치가 없었다. |
