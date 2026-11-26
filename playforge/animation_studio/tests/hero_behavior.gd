@@ -32,27 +32,43 @@ func run() -> void:
 		var second := await simulate(hero)
 		var first_frame: Dictionary = first.front()
 		var end_frame: Dictionary = first.back()
-		var states := {}
+		var transitions: Array[Dictionary] = []
 		var max_move := 0.0
 		var hits := 0
 		var adjustments := 0
-		var raised_ground := 0
 		var max_yaw := 0.0
-		for frame in first:
-			states[frame.state] = true
+		for tick in first.size():
+			var frame := first[tick]
+			record_transition(transitions, frame.state, tick)
 			max_move = maxf(max_move, first_frame.root.distance_to(frame.root))
-			max_yaw = maxf(max_yaw, absf(frame.yaw))
+			max_yaw = maxf(max_yaw, absf(angle_difference(first_frame.yaw, frame.yaw)))
 			for leg in 2:
 				if frame.hits[leg]:
 					hits += 1
-					raised_ground += int(frame.targets[leg].y > 0.12)
 					var before: float = frame.before[leg].distance_to(frame.targets[leg])
 					var after: float = frame.feet[leg].distance_to(frame.targets[leg])
 					adjustments += int(before - after > 0.005)
-		report("no-input, walk, run and stop", first_frame.state == "idle" and end_frame.state == "idle"
-			and states.has("walk") and states.has("run") and max_move > 1.0, {"states": states.keys(), "distance_m": max_move})
+		report("Havok locomotion transition timing", transitions == [
+			{"state": "idle", "tick": 0}, {"state": "idle_to_walk", "tick": 31}, {"state": "walk", "tick": 57},
+			{"state": "run", "tick": 90}, {"state": "idle", "tick": 202}
+		] and max_move > 1.0, {"transitions": transitions, "distance_m": max_move})
+		report("idle blends out remaining movement and stops", first[202].root.distance_to(end_frame.root) > 0.05
+			and first[220].root.is_equal_approx(end_frame.root))
 		report("direction input rotates locomotion root", max_yaw > 0.7, {"max_rad": max_yaw})
-		report("terrain rays produce raised contacts", hits >= TICKS and raised_ground > 0, {"contacts": hits, "raised": raised_ground})
+		report("forward and right input follow Havok world axes", first[149].root.z < -1.0
+			and first[194].root.x < first[150].root.x - 1.0)
+		report("terrain rays produce contacts during replay", hits >= TICKS, {"contacts": hits})
+		await physics_frame
+		await physics_frame
+		# Probe the existing raised surface independently of the recorded movement path.
+		var step := hero.terrain_root.find_child("FirstStep", true, false) as Node3D
+		var motion := hero.rig.get_parent() as Node3D
+		motion.global_position = Vector3(step.global_position.x, 0.0, step.global_position.z)
+		var step_sample := hero.advance_behavior(Vector2.ZERO, STEP, false)
+		var raised := 0
+		for leg in 2:
+			raised += int(step_sample.hits[leg] and step_sample.targets[leg].y > 0.12)
+		report("terrain rays detect raised step", raised > 0, {"raised_feet": raised})
 		report("IK moves ankles toward terrain targets", adjustments >= 20, {"adjusted_ankles": adjustments})
 		report("fixed-input replay repeatable", first == second)
 		hero.get_node("%Behavior").pressed.emit()
@@ -61,6 +77,9 @@ func run() -> void:
 			"ticks": first.size(), "first_state": first_frame.state, "last_state": end_frame.state
 		}}))
 		if "--native" in OS.get_cmdline_user_args():
+			var entry_clip: Dictionary = hero.data.clips.get("idle_to_walk", {})
+			var source_path: String = entry_clip.get("source", {}).get("path", "")
+			report("native comparison uses the SDK walk entry clip", source_path.ends_with("/Walk/Walk_Face_180.hkt"))
 			compare_native(first)
 	print("PFTEST ", JSON.stringify({"status": "SUMMARY", "fail": failures}))
 	quit(1 if failures else 0)

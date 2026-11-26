@@ -28,6 +28,7 @@ RIG_RELATIVE = HERO_RELATIVE / "CharacterAssets/Rig.hkt"
 CLIPS = {
     "idle": HERO_RELATIVE / "Animations/Idle/Idle_0.hkt",
     "walk": HERO_RELATIVE / "Animations/Walk/Walk_0.hkt",
+    "idle_to_walk": HERO_RELATIVE / "Animations/Walk/Walk_Face_180.hkt",
     "run": HERO_RELATIVE / "Animations/Run/Run_0.hkt",
     "turn": HERO_RELATIVE / "Animations/Idle/Idle_To_Run_90.hkt",
 }

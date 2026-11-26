@@ -3,8 +3,17 @@ extends RefCounted
 ## The Behavior graph chooses walking with the left trigger, running otherwise,
 ## and stops after the stick remains in its dead zone for 0.1 seconds.
 
-const DEAD_ZONE := 0.15
-const STOP_DELAY := 0.1
+# Hero's controller uses squared stick distances for the dead zone and hold timer.
+const STICK_THRESHOLD_SQUARED := 0.1
+const STICK_RESPONSE := 0.9
+const START_HOLD := 0.01
+const STOP_HOLD := 0.1
+# Locomotion state switches before its outgoing animation finishes blending.
+const IDLE_BLEND_TIME := 0.18
+# Forward replay selects Walk_Face_180 and enters Walking 26 physics ticks later.
+const WALK_ENTRY_TIME := 26.0 / 60.0
+# The SDK transition turns the initial rig around to face camera-relative forward.
+const FORWARD_HEADING := PI
 
 var _rig: Skeleton3D
 var _motion: Node3D
@@ -12,7 +21,13 @@ var _clips: Dictionary
 var _clip_name := ""
 var _clip_time := 0.0
 var _state := "idle"
-var _stop_elapsed := 0.0
+var _filtered_stick := Vector2.ZERO
+var _stick_hold := 0.0
+var _state_elapsed := 0.0
+var _outgoing_clip: Dictionary
+var _outgoing_time := 0.0
+var _outgoing_loop := true
+var _blend_duration := 0.0
 var _input_speed := 0.0
 var _turning := false
 var _facing_angle := 0.0
@@ -25,8 +40,14 @@ func setup(rig: Skeleton3D, motion: Node3D, clips: Dictionary) -> void:
 	_clip_name = ""
 	_clip_time = 0.0
 	_state = "idle"
-	_stop_elapsed = 0.0
-	_facing_angle = motion.rotation.y
+	_filtered_stick = Vector2.ZERO
+	_stick_hold = 0.0
+	_state_elapsed = 0.0
+	_outgoing_clip = {}
+	_outgoing_time = 0.0
+	_blend_duration = 0.0
+	_motion.rotation.y = 0.0 if clips.has("idle_to_walk") else FORWARD_HEADING
+	_facing_angle = _motion.rotation.y
 	_enter_clip("idle")
 
 
@@ -34,47 +55,47 @@ func step(stick: Vector2, delta: float, walk_modifier := false) -> Dictionary:
 	if _rig == null or _motion == null or delta <= 0.0:
 		return _result(Vector3.ZERO)
 
-	var magnitude := stick.length()
-	var moving := magnitude >= DEAD_ZONE
-	var next_state := _state
-	if moving:
-		_stop_elapsed = 0.0
-		next_state = "walk" if walk_modifier else "run"
+	var previous_stick := _filtered_stick
+	_filtered_stick = previous_stick.lerp(stick, STICK_RESPONSE)
+	if previous_stick.distance_squared_to(_filtered_stick) < STICK_THRESHOLD_SQUARED:
+		_stick_hold += delta
 	else:
-		_stop_elapsed += delta
-		if _stop_elapsed >= STOP_DELAY:
-			next_state = "idle"
-
-	if next_state != _state:
+		_stick_hold = 0.0
+	var magnitude := _filtered_stick.length()
+	var moving := _filtered_stick.length_squared() >= STICK_THRESHOLD_SQUARED
+	var next_state := choose_state(moving, walk_modifier)
+	var entering := next_state != _state
+	if entering:
+		_blend_duration = transition_blend(_state, next_state)
+		_outgoing_clip = _clips[_clip_name] if _blend_duration > 0.0 else {}
+		_outgoing_time = _clip_time
+		_outgoing_loop = _clip_name != "idle_to_walk"
 		_state = next_state
+		_state_elapsed = 0.0
 		_enter_clip(_state)
 
 	_input_speed = magnitude if moving else 0.0
-	var target_yaw := atan2(stick.x, stick.y) if moving else _motion.rotation.y
+	var target_yaw := FORWARD_HEADING + atan2(_filtered_stick.x, _filtered_stick.y)
 	var yaw_gain := 2.0 if _state == "walk" else 3.0
 	var yaw_step := 0.0
-	if moving and magnitude >= 0.5:
+	if _state != "idle_to_walk" and moving and magnitude >= 0.5:
 		yaw_step = wrapf(target_yaw - _motion.rotation.y, -PI, PI) * yaw_gain * delta
 
-	var remaining := delta
-	var root_delta := Transform3D.IDENTITY
-	var clip: Dictionary = _clips.get(_clip_name, {})
-	var duration := float(clip.get("duration", 0.0))
-	if duration <= 0.0:
-		return _result(Vector3.ZERO)
-
-	while remaining > 0.0:
-		var segment := minf(remaining, duration - _clip_time)
-		var old_time := _clip_time
-		_clip_time += segment
-		remaining -= segment
-		var old_root := _sample_root(clip, old_time)
-		var new_root := _sample_root(clip, _clip_time)
-		root_delta = root_delta * old_root.affine_inverse() * new_root
-		if _clip_time >= duration:
-			_clip_time = 0.0
-
-	_apply_pose(clip, _clip_time)
+	var clip: Dictionary = _clips[_clip_name]
+	var sample := advance_clip(clip, _clip_time, 0.0 if entering else delta, _clip_name != "idle_to_walk")
+	_clip_time = sample.time
+	var root_delta: Transform3D = sample.delta
+	var outgoing_weight := 0.0
+	if not _outgoing_clip.is_empty():
+		outgoing_weight = maxf(0.0, 1.0 - _state_elapsed / _blend_duration)
+		if outgoing_weight > 0.0:
+			var outgoing := advance_clip(_outgoing_clip, _outgoing_time, delta, _outgoing_loop)
+			_outgoing_time = outgoing.time
+			root_delta = root_delta.interpolate_with(outgoing.delta, outgoing_weight)
+		else:
+			_outgoing_clip = {}
+	_apply_pose(clip, _clip_time, outgoing_weight)
+	_state_elapsed += delta
 	_motion.transform = _motion.transform * root_delta
 	_motion.rotation.y += yaw_step
 	_turning = not is_zero_approx(yaw_step)
@@ -82,8 +103,52 @@ func step(stick: Vector2, delta: float, walk_modifier := false) -> Dictionary:
 	return _result(root_delta.origin)
 
 
+func advance_clip(clip: Dictionary, time: float, delta: float, loop := true) -> Dictionary:
+	var root_delta := Transform3D.IDENTITY
+	var duration := float(clip.duration)
+	var remaining := delta
+	while remaining > 0.0 and duration > 0.0:
+		var segment := minf(remaining, duration - time)
+		var old_root := _sample_root(clip, time)
+		time += segment
+		remaining -= segment
+		root_delta = root_delta * old_root.affine_inverse() * _sample_root(clip, time)
+		if time >= duration:
+			if not loop:
+				break
+			time = 0.0
+	return {"time": time, "delta": root_delta}
+
+
+static func transition_blend(previous: String, next: String) -> float:
+	if next == "idle":
+		return IDLE_BLEND_TIME
+	# The reference still evaluates Walk Face 180 four ticks after entering Walking.
+	if previous == "idle_to_walk" and next == "walk":
+		return 0.13
+	if previous == "walk" and next == "run":
+		return 0.06
+	if previous == "idle" and next == "idle_to_walk":
+		return 0.06
+	return 0.0
+
+
+func choose_state(moving: bool, walk_modifier: bool) -> String:
+	if _state == "idle":
+		if moving and _stick_hold > START_HOLD:
+			return "idle_to_walk" if walk_modifier else "run"
+		return "idle"
+	if not moving and _stick_hold > STOP_HOLD + 0.000001:
+		return "idle"
+	if moving and not walk_modifier:
+		return "run"
+	if _state == "idle_to_walk":
+		return "walk" if _state_elapsed + 0.000001 >= WALK_ENTRY_TIME else "idle_to_walk"
+	return "walk" if moving else _state
+
+
 func _enter_clip(name: String) -> void:
-	var chosen := name
+	var chosen := "walk" if name == "idle_to_walk" and not _clips.has(name) else name
 	if not _clips.has(chosen):
 		chosen = "idle" if _clips.has("idle") else str(_clips.keys()[0])
 	_clip_name = chosen
@@ -129,19 +194,36 @@ func _sample_root(clip: Dictionary, time: float) -> Transform3D:
 		Vector3(pose.translation[0], pose.translation[1], pose.translation[2]))
 
 
-func _apply_pose(clip: Dictionary, time: float) -> void:
+func _apply_pose(clip: Dictionary, time: float, outgoing_weight := 0.0) -> void:
+	var previous := {}
+	if outgoing_weight > 0.0:
+		for track in _outgoing_clip.tracks:
+			previous[int(track.bone)] = _sample_pose(track.keys, _outgoing_time)
 	for track in clip.get("tracks", []):
-		var bone_index := int(track.bone)
+		var bone := int(track.bone)
 		var pose := _sample_pose(track.keys, time)
 		if pose.is_empty():
 			continue
-		var position: Vector3 = pose.translation if pose.translation is Vector3 else Vector3(pose.translation[0], pose.translation[1], pose.translation[2])
-		var rotation: Quaternion = pose.rotation if pose.rotation is Quaternion else Quaternion(pose.rotation[0], pose.rotation[1], pose.rotation[2], pose.rotation[3]).normalized()
-		var scale: Vector3 = pose.scale if pose.scale is Vector3 else Vector3(pose.scale[0], pose.scale[1], pose.scale[2])
-		_rig.set_bone_pose_position(bone_index, position)
-		_rig.set_bone_pose_rotation(bone_index, rotation)
-		_rig.set_bone_pose_scale(bone_index, scale)
+		var position := pose_vector(pose.translation)
+		var rotation := pose_rotation(pose.rotation)
+		var scale := pose_vector(pose.scale)
+		if previous.has(bone):
+			var outgoing: Dictionary = previous[bone]
+			position = position.lerp(pose_vector(outgoing.translation), outgoing_weight)
+			rotation = rotation.slerp(pose_rotation(outgoing.rotation), outgoing_weight)
+			scale = scale.lerp(pose_vector(outgoing.scale), outgoing_weight)
+		_rig.set_bone_pose_position(bone, position)
+		_rig.set_bone_pose_rotation(bone, rotation)
+		_rig.set_bone_pose_scale(bone, scale)
 	_rig.force_update_all_bone_transforms()
+
+
+static func pose_vector(value: Variant) -> Vector3:
+	return value if value is Vector3 else Vector3(value[0], value[1], value[2])
+
+
+static func pose_rotation(value: Variant) -> Quaternion:
+	return value.normalized() if value is Quaternion else Quaternion(value[0], value[1], value[2], value[3]).normalized()
 
 
 func _result(root_delta: Vector3) -> Dictionary:
