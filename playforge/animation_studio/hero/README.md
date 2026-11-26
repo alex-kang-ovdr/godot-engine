@@ -11,6 +11,7 @@ Havok 2015.1.0-r1의 `Demo/Demos/Behavior/ShowCase/Hero/HeroDemo.cpp`에서 사�
 | 캐릭터 | `CharacterAssets/Rig.hkt`, `CharacterAssets/textures/` |
 | idle | `Animations/Idle/Idle_0.hkt` |
 | walk | `Animations/Walk/Walk_0.hkt` |
+| idle_to_walk | `Animations/Walk/Walk_Face_180.hkt` |
 | run | `Animations/Run/Run_0.hkt` |
 | turn | `Animations/Idle/Idle_To_Run_90.hkt` |
 
@@ -50,9 +51,9 @@ python playforge/tests/run.py --godot $env:GODOT_BIN --only animation_hero_parit
 
 Hero 씬에서 **이동 · 발 IK**를 누르면 같은 스틱과 왼쪽 트리거 입력 255틱을 60 Hz로 반복한다. 입력은 대기 30틱, 전진 걷기 60틱, 전진 달리기 60틱, 달리는 중 오른쪽 입력 45틱, 입력 해제 60틱이다. **클립 검증**으로 돌아가 원본 포즈 검증을 계속한다.
 
-Godot은 Hero SDK의 좌측 트리거 임계값, 스틱 데드존, 입력 해제 시 정지 지연과 보행별 방향 보정 계수를 적용한다. 기존 Hero 클립을 재생하면서 루트 이동을 루프 경계에서 누적한다. 각 발 아래의 충돌 지표를 확인해 두 관절을 풀고 발 방향을 면의 법선에 맞춘다. 동일한 상자 4개를 양쪽 엔진에 구성해 평지, 두 계단, 기울어진 지면을 대조하도록 했다. 방향별 출발·정지 전환 클립, 보행 블렌딩과 캐릭터 컨트롤러는 추가 포팅 범위다.
+Godot은 Hero SDK의 좌측 트리거 임계값, 스틱 보간과 정지 판정, 보행별 방향 보정 계수를 적용한다. 재생의 전진 입력은 월드 −Z 방향을 향한다. 출발할 때 원본 그래프가 선택한 `Walk_Face_180.hkt`가 리그를 해당 방향으로 돌린다. 기존 Hero 클립을 재생하면서 루트 이동을 루프 경계에서 누적한다. 각 발 아래의 충돌 지표를 확인해 두 관절을 풀고 발 방향을 면의 법선에 맞춘다. 동일한 상자 4개를 양쪽 엔진에 구성해 평지, 두 계단, 기울어진 지면을 대조하도록 했다. 원본 그래프에서 관측한 클립 겹침을 바탕으로 선형 블렌드를 적용한다. 나머지 방향별 출발과 전체 캐릭터 컨트롤러는 추가 포팅 범위다.
 
-Godot 자체 시험은 동일 입력 재생 두 번을 대조한다. 공식 Godot 4.7.2에서 255틱 동안 지면 감지 510회, 높은 지면 감지 59회, IK 적용 후 목표에 최소 5 mm 가까워진 발목 샘플 504회를 기록했다.
+Godot 자체 시험은 동일 입력 재생 두 번을 대조한다. 두 엔진의 경로가 −Z 방향을 향하므로 +Z 계단에서의 발 IK는 별도 프로브로 확인한다. 저장소의 이전 변환 결과가 있으면 모션 변환 명령을 다시 실행해 걷기 진입 클립을 추가한다.
 
 ```powershell
 python playforge/tests/run.py --godot $env:GODOT_BIN --only animation_hero_behavior
@@ -71,4 +72,24 @@ if ($LASTEXITCODE -ne 0) { throw "Havok Behavior simulation failed" }
 python playforge/tests/run.py --godot $env:GODOT_BIN --only animation_hero_behavior_native
 ```
 
-현재 설치본에서 실행기는 컴파일·링크와 캐릭터 생성까지 진행했다. Havok 런타임은 `Product:hkb Key Code is invalid or is for a different product version`을 반환했고 기준 트레이스 생성을 중단했다. 대조 시험은 입력과 상태를 틱별로 비교하고 위치 허용 오차를 1 cm로 둔다. 기준 트레이스가 없는 상태에서도 명시적으로 실행하면 실패를 보고한다.
+### 이동 방향과 상태 전이 대조
+
+Havok과 Godot에서 같은 스틱·트리거 입력 255틱을 사용했다. 전이 시점은 0부터 센다. Havok 쪽은 `Locomotion State Machine`의 현재 상태를 기록했다.
+
+| 상태 | 수정 전 Godot | 수정 후 Godot | Havok |
+| --- | ---: | ---: | ---: |
+| Idle | 0 | 0 | 0 |
+| Idle to Walk | — | 31 | 31 |
+| Walking | 30 | 57 | 57 |
+| Running | 90 | 90 | 90 |
+| 정지 후 Idle | 201 | 202 | 202 |
+
+상태 불일치는 28틱에서 0틱으로 줄었다. 아래 수치는 같은 지형에서 궤적 정렬 없이 구한 월드 거리다. 발목 오차에는 루트 경로 차이가 포함된다.
+
+| 대상 | RMS 전 → 후 (m) | 최대 전 → 후 (m) | 마지막 틱 전 → 후 (m) |
+| --- | ---: | ---: | ---: |
+| 루트 | 14.454 → 0.156 | 22.690 → 0.322 | 22.690 → 0.322 |
+| 왼쪽 발목 | 14.282 → 0.255 | 22.668 → 0.506 | 22.518 → 0.316 |
+| 오른쪽 발목 | 14.386 → 0.247 | 22.764 → 0.456 | 22.764 → 0.327 |
+
+수정 후 공식 Godot 4.7.2의 두 번 재생에서 같은 결과를 얻었다. 세 위치 검사는 여전히 1 cm 허용치를 초과한다.
