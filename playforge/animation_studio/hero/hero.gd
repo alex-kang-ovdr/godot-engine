@@ -1,5 +1,8 @@
 extends Node3D
 
+const Locomotion := preload("res://hero/locomotion.gd")
+const TerrainIK := preload("res://hero/terrain_ik.gd")
+
 const MOTION_FILE := "res://hero/generated/motion.json"
 
 @onready var rig: Skeleton3D = $Motion/Rig
@@ -14,6 +17,23 @@ var library := AnimationLibrary.new()
 var skin_surfaces := 0
 var skin_vertices := 0
 var skin_problem := ""
+var locomotion: Locomotion
+var terrain_ik: TerrainIK
+var terrain_root: Node3D
+var preview_ground: MeshInstance3D
+var behavior_tick := 0
+
+
+static func replay_input(tick: int) -> Vector2:
+	if tick < 30:
+		return Vector2.ZERO
+	if tick < 90:
+		return Vector2(0.0, 0.45)
+	if tick < 150:
+		return Vector2(0.0, 1.0)
+	if tick < 195:
+		return Vector2(1.0, 0.0)
+	return Vector2.ZERO
 
 
 static func vector(a: Array) -> Vector3:
@@ -45,6 +65,7 @@ func _ready() -> void:
 	%Step.pressed.connect(func(): set_running(false); sample_at(elapsed + 1.0 / 60.0))
 	%Progress.value_changed.connect(func(t: float): set_running(false); sample_at(t))
 	%Reference.pressed.connect(show_next_reference)
+	%Behavior.pressed.connect(toggle_behavior)
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color("#253638")
@@ -65,9 +86,9 @@ func _ready() -> void:
 	mat.uv1_scale = Vector3(100, 100, 1)
 	mat.roughness = 1.0
 	floor_mesh.material = mat
-	var ground := MeshInstance3D.new()
-	ground.mesh = floor_mesh
-	add_child(ground)
+	preview_ground = MeshInstance3D.new()
+	preview_ground.mesh = floor_mesh
+	add_child(preview_ground)
 	if not FileAccess.file_exists(MOTION_FILE):
 		%Readout.text = "Hero 원본 데이터가 없습니다. hero/README.md의 SDK 변환 명령을 실행하세요."
 		%Play.disabled = true
@@ -94,6 +115,7 @@ func _ready() -> void:
 	for key in data.clips:
 		%Clips.add_item(key)
 	select_clip(%Clips.get_item_text(0))
+	%Behavior.disabled = not data.clips.has_all(["idle", "walk", "run"])
 
 
 func load_skin() -> void:
@@ -209,7 +231,7 @@ func sample_at(t: float) -> void:
 
 
 func _process(delta: float) -> void:
-	if running and not selected.is_empty():
+	if locomotion == null and running and not selected.is_empty():
 		var duration := player.current_animation_length
 		sample_at(fposmod(elapsed + delta, duration))
 
@@ -230,3 +252,71 @@ func show_next_reference() -> void:
 		translation_error = maxf(translation_error, rig.get_bone_pose_position(i).distance_to(vector(expected.translation)))
 		rotation_error = maxf(rotation_error, angle_between(rig.get_bone_pose_rotation(i), rotation(expected.rotation)))
 	%Readout.text += "   ·   SDK 최대 오차 %.3f mm / %.3f°" % [translation_error * 1000.0, rad_to_deg(rotation_error)]
+
+
+func toggle_behavior() -> void:
+	if locomotion != null:
+		locomotion = null
+		terrain_ik.teardown()
+		terrain_ik = null
+		remove_child(terrain_root)
+		terrain_root.queue_free()
+		terrain_root = null
+		preview_ground.show()
+		%Behavior.text = "이동 · 발 IK"
+		%Clips.disabled = false
+		%Play.disabled = false
+		%Step.disabled = false
+		%Progress.editable = true
+		select_clip(selected)
+		return
+	player.stop()
+	$Motion.transform = Transform3D.IDENTITY
+	rig.reset_bone_poses()
+	terrain_root = Node3D.new()
+	add_child(terrain_root)
+	locomotion = Locomotion.new()
+	locomotion.setup(rig, $Motion, data.clips)
+	terrain_ik = TerrainIK.new()
+	if not terrain_ik.setup(rig, terrain_root):
+		toggle_behavior()
+		%Readout.text = "Hero 스켈레톤에서 발 IK를 초기화하지 못했습니다."
+		return
+	behavior_tick = 0
+	preview_ground.hide()
+	%Behavior.text = "클립 검증"
+	%Clips.disabled = true
+	%Reference.disabled = true
+	%Play.disabled = true
+	%Step.disabled = true
+	%Progress.editable = false
+
+
+static func replay_walk_modifier(tick: int) -> bool:
+	return tick >= 30 and tick < 90
+
+
+func advance_behavior(stick: Vector2, delta: float, walk_modifier: bool) -> Dictionary:
+	var frame := locomotion.step(stick, delta, walk_modifier)
+	frame.merge(terrain_ik.step(delta), true)
+	return frame
+
+
+func _physics_process(delta: float) -> void:
+	if locomotion == null:
+		return
+	var stick := replay_input(behavior_tick)
+	var frame := advance_behavior(stick, delta, replay_walk_modifier(behavior_tick))
+	behavior_tick += 1
+	var at: Vector3 = $Motion.position + Vector3.UP * 0.98
+	$Camera.position = at + Vector3(2.5, 0.75, 3.8)
+	$Camera.look_at(at)
+	var hits: Array = frame.get("hits", [])
+	%Readout.text = "이동 재생 · 틱 %d · %s · 입력 (%.2f, %.2f) · 루트 %.2f m · 지면 감지 %d/2" % [
+		behavior_tick, frame.get("state", ""), stick.x, stick.y, $Motion.position.length(), hits.count(true)]
+	if behavior_tick >= 255:
+		player.stop()
+		$Motion.transform = Transform3D.IDENTITY
+		locomotion.setup(rig, $Motion, data.clips)
+		terrain_ik.reset()
+		behavior_tick = 0

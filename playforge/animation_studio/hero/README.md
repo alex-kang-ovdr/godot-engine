@@ -43,4 +43,32 @@ python playforge/tests/run.py --godot $env:GODOT_BIN --only animation_hero_parit
 
 각 클립의 트랙과 본 사이의 바인딩을 따라 Godot Skeleton3D와 AnimationPlayer를 구성한다. Havok의 Z-up 오른손 좌표를 Godot의 Y-up으로 바꾸는 식은 `(x, z, -y)`다. 본 트랙과 별도로 추출된 루트 이동은 캐릭터 부모 노드에 적용한다.
 
-[포즈 회귀 시험](../tests/hero_parity.gd)은 리그의 모델 좌표계에서 머리·손·발의 준비 자세 위치를 확인한다. 각 클립의 처음·끝 및 키 사이의 시각에 전신 본의 로컬 위치·회전·스케일과 추출 루트 이동·회전을 대조한다. 허용 오차는 위치 1 mm, 회전 0.005 rad, 스케일 벡터 차이 0.001이다. Hero Behavior의 상태 전이, 캐릭터 컨트롤러, 지형 접지 IK를 거친 최종 게임플레이는 별도의 비교 대상이다.
+[포즈 회귀 시험](../tests/hero_parity.gd)은 리그의 모델 좌표계에서 머리·손·발의 준비 자세 위치를 확인한다. 각 클립의 처음·끝 및 키 사이의 시각에 전신 본의 로컬 위치·회전·스케일과 추출 루트 이동·회전을 대조한다. 허용 오차는 위치 1 mm, 회전 0.005 rad, 스케일 벡터 차이 0.001이다.
+
+
+## 이동 상태와 지형 발 IK
+
+Hero 씬에서 **이동 · 발 IK**를 누르면 같은 스틱과 왼쪽 트리거 입력 255틱을 60 Hz로 반복한다. 입력은 대기 30틱, 전진 걷기 60틱, 전진 달리기 60틱, 달리는 중 오른쪽 입력 45틱, 입력 해제 60틱이다. **클립 검증**으로 돌아가 원본 포즈 검증을 계속한다.
+
+Godot은 Hero SDK의 좌측 트리거 임계값, 스틱 데드존, 입력 해제 시 정지 지연과 보행별 방향 보정 계수를 적용한다. 기존 Hero 클립을 재생하면서 루트 이동을 루프 경계에서 누적한다. 각 발 아래의 충돌 지표를 확인해 두 관절을 풀고 발 방향을 면의 법선에 맞춘다. 동일한 상자 4개를 양쪽 엔진에 구성해 평지, 두 계단, 기울어진 지면을 대조하도록 했다. 방향별 출발·정지 전환 클립, 보행 블렌딩과 캐릭터 컨트롤러는 추가 포팅 범위다.
+
+Godot 자체 시험은 동일 입력 재생 두 번을 대조한다. 공식 Godot 4.7.2에서 255틱 동안 지면 감지 510회, 높은 지면 감지 59회, IK 적용 후 목표에 최소 5 mm 가까워진 발목 샘플 504회를 기록했다.
+
+```powershell
+python playforge/tests/run.py --godot $env:GODOT_BIN --only animation_hero_behavior
+```
+
+Havok 대조는 같은 SDK 버전의 Behavior 제품 키가 활성화된 SDK 환경을 사용한다. 실행기는 Hero 프로젝트의 3인칭 Behavior 그래프와 Physics 캐릭터 변형을 로드하고 공유 시험 지형에서 상태, 루트 위치, 좌우 발목 위치를 기록하도록 구성됐다.
+
+```powershell
+$sdk = 'D:/SDK/hk2015_1_0/hk2015_1_0_r1'
+$hero = 'playforge/animation_studio/hero'
+$project = "$sdk/Demo/Demos/Resources/Behavior/GameAssets/Hero/Project/HeroProject.hkt"
+& "$hero/build_native_behavior.cmd" $sdk
+if ($LASTEXITCODE -ne 0) { throw "Havok Behavior runner build failed" }
+& "$env:TEMP/codex_havok_behavior/native_behavior.exe" $project "$hero/generated/behavior_trace.json"
+if ($LASTEXITCODE -ne 0) { throw "Havok Behavior simulation failed" }
+python playforge/tests/run.py --godot $env:GODOT_BIN --only animation_hero_behavior_native
+```
+
+현재 설치본에서 실행기는 컴파일·링크와 캐릭터 생성까지 진행했다. Havok 런타임은 `Product:hkb Key Code is invalid or is for a different product version`을 반환했고 기준 트레이스 생성을 중단했다. 대조 시험은 입력과 상태를 틱별로 비교하고 위치 허용 오차를 1 cm로 둔다. 기준 트레이스가 없는 상태에서도 명시적으로 실행하면 실패를 보고한다.

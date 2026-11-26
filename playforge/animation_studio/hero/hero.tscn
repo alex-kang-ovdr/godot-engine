@@ -57,6 +57,11 @@ unique_name_in_owner = true
 disabled = true
 text = "다음 SDK 기준 포즈"
 
+[node name="Behavior" type="Button" parent="UI/Panel/Box/Bar"]
+unique_name_in_owner = true
+disabled = true
+text = "이동 · 발 IK"
+
 [node name="Progress" type="HSlider" parent="UI/Panel/Box"]
 unique_name_in_owner = true
 step = 0.0001
