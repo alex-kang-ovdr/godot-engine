@@ -11,6 +11,9 @@ window/size/viewport_width=1152
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 
+[editor_plugins]
+enabled=PackedStringArray("res://addons/animation_studio/plugin.cfg")
+
 [physics]
 common/physics_ticks_per_second=60
 

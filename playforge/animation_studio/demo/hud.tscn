@@ -36,6 +36,10 @@ text = "애니메이션 사례 목록 →"
 unique_name_in_owner = true
 text = "Havok Hero · 원본 클립 →"
 
+[node name="HeroStudio" type="Button" parent="Layout/Header/Info"]
+unique_name_in_owner = true
+text = "Hero 상태머신 · 제작과정 다시보기 →"
+
 [node name="GraphStudio" type="Button" parent="Layout/Header/Info"]
 unique_name_in_owner = true
 text = "그래프 · 관성 · Rewind →"

@@ -53,6 +53,7 @@ SUITES = [
     ("animation_hero_behavior_native", "res://tests/hero_behavior.gd", ["--fixed-fps", "60"], ["--native"], 90, "Havok Hero Behavior SDK", ANIMATION_PROJECT),
     ("animation_hero_parity", "res://tests/hero_parity.gd", ["--fixed-fps", "60"], [], 90, "Havok Hero SDK", ANIMATION_PROJECT),
     ("animation_hero_same_asset", "res://tests/hero_same_asset_verify.gd", ["--fixed-fps", "60"], [], 90, "Havok Hero Same-Asset Perf+Pos", ANIMATION_PROJECT),
+    ("animation_hero_studio", "res://tests/hero_locomotion_studio.gd", ["--fixed-fps", "60"], [], 60, "Hero Editor State-Machine Rewind", ANIMATION_PROJECT),
     ("animation_gallery", "res://tests/animation_gallery.gd", ["--fixed-fps", "60"], [], 120, "Animation Studio", ANIMATION_PROJECT),
     ("animation_pose_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
     ("animation_compressed_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], ["--compressed"], 30, "Animation Studio", ANIMATION_PROJECT),
