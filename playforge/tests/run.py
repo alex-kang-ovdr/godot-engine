@@ -225,8 +225,8 @@ def main() -> int:
         for name, scene, eargs, uargs, timeout, guards, *project in SUITES:
             if name == "animation_hero_behavior_native" and only is None:
                 continue
-            if name in ("animation_hero_parity", "animation_hero_behavior") and only is None and not (ANIMATION_PROJECT / "hero/generated/motion.json").is_file():
-                print(f"[skip] {name} requires locally converted Havok Hero assets")
+            if name == "animation_hero_parity" and only is None and not (ANIMATION_PROJECT / "hero/generated/oracle.json").is_file():
+                print(f"[skip] {name} requires optional local SDK oracle.json")
                 continue
             if only and name not in only:
                 continue

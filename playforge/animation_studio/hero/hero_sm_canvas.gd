@@ -61,10 +61,10 @@ func _draw() -> void:
 		s3, state == "idle" and blend_from == "run" and blend_w > 0.01, "10t")
 
 	# State nodes
-	_draw_node(font, fsize, r_idle, "1. Idle", "Idle_0.hkt", true, state == "idle", ACCENT_STATE)
-	_draw_node(font, fsize, r_i2w, "2. Idle→Walk", "Walk_Face_180", s2, state == "idle_to_walk", ACCENT_STATE)
-	_draw_node(font, fsize, r_walk, "2. Walking", "Walk_0.hkt", s2, state == "walk", ACCENT_STATE)
-	_draw_node(font, fsize, r_run, "3. Running", "Run_0.hkt", s3, state == "run", ACCENT_STATE)
+	_draw_node(font, fsize, r_idle, "1. Idle", "clip: idle", true, state == "idle", ACCENT_STATE)
+	_draw_node(font, fsize, r_i2w, "2. Idle→Walk", "clip: idle_to_walk", s2, state == "idle_to_walk", ACCENT_STATE)
+	_draw_node(font, fsize, r_walk, "2. Walking", "clip: walk", s2, state == "walk", ACCENT_STATE)
+	_draw_node(font, fsize, r_run, "3. Running", "clip: run", s3, state == "run", ACCENT_STATE)
 
 	# Post-processing pipeline nodes
 	var cam_sub := "리드 %+.1f°" % cam_deg if s3 else "미적용 (3단계)"

@@ -7,13 +7,12 @@ extends Node3D
 
 const Character := preload("res://demo/character/character.tscn")
 const HeroScene := preload("res://hero/hero.tscn")
+const HeroMotionData := preload("res://hero/hero_motion_data.gd")
 const PoseBuffer := preload("res://addons/animation_studio/pose_buffer.gd")
 const PoseGraph := preload("res://addons/animation_studio/pose_graph.gd")
 const RewindRecorder := preload("res://addons/animation_studio/rewind_recorder.gd")
 const ActiveRagdollJoint := preload("res://addons/animation_studio/active_ragdoll_joint.gd")
 const CrowdEvaluator := preload("res://addons/animation_studio/crowd_evaluator.gd")
-
-const HERO_MOTION_FILE := "res://hero/generated/motion.json"
 
 var family := ""
 var case_path := ""
@@ -98,7 +97,7 @@ func start_case(path: String, variant_name: String) -> void:
 	elapsed = 0.0
 	ticks = 0
 
-	if "/showcase/hero/" in case_path and FileAccess.file_exists(HERO_MOTION_FILE):
+	if "/showcase/hero/" in case_path and HeroMotionData.has_motion_data():
 		family = "hero_showcase"
 		_setup_hero_showcase()
 	elif "/docking/" in case_path:

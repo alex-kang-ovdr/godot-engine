@@ -39,7 +39,7 @@ text = "← 모션 실험실"
 
 [node name="Title" type="Label" parent="UI/Panel/Box/Bar"]
 size_flags_horizontal = 3
-text = "Havok Hero"
+text = "Hero 85본"
 
 [node name="Clips" type="OptionButton" parent="UI/Panel/Box/Bar"]
 unique_name_in_owner = true

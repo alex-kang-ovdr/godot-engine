@@ -1,20 +1,29 @@
-# Havok Hero 원본 재생
+# Hero 85본 로코모션 & 가상 포인터 제작 과정 다시보기
 
-[Animation Studio](../project.godot)를 Godot 에디터로 열면 상단 메뉴 **프로젝트 → 도구 → Hero 제작 과정 가상 포인터 다시보기** 또는 하단 패널 **Hero 상태머신**에서 데모 에셋을 빈 씬에서 단계별로 조립하는 가상 포인터 제작 과정 다시보기(14단계, `0.0~14.0s`)와 1~5단계·255틱 로코모션 Rewind를 바로 조작할 수 있다. 에디터 실행 시 실제 `SceneTreeDock`·`FileSystemDock`·`InspectorDock`·3D 뷰포트 위에도 역할별 가상 포인터와 대상 강조 박스가 함께 표시된다. F5 실행 시 **Hero 상태머신 · 제작과정 다시보기 →** 또는 **Havok Hero · 원본 클립 →**을 선택하거나 [Hero 씬](hero.tscn) · [Hero 상태머신 스튜디오](hero_locomotion_studio.tscn)를 F6로 실행할 수 있다. 클립을 선택하고 타임라인을 끌거나 **+ 1/60 s**로 진행한다. **다음 SDK 기준 포즈**는 해당 시각에서 재생을 멈추고 모든 본의 로컬 위치·회전 오차 중 최댓값을 표시한다. 타임라인이 끝나면 클립의 시작 위치로 돌아간다.
+[Animation Studio](../project.godot)를 Godot 에디터로 열면 상단 메뉴 **프로젝트 → 도구 → Hero 제작 과정 가상 포인터 다시보기** 또는 하단 패널 **Hero 상태머신**에서 데모 에셋을 빈 씬에서 단계별로 조립하는 가상 포인터 제작 과정 다시보기(14단계, `0.0~14.0s`)와 1~5단계·255틱 로코모션 Rewind를 바로 조작할 수 있다. 에디터 실행 시 실제 `SceneTreeDock`·`FileSystemDock`·`InspectorDock`·3D 뷰포트 위에도 역할별 가상 포인터와 대상 강조 박스가 함께 표시된다. F5 실행 시 **Hero 상태머신 · 제작과정 다시보기 →** 또는 **Hero 85본 · 클립 & 발 IK →**을 선택하거나 [Hero 씬](hero.tscn) · [Hero 상태머신 스튜디오](hero_locomotion_studio.tscn)를 F6로 실행할 수 있다.
+
+## 내재화된 Godot 네이티브 에셋 (`.hkt` / SDK 의존성 없음)
+
+기본 실행·에디터 프리뷰·회귀 테스트(`animation_hero_studio`, `animation_hero_behavior`, `animation_hero_same_asset`, `animation_gallery`)는 외부 `.hkt` 파일이나 Havok SDK 없이 프로젝트 내부에 포함된 Godot 네이티브 에셋만으로 100% 동작한다.
+
+| 내재화 리소스 | 형식·크기 | 내용 |
+| --- | --- | --- |
+| [hero_motion.res](assets/hero_motion.res) | Godot 압축 바이너리 `Resource` (`627.5 KB`) | [HeroMotionData](hero_motion_data.gd) — 85본 바인드 포즈 + 5클립(`idle`, `idle_to_walk`, `walk`, `run`, `turn`) `PackedFloat32Array` |
+| [hero_skin.glb](assets/hero_skin.glb) | 단일 바이너리 glTF 2.0 (`4.41 MB`) | 6개 스킨 메시(10표면, 18,050정점) + 6개 내장 PNG 텍스처 |
 
 ## 가상 포인터 제작 과정 다시보기
 
 [가상 포인터 오버레이](authoring_cursor_overlay.gd)와 [14단계 제작 타임라인](authoring_replay.gd)은 4개 역할(`에셋`·`리그·씬`·`상태머신`·`물리·IK`)과 단계 칩(`탐색`·`대상`·`실행`·`변경`·`완료`), 클릭 리플, 대상 위젯 강조 박스를 사용해 빈 씬 → `Motion` 노드 → 85본 와이어프레임 리그 → 18,050정점 스킨 바인딩 → 공유 지형 → `Idle`/`Idle→Walk`/`Walking`/`Running` 상태머신 → 카메라 추적 리드 → 지형 레이캐스트 2본 발 IK → 255틱 궤적 완성까지를 순서대로 재현한다. 타임라인을 뒤로 스크러빙하면 3D 씬 가시성, 씬 트리, 인스펙터 속성, 역할별 작업 로그, 상태머신 단계가 정확히 해당 시점으로 되감긴다.
 
 ```powershell
-python playforge/tests/run.py --godot $env:GODOT_BIN --only animation_hero_studio
+python playforge/tests/run.py --godot $env:GODOT_BIN --only animation_hero_studio,animation_hero_behavior,animation_hero_same_asset
 ```
 
-## 원본
+## 선택(Optional): 원본 SDK 기준 포즈 대조
 
-Havok 2015.1.0-r1의 `Demo/Demos/Behavior/ShowCase/Hero/HeroDemo.cpp`에서 사용하는 캐릭터의 리그, 스킨, 텍스처와 이동 클립을 사용한다. 원본 파일 위치는 SDK의 `Demo/Demos/Resources/Behavior/GameAssets/Hero/` 기준이다.
+로컬에 Havok 2015.1.0-r1 SDK를 보유한 환경에서만 선택적으로 `hero/generated/oracle.json` 및 `behavior_trace.json`을 생성해 SDK 기준 포즈·궤적과 교차 검증할 수 있다. 기본 실행·에디터 사용에는 필요하지 않다.
 
-| 선택 | 원본 |
+| 클립 ID | 선택적 대조 원본 |
 | --- | --- |
 | 캐릭터 | `CharacterAssets/Rig.hkt`, `CharacterAssets/textures/` |
 | idle | `Animations/Idle/Idle_0.hkt` |
@@ -23,7 +32,7 @@ Havok 2015.1.0-r1의 `Demo/Demos/Behavior/ShowCase/Hero/HeroDemo.cpp`에서 사�
 | run | `Animations/Run/Run_0.hkt` |
 | turn | `Animations/Idle/Idle_To_Run_90.hkt` |
 
-보유한 로컬 SDK에서 읽은 변환 결과는 `hero/generated/`에 생성한다. 이 폴더는 Git에서 제외한다. 다른 체크아웃에서는 같은 SDK에서 다시 생성한다.
+`hero/generated/` 폴더는 Git에서 제외된다. 선택적 SDK 대조용 오라클·트레이스 생성 절차는 아래와 같다.
 
 ## 새 체크아웃에서 생성하기
 

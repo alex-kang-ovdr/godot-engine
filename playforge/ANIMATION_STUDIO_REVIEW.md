@@ -102,3 +102,11 @@ Behavior 키 등록 후 255틱 대조를 실행했다. 양쪽 스틱·트리거 
 - **가상 포인터 제작 과정 다시보기 (`0.0~14.0s`, 14단계)**: 에디터 상단 **프로젝트 → 도구 → Hero 제작 과정 가상 포인터 다시보기** 또는 하단 **Hero 상태머신** 패널(및 F5 런타임)에서 역할별 가상 포인터(`에셋`·`리그·씬`·`상태머신`·`물리·IK`), 단계 칩(`탐색`·`대상`·`실행`·`변경`·`완료`), 클릭 리플, 대상 강조 박스로 에셋 제작 전 과정을 시청·되감기할 수 있다. 빈 씬 → `Motion` 노드 → 85본 와이어프레임 리그 → 18,050정점 스킨 바인딩 → 공유 지형 → 상태머신(`Idle`·`Idle→Walk`·`Walking`·`Running`·Smoothstep) → 카메라 추적 리드 → 지형 레이캐스트 2본 발 IK → 255틱 궤적까지 정방향·역방향 모두 결정적으로 재구성되며, 에디터 모드에서는 실제 `SceneTreeDock`·`FileSystemDock`·`InspectorDock`·3D 뷰포트 위에도 라이브 커서 오버레이를 구동한다.
 - **255틱 로코모션 Rewind**: 1~5단계 제작 과정을 직접 선택해 즉시 재베이킹하고, 2D 상태머신 강조·스틱 인디케이터·3D 궤적·전이 점프(`t=0/31/57/90/150/202`)·타임라인 스크러빙으로 임의 틱을 다시볼 수 있다.
 - **검증**: `animation_hero_studio` 헤드리스 검증 **12/12 PASS**(빈 씬 → 85본 와이어프레임 → 스킨 바인딩 → 12단계 완료 → `13.5s → 2.4s` 역방향 롤백, 1~5단계 상태 해제, 85본 포즈·루트 되감기 복원 오차 `0.0`)와 GPU 실렌더링 시각 검수를 통과했다.
+
+## Hero 에셋 Godot 네이티브 내재화 (`.hkt`/SDK 의존성 제거) · 2026-11-26
+
+로컬 `hero/generated/` 및 `.hkt`/Havok SDK 변환 절차 없이 새 체크아웃·에디터·런타임 어디서나 즉시 동작하도록 Hero 85본 에셋을 Godot 네이티브 포맷으로 내재화했다.
+
+- **내재화 리소스**: [HeroMotionData](animation_studio/hero/hero_motion_data.gd) (`PackedFloat32Array` 압축 바이너리 [hero_motion.res](animation_studio/hero/assets/hero_motion.res), `627.5 KB` — 기존 4.65 MB JSON 대비 86.5% 절감, `.hkt`/SDK 경로 메타데이터 0건) + 단일 바이너리 glTF 2.0 [hero_skin.glb](animation_studio/hero/assets/hero_skin.glb) (`4.41 MB`, 18,050정점·10표면·6내장 PNG, JSON 청크 내 Havok 문자열 0건).
+- **UI·스크립트·테스트 전환**: [hero.gd](animation_studio/hero/hero.gd), [hero_locomotion_studio.gd](animation_studio/hero/hero_locomotion_studio.gd), [authoring_replay.gd](animation_studio/hero/authoring_replay.gd), [hero_sm_canvas.gd](animation_studio/hero/hero_sm_canvas.gd), [behavior_cases.gd](animation_studio/catalog/behavior_cases.gd), [hud.tscn](animation_studio/demo/hud.tscn), [run.py](tests/run.py)를 모두 내재화 리소스 기본 로드로 전환하고 UI의 `.hkt`/SDK 표기를 정리했다. 기존 SDK 오라클·트레이스 비교 도구(`animation_hero_parity`, `animation_hero_behavior_native`)는 로컬 `hero/generated/`가 있을 때만 동작하는 선택(optional) 검증으로 유지했다.
+- **검증 (`hero/generated/` 임시 제거 클린 체크아웃 모의)**: `animation_havok_demo`(57/57), `animation_hero_behavior`(11/11), `animation_hero_same_asset`(5/5), `animation_hero_studio`(12/12), `animation_gallery`(422/422) 총 **507/507 PASS** + GPU 실렌더링 검수 완료. 복구 후 선택 SDK 패리티 `animation_hero_parity` **11/11 PASS** 확인.

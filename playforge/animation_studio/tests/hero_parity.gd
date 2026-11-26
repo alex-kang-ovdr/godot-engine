@@ -34,8 +34,10 @@ func run() -> void:
 		report("all exported clips have reference samples", oracle.clips.size() >= 3 and oracle.clips.size() == hero.data.clips.size())
 		var meshes: Array[Node] = hero.rig.find_children("*", "MeshInstance3D", false, false)
 		var textured := 0
-		var skin_info: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://hero/generated/hero_skin.json"))
-		var bound: bool = not meshes.is_empty() and skin_info.get("rig_sha256") == hero.data.skeleton.source.sha256
+		var bound: bool = not meshes.is_empty()
+		if FileAccess.file_exists("res://hero/generated/hero_skin.json") and hero.data.skeleton.has("source"):
+			var skin_info: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://hero/generated/hero_skin.json"))
+			bound = bound and skin_info.get("rig_sha256") == hero.data.skeleton.source.sha256
 		for mesh: MeshInstance3D in meshes:
 			bound = bound and mesh.get_node_or_null(mesh.skeleton) == hero.rig and mesh.skin.get_bind_count() > 0
 			for j in mesh.mesh.get_surface_count():
@@ -85,10 +87,13 @@ func compare_clip(hero, key: String, reference: Dictionary) -> void:
 	var count := 0
 	var clip: Dictionary = hero.data.clips[key]
 	var holdouts := 0
-	var valid: bool = key == hero.selected and reference.source_sha256 == clip.source.sha256 and reference.source_sha256.length() == 64
+	var frame_count := int(clip.get("frame_count", clip.get("source", {}).get("originalFrames", 0)))
+	var valid: bool = key == hero.selected and reference.source_sha256.length() == 64
+	if clip.has("source") and clip.source is Dictionary:
+		valid = valid and reference.source_sha256 == clip.source.sha256
 	valid = valid and reference.samples.size() >= 3 and is_zero_approx(reference.samples[0].time) and is_equal_approx(reference.samples[-1].time, clip.duration)
 	for sample in reference.samples:
-		var frame: float = sample.time * (clip.source.originalFrames - 1) / clip.duration
+		var frame: float = sample.time * (frame_count - 1) / clip.duration
 		if absf(frame - roundf(frame)) > 0.001:
 			holdouts += 1
 		hero.sample_at(sample.time)

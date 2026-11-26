@@ -7,28 +7,29 @@ extends Control
 ## Mode 2 (255-Tick Rewind): Direct 1..5 stage & 0..254 tick pose scrubbing.
 
 const Hero := preload("res://hero/hero.gd")
+const HeroMotionData := preload("res://hero/hero_motion_data.gd")
 const Locomotion := preload("res://hero/locomotion.gd")
 const PoseBuffer := preload("res://addons/animation_studio/pose_buffer.gd")
 const HeroSMCanvas := preload("res://hero/hero_sm_canvas.gd")
 const AuthoringReplay := preload("res://hero/authoring_replay.gd")
 const AuthoringCursorOverlay := preload("res://hero/authoring_cursor_overlay.gd")
 
-const MOTION_FILE := "res://hero/generated/motion.json"
-const SKIN_FILE := "res://hero/generated/hero_skin.gltf"
+const MOTION_FILE := HeroMotionData.NATIVE_MOTION_RES
+const SKIN_FILE := HeroMotionData.NATIVE_SKIN_GLB
 const STEP := 1.0 / 60.0
 const TOTAL_TICKS := 255
 
 const STAGE_TITLES := [
-	"1단계 · 원본 리그·스킨 & Idle 상태",
-	"2단계 · 걷기 진입 전이 (Idle → Walk_Face_180 → Walk)",
+	"1단계 · 85본 리그·스킨 & Idle 상태",
+	"2단계 · 걷기 진입 전이 (Idle → Idle→Walk → Walk)",
 	"3단계 · 달리기 전이 · Smoothstep · 카메라 리드 회전",
 	"4단계 · 지형 레이캐스트 & 스윙 페이즈 발 IK",
 	"5단계 · 완성 로코모션 & 255틱 전 구간 다시보기",
 ]
 
 const STAGE_DESCRIPTIONS := [
-	"Havok 원본 85본 Rig.hkt와 18,050정점 스킨 메시를 로드하고 기본 Idle_0 상태만 구동합니다.",
-	"스틱 입력 시 Walk_Face_180으로 방향을 전환한 뒤 26틱 후 Walking 상태로 전이합니다.",
+	"내재화된 85본 리그(hero_motion.res)와 18,050정점 스킨(hero_skin.glb)을 로드하고 기본 idle 상태만 구동합니다.",
+	"스틱 입력 시 idle_to_walk로 방향을 전환한 뒤 26틱 후 Walking 상태로 전이합니다.",
 	"Running 상태, Smoothstep 전환 블렌딩(4틱/10틱), Walk→Run 회전 속도 유지, 카메라 리드 각도를 추가합니다.",
 	"평지·계단·경사면 지형 위에서 2본 발 IK와 스윙 페이즈 페이드아웃을 적용합니다.",
 	"전체 상태머신·카메라 리드·발 IK 255틱 완성 상태입니다. 타임라인으로 임의 틱을 되감아 다시봅니다.",
@@ -212,8 +213,8 @@ func _build_ui() -> void:
 
 	asset_list = ItemList.new()
 	asset_list.custom_minimum_size.y = 54
-	asset_list.add_item("hero/generated/motion.json (85본·5클립)")
-	asset_list.add_item("hero/generated/hero_skin.gltf (18,050정점)")
+	asset_list.add_item("hero/assets/hero_motion.res (85본·5클립)")
+	asset_list.add_item("hero/assets/hero_skin.glb (18,050정점)")
 	authoring_dock_col.add_child(asset_list)
 
 	var insp_title := Label.new()
@@ -459,12 +460,9 @@ func _add_terrain_box(n: String, pos: Vector3, box_size: Vector3, color: Color) 
 
 func _load_hero_assets() -> void:
 	assets_ready = false
-	if not FileAccess.file_exists(MOTION_FILE):
-		detail_label.text = "Hero 원본 데이터(motion.json)가 없습니다."
-		return
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(MOTION_FILE))
-	if not parsed is Dictionary or parsed.get("clips", {}).is_empty():
-		detail_label.text = "motion.json 형식이 올바르지 않습니다."
+	var parsed: Dictionary = HeroMotionData.load_motion_dict()
+	if parsed.is_empty() or parsed.get("clips", {}).is_empty():
+		detail_label.text = "내재화된 Hero 리소스(hero/assets/hero_motion.res)가 없습니다."
 		return
 	data = parsed
 	rig.clear_bones()
@@ -479,12 +477,13 @@ func _load_hero_assets() -> void:
 
 func _load_hero_skin() -> void:
 	skin_meshes.clear()
-	if not FileAccess.file_exists(SKIN_FILE):
+	var skin_path := HeroMotionData.resolve_skin_path()
+	if skin_path.is_empty():
 		return
 	var doc := GLTFDocument.new()
 	var st := GLTFState.new()
 	st.use_named_skin_binds = true
-	if doc.append_from_file(SKIN_FILE, st) != OK:
+	if doc.append_from_file(skin_path, st) != OK:
 		return
 	var scene := doc.generate_scene(st)
 	if scene == null:

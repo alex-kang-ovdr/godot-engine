@@ -85,8 +85,7 @@ func run() -> void:
 		}}))
 		if "--native" in OS.get_cmdline_user_args():
 			var entry_clip: Dictionary = hero.data.clips.get("idle_to_walk", {})
-			var source_path: String = entry_clip.get("source", {}).get("path", "")
-			report("native comparison uses the SDK walk entry clip", source_path.ends_with("/Walk/Walk_Face_180.hkt"))
+			report("native comparison has walk entry clip", not entry_clip.is_empty() and not entry_clip.get("tracks", []).is_empty())
 			compare_native(first)
 	print("PFTEST ", JSON.stringify({"status": "SUMMARY", "fail": failures}))
 	quit(1 if failures else 0)

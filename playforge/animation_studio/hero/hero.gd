@@ -2,8 +2,9 @@ extends Node3D
 
 const Locomotion := preload("res://hero/locomotion.gd")
 const TerrainIK := preload("res://hero/terrain_ik.gd")
+const HeroMotionData := preload("res://hero/hero_motion_data.gd")
 
-const MOTION_FILE := "res://hero/generated/motion.json"
+const MOTION_FILE := HeroMotionData.NATIVE_MOTION_RES
 
 @onready var rig: Skeleton3D = $Motion/Rig
 @onready var player: AnimationPlayer = $Player
@@ -89,21 +90,19 @@ func _ready() -> void:
 	preview_ground = MeshInstance3D.new()
 	preview_ground.mesh = floor_mesh
 	add_child(preview_ground)
-	if not FileAccess.file_exists(MOTION_FILE):
-		%Readout.text = "Hero 원본 데이터가 없습니다. hero/README.md의 SDK 변환 명령을 실행하세요."
+	var obj: Dictionary = HeroMotionData.load_motion_dict()
+	if obj.is_empty() or obj.get("schema_version") != 1 or obj.get("clips", {}).is_empty():
+		%Readout.text = "내재화된 Hero 모션 리소스(hero/assets/hero_motion.res)를 찾을 수 없습니다."
 		%Play.disabled = true
 		%Step.disabled = true
 		%Progress.editable = false
-		return
-	var obj = JSON.parse_string(FileAccess.get_file_as_string(MOTION_FILE))
-	if not obj is Dictionary or obj.get("schema_version") != 1 or obj.get("clips", {}).is_empty():
-		%Readout.text = "Hero 데이터 형식을 확인하세요. SDK 원본에서 다시 생성할 수 있습니다."
 		return
 	data = obj
 	if FileAccess.file_exists("res://hero/generated/oracle.json"):
 		var decoded = JSON.parse_string(FileAccess.get_file_as_string("res://hero/generated/oracle.json"))
 		if decoded is Dictionary:
 			oracle = decoded
+	%Reference.visible = not oracle.is_empty()
 	for bone in data.skeleton.bones:
 		var index := rig.add_bone(bone.name)
 		rig.set_bone_parent(index, int(bone.parent))
@@ -119,9 +118,9 @@ func _ready() -> void:
 
 
 func load_skin() -> void:
-	var file := "res://hero/generated/hero_skin.gltf"
-	if not FileAccess.file_exists(file):
-		skin_problem = "스킨 없음 · SDK 변환 필요"
+	var file := HeroMotionData.resolve_skin_path()
+	if file.is_empty():
+		skin_problem = "스킨 리소스 없음 (hero/assets/hero_skin.glb)"
 		return
 	var document := GLTFDocument.new()
 	var state := GLTFState.new()
