@@ -120,44 +120,114 @@ func run() -> void:
 	for i in AGENTS:
 		players[i].active = false
 
-	var evaluator := CrowdEvaluator.new()
-	evaluator.setup(qclip, AGENTS)
-	var worker_cpu_ms: Array[float] = []
-	var worker_wait_ms: Array[float] = []
-	var main_apply_ms: Array[float] = []
-	var main_total_ms: Array[float] = []
+	# GDScript WorkerThreadPool path
+	var gd_eval := CrowdEvaluator.new()
+	gd_eval.setup(qclip, AGENTS, false)
+	var gd_worker_cpu_ms: Array[float] = []
+	var gd_worker_wait_ms: Array[float] = []
+	var gd_main_apply_ms: Array[float] = []
+	var gd_main_total_ms: Array[float] = []
 	for tick in WARMUP_TICKS + MEASURE_TICKS:
-		var stats := evaluator.step_parallel(STEP, skeletons)
+		var stats := gd_eval.step_parallel(STEP, skeletons)
 		if tick >= WARMUP_TICKS:
-			worker_cpu_ms.append(stats.worker_cpu_ms)
-			worker_wait_ms.append(stats.worker_wait_ms)
-			main_apply_ms.append(stats.main_apply_ms)
-			main_total_ms.append(stats.main_total_ms)
+			gd_worker_cpu_ms.append(stats.worker_cpu_ms)
+			gd_worker_wait_ms.append(stats.worker_wait_ms)
+			gd_main_apply_ms.append(stats.main_apply_ms)
+			gd_main_total_ms.append(stats.main_total_ms)
+
+	# Snapshot GDScript final poses of sample agents for parity check against native C++.
+	var gd_sample_pos: Array[Vector3] = []
+	var gd_sample_rot: Array[Quaternion] = []
+	for a in [0, 37, 199]:
+		for b in BONES:
+			gd_sample_pos.append(skeletons[a].get_bone_pose_position(b))
+			gd_sample_rot.append(skeletons[a].get_bone_pose_rotation(b))
 
 	var base_p50 := _percentile(base_ms, 0.50)
 	var base_p95 := _percentile(base_ms, 0.95)
-	var w_cpu_p50 := _percentile(worker_cpu_ms, 0.50)
-	var w_cpu_p95 := _percentile(worker_cpu_ms, 0.95)
-	var w_wait_p50 := _percentile(worker_wait_ms, 0.50)
-	var w_wait_p95 := _percentile(worker_wait_ms, 0.95)
-	var m_apply_p50 := _percentile(main_apply_ms, 0.50)
-	var m_apply_p95 := _percentile(main_apply_ms, 0.95)
-	var m_total_p50 := _percentile(main_total_ms, 0.50)
-	var m_total_p95 := _percentile(main_total_ms, 0.95)
+	var gd_w_cpu_p50 := _percentile(gd_worker_cpu_ms, 0.50)
+	var gd_w_cpu_p95 := _percentile(gd_worker_cpu_ms, 0.95)
+	var gd_w_wait_p50 := _percentile(gd_worker_wait_ms, 0.50)
+	var gd_w_wait_p95 := _percentile(gd_worker_wait_ms, 0.95)
+	var gd_m_apply_p50 := _percentile(gd_main_apply_ms, 0.50)
+	var gd_m_apply_p95 := _percentile(gd_main_apply_ms, 0.95)
+	var gd_m_total_p50 := _percentile(gd_main_total_ms, 0.50)
+	var gd_m_total_p95 := _percentile(gd_main_total_ms, 0.95)
 
-	info("crowd_65x200_perf", {
+	var perf_info := {
 		"bones": BONES, "agents": AGENTS, "measure_ticks": MEASURE_TICKS,
 		"baseline_main_p50_ms": base_p50, "baseline_main_p95_ms": base_p95,
-		"worker_cpu_p50_ms": w_cpu_p50, "worker_cpu_p95_ms": w_cpu_p95,
-		"worker_wait_p50_ms": w_wait_p50, "worker_wait_p95_ms": w_wait_p95,
-		"main_apply_p50_ms": m_apply_p50, "main_apply_p95_ms": m_apply_p95,
-		"extended_main_total_p50_ms": m_total_p50, "extended_main_total_p95_ms": m_total_p95,
-		"meets_1_5ms_target": m_total_p50 <= 1.5,
-	})
+		"gd_worker_cpu_p50_ms": gd_w_cpu_p50, "gd_worker_cpu_p95_ms": gd_w_cpu_p95,
+		"gd_worker_wait_p50_ms": gd_w_wait_p50, "gd_worker_wait_p95_ms": gd_w_wait_p95,
+		"gd_main_apply_p50_ms": gd_m_apply_p50, "gd_main_apply_p95_ms": gd_m_apply_p95,
+		"gd_main_total_p50_ms": gd_m_total_p50, "gd_main_total_p95_ms": gd_m_total_p95,
+		"native_available": false,
+	}
+
+	# C++ GDExtension native worker pool path (when debug DLL is present).
+	var native_eval := CrowdEvaluator.new()
+	native_eval.setup(qclip, AGENTS, true)
+	if native_eval.is_using_native():
+		var nat_worker_cpu_ms: Array[float] = []
+		var nat_worker_wait_ms: Array[float] = []
+		var nat_main_apply_ms: Array[float] = []
+		var nat_main_total_ms: Array[float] = []
+		var nat_threads := 0
+		for tick in WARMUP_TICKS + MEASURE_TICKS:
+			var stats := native_eval.step_parallel(STEP, skeletons)
+			nat_threads = int(stats.get("threads", 0))
+			if tick >= WARMUP_TICKS:
+				nat_worker_cpu_ms.append(stats.worker_cpu_ms)
+				nat_worker_wait_ms.append(stats.worker_wait_ms)
+				nat_main_apply_ms.append(stats.main_apply_ms)
+				nat_main_total_ms.append(stats.main_total_ms)
+
+		var max_pos_parity := 0.0
+		var max_rot_parity := 0.0
+		var sidx := 0
+		for a in [0, 37, 199]:
+			for b in BONES:
+				max_pos_parity = maxf(max_pos_parity, skeletons[a].get_bone_pose_position(b).distance_to(gd_sample_pos[sidx]))
+				var d := skeletons[a].get_bone_pose_rotation(b).normalized().inverse() * gd_sample_rot[sidx].normalized()
+				max_rot_parity = maxf(max_rot_parity, 2.0 * atan2(Vector3(d.x, d.y, d.z).length(), absf(d.w)))
+				sidx += 1
+
+		var nat_w_cpu_p50 := _percentile(nat_worker_cpu_ms, 0.50)
+		var nat_w_cpu_p95 := _percentile(nat_worker_cpu_ms, 0.95)
+		var nat_w_wait_p50 := _percentile(nat_worker_wait_ms, 0.50)
+		var nat_w_wait_p95 := _percentile(nat_worker_wait_ms, 0.95)
+		var nat_m_apply_p50 := _percentile(nat_main_apply_ms, 0.50)
+		var nat_m_apply_p95 := _percentile(nat_main_apply_ms, 0.95)
+		var nat_m_total_p50 := _percentile(nat_main_total_ms, 0.50)
+		var nat_m_total_p95 := _percentile(nat_main_total_ms, 0.95)
+
+		perf_info["native_available"] = true
+		perf_info["native_threads"] = nat_threads
+		perf_info["native_worker_cpu_p50_ms"] = nat_w_cpu_p50
+		perf_info["native_worker_cpu_p95_ms"] = nat_w_cpu_p95
+		perf_info["native_worker_wait_p50_ms"] = nat_w_wait_p50
+		perf_info["native_worker_wait_p95_ms"] = nat_w_wait_p95
+		perf_info["native_main_apply_p50_ms"] = nat_m_apply_p50
+		perf_info["native_main_apply_p95_ms"] = nat_m_apply_p95
+		perf_info["native_main_total_p50_ms"] = nat_m_total_p50
+		perf_info["native_main_total_p95_ms"] = nat_m_total_p95
+		perf_info["meets_1_5ms_target"] = nat_m_total_p50 <= 1.5
+		perf_info["native_vs_gd_max_pos_mm"] = max_pos_parity * 1000.0
+		perf_info["native_vs_gd_max_rot_deg"] = rad_to_deg(max_rot_parity)
+
+		report("native C++ crowd evaluator matches GDScript poses within 0.01mm / 0.01deg",
+			max_pos_parity < 0.00001 and rad_to_deg(max_rot_parity) < 0.01,
+			{"max_pos_mm": max_pos_parity * 1000.0, "max_rot_deg": rad_to_deg(max_rot_parity)})
+		report("native C++ 65x200 crowd meets <= 1.5 ms main-thread p50 target",
+			nat_m_total_p50 <= 1.5,
+			{"native_main_p50_ms": nat_m_total_p50, "native_main_p95_ms": nat_m_total_p95,
+			"worker_wait_p50_ms": nat_w_wait_p50, "main_apply_p50_ms": nat_m_apply_p50, "threads": nat_threads})
+
+	info("crowd_65x200_perf", perf_info)
 
 	report("65 bones x 200 agents baseline and parallel paths both measured cleanly",
-		base_p50 > 0.0 and m_total_p50 > 0.0 and m_apply_p50 > 0.0,
-		{"baseline_p50_ms": base_p50, "extended_main_p50_ms": m_total_p50, "main_apply_p50_ms": m_apply_p50, "worker_wait_p50_ms": w_wait_p50})
+		base_p50 > 0.0 and gd_m_total_p50 > 0.0 and gd_m_apply_p50 > 0.0,
+		{"baseline_p50_ms": base_p50, "gd_main_p50_ms": gd_m_total_p50, "gd_main_apply_p50_ms": gd_m_apply_p50})
 
 	container.queue_free()
 	print("PFTEST ", JSON.stringify({"status": "SUMMARY", "fail": failures}))

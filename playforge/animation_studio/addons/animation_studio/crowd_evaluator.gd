@@ -1,7 +1,11 @@
 extends RefCounted
 ## Stage 3 crowd evaluator & quantized clip representation.
-## Evaluates N characters x M bones in parallel via WorkerThreadPool using flat
-## quantized arrays, then applies poses on the main thread with split timing.
+## Evaluates N characters x M bones in parallel via C++ GDExtension worker pool
+## (when available) or GDScript WorkerThreadPool fallback, then applies poses on
+## the main thread with split timing.
+
+const NATIVE_CLASS := &"AnimationStudioCrowdEvaluator"
+const NATIVE_DESCRIPTOR := "res://addons/animation_studio/bin/animation_studio_pose_sampler.gdextension"
 
 class QuantizedClip extends RefCounted:
 	var bone_count: int = 0
@@ -129,12 +133,37 @@ var _times: PackedFloat32Array = PackedFloat32Array()
 var _out_pos: PackedVector3Array = PackedVector3Array()
 var _out_rot: Array[Quaternion] = []
 var _worker_us: PackedInt64Array = PackedInt64Array()
+var _native_eval: RefCounted = null
+var _use_native: bool = false
 
 
-func setup(clip: QuantizedClip, agent_count: int) -> void:
+static func native_available() -> bool:
+	if not ClassDB.class_exists(NATIVE_CLASS):
+		if not (OS.has_feature("windows") and OS.has_feature("x86_64") and OS.has_feature("debug")):
+			return false
+		if not FileAccess.file_exists(NATIVE_DESCRIPTOR):
+			return false
+		GDExtensionManager.load_extension(NATIVE_DESCRIPTOR)
+	return ClassDB.class_exists(NATIVE_CLASS)
+
+
+func is_using_native() -> bool:
+	return _use_native
+
+
+func setup(clip: QuantizedClip, agent_count: int, prefer_native: bool = true, thread_count: int = 0) -> void:
 	_clip = clip
 	_agent_count = agent_count
 	_bone_count = clip.bone_count
+	_native_eval = null
+	_use_native = false
+	if prefer_native and native_available():
+		var inst: RefCounted = ClassDB.instantiate(NATIVE_CLASS)
+		if inst != null and inst.call(&"configure", clip.bone_count, clip.key_count, clip.duration,
+				clip.sample_rate, clip.pos_min, clip.pos_range, clip.pos_q, clip.rot_q, agent_count, thread_count):
+			_native_eval = inst
+			_use_native = true
+			return
 	_times.resize(agent_count)
 	for i in agent_count:
 		_times[i] = fposmod(float(i) * 0.037, clip.duration)
@@ -147,6 +176,8 @@ func setup(clip: QuantizedClip, agent_count: int) -> void:
 
 
 func step_parallel(delta: float, skeletons: Array[Skeleton3D]) -> Dictionary:
+	if _use_native and _native_eval != null:
+		return _native_eval.call(&"step_parallel", delta, skeletons)
 	for i in _agent_count:
 		_times[i] = fposmod(_times[i] + delta, _clip.duration)
 
@@ -174,6 +205,7 @@ func step_parallel(delta: float, skeletons: Array[Skeleton3D]) -> Dictionary:
 		"worker_wait_ms": float(t_wait_end - t_wait_start) / 1000.0,
 		"main_apply_ms": float(t_apply_end - t_apply_start) / 1000.0,
 		"main_total_ms": float((t_wait_end - t_dispatch) + (t_apply_end - t_apply_start)) / 1000.0,
+		"native": false,
 	}
 
 

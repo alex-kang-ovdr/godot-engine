@@ -1,6 +1,8 @@
 #include <cmath>
 #include <cstdint>
 
+#include "animation_studio_crowd_evaluator.h"
+
 #include <godot_cpp/classes/animation.hpp>
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/classes/skeleton3d.hpp>
@@ -139,6 +141,7 @@ public:
 void initialize_animation_studio_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		GDREGISTER_CLASS(AnimationStudioPoseSampler);
+		GDREGISTER_CLASS(AnimationStudioCrowdEvaluator);
 	}
 }
 
