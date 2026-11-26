@@ -102,6 +102,7 @@ func _add_box(label: String, position: Vector3, size: Vector3, color: Color) -> 
 func step(delta: float) -> Dictionary:
 	var space := host.get_world_3d().direct_space_state
 	rig.force_update_all_bone_transforms()
+	var root_y := rig.global_position.y
 	for i in 2:
 		var foot := rig.find_bone(FEET[i])
 		var ankle := rig.to_global(rig.get_bone_global_pose(foot).origin)
@@ -110,11 +111,21 @@ func step(delta: float) -> Dictionary:
 		var hit := space.intersect_ray(query)
 		hits[i] = not hit.is_empty()
 		target_normals[i] = hit.get("normal", Vector3.UP)
-		target_positions[i] = hit.position + target_normals[i] * 0.025 if hits[i] else ankle
-		smoothed_heights[i] = move_toward(smoothed_heights[i], target_positions[i].y, delta * 4.0)
 		if hits[i]:
-			var target := Vector3(target_positions[i].x, smoothed_heights[i], target_positions[i].z)
-			adjust_leg(i, rig.to_local(target), rig.global_basis.inverse() * target_normals[i])
+			var ankle_height := ankle.y - root_y
+			var ground_offset: float = hit.position.y - root_y
+			# Fade out IK while the foot swings high above the ground so airborne strides stay intact.
+			var stance_weight := clampf(1.0 - (ankle_height - 0.14) / 0.12, 0.0, 1.0)
+			var desired_y := maxf(ankle.y + ground_offset * stance_weight, hit.position.y + 0.08)
+			target_positions[i] = Vector3(ankle.x, desired_y, ankle.z)
+			smoothed_heights[i] = move_toward(smoothed_heights[i], desired_y, delta * 4.0)
+			if stance_weight > 0.001 or desired_y > ankle.y + 0.001:
+				var target := Vector3(ankle.x, smoothed_heights[i], ankle.z)
+				var normal := Vector3.UP.slerp(target_normals[i].normalized(), stance_weight)
+				adjust_leg(i, rig.to_local(target), rig.global_basis.inverse() * normal)
+		else:
+			target_positions[i] = ankle
+			smoothed_heights[i] = move_toward(smoothed_heights[i], ankle.y, delta * 4.0)
 		feet[i] = rig.to_global(rig.get_bone_global_pose(foot).origin)
 	return {"feet": feet.duplicate(), "before_ik": before_ik.duplicate(),
 		"hits": hits.duplicate(), "targets": target_positions.duplicate(), "normals": target_normals.duplicate()}

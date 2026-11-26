@@ -9,11 +9,12 @@ const STICK_RESPONSE := 0.9
 const START_HOLD := 0.01
 const STOP_HOLD := 0.1
 # Locomotion state switches before its outgoing animation finishes blending.
-const IDLE_BLEND_TIME := 0.18
+const IDLE_BLEND_TIME := 10.0 / 60.0
 # Forward replay selects Walk_Face_180 and enters Walking 26 physics ticks later.
 const WALK_ENTRY_TIME := 26.0 / 60.0
 # The SDK transition turns the initial rig around to face camera-relative forward.
 const FORWARD_HEADING := PI
+const CAMERA_FOLLOW_DISTANCE := 5.0
 
 var _rig: Skeleton3D
 var _motion: Node3D
@@ -25,12 +26,19 @@ var _filtered_stick := Vector2.ZERO
 var _stick_hold := 0.0
 var _state_elapsed := 0.0
 var _outgoing_clip: Dictionary
+var _outgoing_name := ""
 var _outgoing_time := 0.0
 var _outgoing_loop := true
 var _blend_duration := 0.0
 var _input_speed := 0.0
 var _turning := false
 var _facing_angle := 0.0
+var _camera_from := Vector3(0.0, 2.5, -4.0)
+var _camera_to := Vector3(0.0, 1.75, 0.0)
+var _camera_lead := Vector3.ZERO
+var _camera_angle := 0.0
+var _last_root_pos := Vector3.ZERO
+var _root_velocity := Vector3.ZERO
 
 
 func setup(rig: Skeleton3D, motion: Node3D, clips: Dictionary) -> void:
@@ -44,10 +52,17 @@ func setup(rig: Skeleton3D, motion: Node3D, clips: Dictionary) -> void:
 	_stick_hold = 0.0
 	_state_elapsed = 0.0
 	_outgoing_clip = {}
+	_outgoing_name = ""
 	_outgoing_time = 0.0
 	_blend_duration = 0.0
 	_motion.rotation.y = 0.0 if clips.has("idle_to_walk") else FORWARD_HEADING
 	_facing_angle = _motion.rotation.y
+	_camera_from = Vector3(0.0, 2.5, -4.0)
+	_camera_to = Vector3(0.0, 1.75, 0.0)
+	_camera_lead = Vector3.ZERO
+	_camera_angle = 0.0
+	_last_root_pos = _motion.position
+	_root_velocity = Vector3.ZERO
 	_enter_clip("idle")
 
 
@@ -61,6 +76,7 @@ func step(stick: Vector2, delta: float, walk_modifier := false) -> Dictionary:
 		_stick_hold += delta
 	else:
 		_stick_hold = 0.0
+	_update_camera(delta)
 	var magnitude := _filtered_stick.length()
 	var moving := _filtered_stick.length_squared() >= STICK_THRESHOLD_SQUARED
 	var next_state := choose_state(moving, walk_modifier)
@@ -68,6 +84,7 @@ func step(stick: Vector2, delta: float, walk_modifier := false) -> Dictionary:
 	if entering:
 		_blend_duration = transition_blend(_state, next_state)
 		_outgoing_clip = _clips[_clip_name] if _blend_duration > 0.0 else {}
+		_outgoing_name = _clip_name if _blend_duration > 0.0 else ""
 		_outgoing_time = _clip_time
 		_outgoing_loop = _clip_name != "idle_to_walk"
 		_state = next_state
@@ -75,10 +92,12 @@ func step(stick: Vector2, delta: float, walk_modifier := false) -> Dictionary:
 		_enter_clip(_state)
 
 	_input_speed = magnitude if moving else 0.0
-	var target_yaw := FORWARD_HEADING + atan2(_filtered_stick.x, _filtered_stick.y)
-	var yaw_gain := 2.0 if _state == "walk" else 3.0
+	var pad_angle := atan2(_filtered_stick.x, -_filtered_stick.y)
+	var walking_active := _state == "walk" or (_outgoing_name == "walk" and not _outgoing_clip.is_empty() and _state_elapsed < _blend_duration)
+	var yaw_gain := 2.0 if walking_active else 3.0
 	var yaw_step := 0.0
-	if _state != "idle_to_walk" and moving and magnitude >= 0.5:
+	if _state != "idle_to_walk" and _state != "idle" and magnitude >= 0.5:
+		var target_yaw := -pad_angle - _camera_angle
 		yaw_step = wrapf(target_yaw - _motion.rotation.y, -PI, PI) * yaw_gain * delta
 
 	var clip: Dictionary = _clips[_clip_name]
@@ -87,7 +106,8 @@ func step(stick: Vector2, delta: float, walk_modifier := false) -> Dictionary:
 	var root_delta: Transform3D = sample.delta
 	var outgoing_weight := 0.0
 	if not _outgoing_clip.is_empty():
-		outgoing_weight = maxf(0.0, 1.0 - _state_elapsed / _blend_duration)
+		var u := clampf(_state_elapsed / _blend_duration, 0.0, 1.0)
+		outgoing_weight = 1.0 - u * u * (3.0 - 2.0 * u)
 		if outgoing_weight > 0.0:
 			var outgoing := advance_clip(_outgoing_clip, _outgoing_time, delta, _outgoing_loop)
 			_outgoing_time = outgoing.time
@@ -96,11 +116,30 @@ func step(stick: Vector2, delta: float, walk_modifier := false) -> Dictionary:
 			_outgoing_clip = {}
 	_apply_pose(clip, _clip_time, outgoing_weight)
 	_state_elapsed += delta
+	var prev_pos := _motion.position
 	_motion.transform = _motion.transform * root_delta
 	_motion.rotation.y += yaw_step
+	_root_velocity = (_motion.position - prev_pos) / delta
+	_last_root_pos = prev_pos
 	_turning = not is_zero_approx(yaw_step)
 	_facing_angle = _motion.rotation.y
 	return _result(root_delta.origin)
+
+
+func _update_camera(delta: float) -> void:
+	# Mirrors Hero's hero_camera.lua: compute camera angle before updating follow targets.
+	var cam_fwd_x := _camera_from.x - _camera_to.x
+	var cam_fwd_y_hk := _camera_to.z - _camera_from.z
+	if cam_fwd_x * cam_fwd_x + cam_fwd_y_hk * cam_fwd_y_hk > 1e-10:
+		_camera_angle = atan2(cam_fwd_x, cam_fwd_y_hk)
+	var old_pos := _motion.position
+	var target_to := old_pos + Vector3(0.0, 1.6, 0.0)
+	var scaled_vel := _root_velocity * (10.0 * delta)
+	_camera_lead = _camera_lead.lerp(scaled_vel, 5.0 * delta)
+	target_to += _camera_lead
+	var target_from := Vector3(old_pos.x, target_to.y, old_pos.z - CAMERA_FOLLOW_DISTANCE)
+	_camera_to = _camera_to.lerp(target_to, 0.25)
+	_camera_from = _camera_from.lerp(target_from, 0.33)
 
 
 func advance_clip(clip: Dictionary, time: float, delta: float, loop := true) -> Dictionary:
@@ -125,11 +164,11 @@ static func transition_blend(previous: String, next: String) -> float:
 		return IDLE_BLEND_TIME
 	# The reference still evaluates Walk Face 180 four ticks after entering Walking.
 	if previous == "idle_to_walk" and next == "walk":
-		return 0.13
+		return 8.0 / 60.0
 	if previous == "walk" and next == "run":
-		return 0.06
+		return 4.0 / 60.0
 	if previous == "idle" and next == "idle_to_walk":
-		return 0.06
+		return 4.0 / 60.0
 	return 0.0
 
 

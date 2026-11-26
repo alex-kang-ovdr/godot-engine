@@ -36,6 +36,8 @@ func run() -> void:
 		var max_move := 0.0
 		var hits := 0
 		var adjustments := 0
+		var swing_samples := 0
+		var max_swing_drop := 0.0
 		var max_yaw := 0.0
 		for tick in first.size():
 			var frame := first[tick]
@@ -43,6 +45,9 @@ func run() -> void:
 			max_move = maxf(max_move, first_frame.root.distance_to(frame.root))
 			max_yaw = maxf(max_yaw, absf(angle_difference(first_frame.yaw, frame.yaw)))
 			for leg in 2:
+				if frame.before[leg].y > 0.35:
+					swing_samples += 1
+					max_swing_drop = maxf(max_swing_drop, absf(frame.feet[leg].y - frame.before[leg].y))
 				if frame.hits[leg]:
 					hits += 1
 					var before: float = frame.before[leg].distance_to(frame.targets[leg])
@@ -53,7 +58,7 @@ func run() -> void:
 			{"state": "run", "tick": 90}, {"state": "idle", "tick": 202}
 		] and max_move > 1.0, {"transitions": transitions, "distance_m": max_move})
 		report("idle blends out remaining movement and stops", first[202].root.distance_to(end_frame.root) > 0.05
-			and first[220].root.is_equal_approx(end_frame.root))
+			and first[212].root.is_equal_approx(end_frame.root))
 		report("direction input rotates locomotion root", max_yaw > 0.7, {"max_rad": max_yaw})
 		report("forward and right input follow Havok world axes", first[149].root.z < -1.0
 			and first[194].root.x < first[150].root.x - 1.0)
@@ -70,6 +75,8 @@ func run() -> void:
 			raised += int(step_sample.hits[leg] and step_sample.targets[leg].y > 0.12)
 		report("terrain rays detect raised step", raised > 0, {"raised_feet": raised})
 		report("IK moves ankles toward terrain targets", adjustments >= 20, {"adjusted_ankles": adjustments})
+		report("IK preserves airborne swing foot height", swing_samples > 0 and max_swing_drop < 0.02,
+			{"swing_samples": swing_samples, "max_drop_m": max_swing_drop})
 		report("fixed-input replay repeatable", first == second)
 		hero.get_node("%Behavior").pressed.emit()
 		report("switch back to clip comparison", hero.locomotion == null and not hero.selected.is_empty())
