@@ -12,6 +12,7 @@
 #include <Behavior/Behavior/Character/hkbCharacterSetup.h>
 #include <Behavior/Behavior/Linker/hkbSymbolLinker.h>
 #include <Behavior/Behavior/Node/hkbNodeInfo.h>
+#include <Behavior/Behavior/StateMachine/hkbStateMachine.h>
 #include <Behavior/Behavior/World/hkbWorld.h>
 #include <Behavior/Behavior/World/hkbWorldCinfo.h>
 #include <Behavior/PhysicsBridge/hkbnpPhysicsInterface.h>
@@ -131,6 +132,7 @@ static bool trace(const char* projectPath, const char* outputPath)
 	std::FILE* file = std::fopen(outputPath, "wb");
 	if (!file) return false;
 	std::fprintf(file, "{\"hz\":60,\"fixture\":\"hero-step-slope-v1\",\"frames\":[");
+	std::string previousLocomotion;
 	for (int tick = 0; tick < 255; ++tick)
 	{
 		const float x = tick >= 150 && tick < 195 ? 1.f : 0.f;
@@ -146,9 +148,29 @@ static bool trace(const char* projectPath, const char* outputPath)
 		{
 			const char* name = node->m_nodeClone ? static_cast<const char*>(node->m_nodeClone->m_name) : nullptr;
 			if (!name) continue;
-			if (std::strcmp(name, "Walking Logic") == 0) { state = "walk"; break; }
-			if (std::strcmp(name, "Running Logic") == 0) state = "run";
-			if (std::strcmp(name, "Idle Logic") == 0 && std::strcmp(state, "unknown") == 0) state = "idle";
+			if (std::strcmp(name, "Locomotion State Machine") == 0 && node->m_nodeClone->getType() == HKB_NODE_TYPE_STATE_MACHINE)
+			{
+				const auto& machine = *static_cast<const hkbStateMachine*>(node->m_nodeClone);
+				const int id = machine.getCurrentStateId();
+				if (id >= 0)
+				{
+					const char* active = machine.getStateInfoById(id).m_name.cString();
+					if (previousLocomotion != active)
+						std::fprintf(stderr, "Locomotion state at tick %d: %s\n", tick, active);
+					previousLocomotion = active;
+					if (std::strcmp(active, "Idle") == 0) state = "idle";
+					if (std::strcmp(active, "Idle to Walk") == 0) state = "idle_to_walk";
+					if (std::strcmp(active, "Walking") == 0) state = "walk";
+					if (std::strcmp(active, "Running") == 0) state = "run";
+				}
+			}
+		}
+		if (std::strcmp(state, "unknown") == 0)
+		{
+			std::fprintf(stderr, "Unmapped locomotion state at tick %d.\n", tick);
+			std::fclose(file);
+			world->removeCharacter(hero);
+			return false;
 		}
 		const hkQsTransform& root = hero->getWorldFromModel();
 		const hkQsTransform* local = hero->getPoseLocal();
