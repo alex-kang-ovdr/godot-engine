@@ -208,9 +208,10 @@ func _spawn_havok_graph_actor(char_id: String, pos := Vector3.ZERO, loop_overrid
 	var idle_a: Animation = lib.get_animation(idle_key)
 	var act_a: Animation = lib.get_animation(act_key)
 
-	var root_idx := Standards.find_semantic_bone(skel, "root")
 	var pg := PoseGraph.new()
-	pg.configure(StringName(skel.get_bone_name(root_idx)) if root_idx >= 0 else &"")
+	# All internalized Havok clips already have root motion extracted separately from bone tracks;
+	# passing Pelvis / Root_M as root_motion_bone would freeze hip bob/rotation (and strip Soldier's -90° Root_M yaw).
+	pg.configure(&"")
 	var loop_flag := eff_loop != Animation.LOOP_NONE
 	var mode_str := "ping_pong" if eff_loop == Animation.LOOP_PINGPONG else ("loop" if loop_flag else "single")
 	pg.add_state(&"idle", idle_a, true, "loop")
@@ -377,6 +378,23 @@ func _attach_actor_ik(skel: Skeleton3D, is_hand: bool, target_pos: Vector3) -> v
 
 func _setup_driver_ik() -> void:
 	if "charactercontroller" in case_path:
+		# Solid collision floor at Y = 0.0 so CharacterBody3D never falls under 9.81 m/s² gravity
+		var floor_body := StaticBody3D.new()
+		floor_body.name = "BehaviorControllerFloor"
+		var floor_col := CollisionShape3D.new()
+		var floor_box := BoxShape3D.new()
+		floor_box.size = Vector3(60.0, 0.4, 60.0)
+		floor_col.shape = floor_box
+		floor_col.position = Vector3(0.0, -0.2, 0.0)
+		floor_body.add_child(floor_col)
+		var step_col := CollisionShape3D.new()
+		var step_box := BoxShape3D.new()
+		step_box.size = Vector3(1.8, 0.14, 1.4)
+		step_col.shape = step_box
+		step_col.position = Vector3(0.0, 0.07, -1.6)
+		floor_body.add_child(step_col)
+		add_child(floor_body)
+
 		controller = CharacterBody3D.new()
 		controller.name = "BehaviorController"
 		var cs := CollisionShape3D.new()
@@ -645,6 +663,13 @@ func _setup_generator() -> void:
 	elif "referencepose" in case_path:
 		generator_mode = "reference_pose"
 		actor_skel.reset_bone_poses()
+		if cid == "soldier":
+			# Soldier GLB bind pose faces +Z (whereas animation tracks rotate Root_M to Maya +X).
+			# Align inner yaw to PI so ReferencePose faces Godot -Z identically to Havok ReferencePoseGenerator.
+			var inner_ref: Node3D = pack["inner"] as Node3D
+			if inner_ref != null:
+				inner_ref.rotation.y = PI
+		actor_skel.force_update_all_bone_transforms()
 	elif "manualselector" in case_path:
 		generator_mode = "manual_selector"
 		graph.reset(&"idle")
@@ -711,6 +736,10 @@ func _physics_process(delta: float) -> void:
 			actor_skel.force_update_all_bone_transforms()
 		"driver_ik":
 			if controller != null:
+				if controller.is_on_floor():
+					controller.velocity.y = 0.0
+					if "jump" in case_variant.to_lower() and ticks > 0 and ticks % 75 == 30:
+						controller.velocity.y = 4.2
 				controller.velocity = Vector3(0.0, controller.velocity.y - Standards.GRAVITY_MPS2 * delta, -1.15)
 				controller.move_and_slide()
 				traveled = controller.position.length()

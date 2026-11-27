@@ -280,3 +280,25 @@ Havok SDK 2015.1.0-r1의 `Demo/Demos/Behavior/` 전체 중 **Hero 및 Soldier �
   - **대상 범위**: 등록 활성 **47종** = Hero 전용 **23종** + Hero+Soldier 공용 **2종**(`CharacterToObjectAttachment` Keyframe/Ragdoll) = Hero 계 **25종**, Soldier 전용 **22종** *(SDK 자체 비활성 3파일: `DockingHangingDemo.cpp` `#if !defined(HK_PLATFORM_X64)`, `DockingReRooting.cpp` SDK 주석 처리, `Determinism.cpp` `#ifdef HK_ENABLE_DETERMINISM_CHECKS`)*.
   - **결정론 검증**: **47 / 47 (`100.0%`)** 독립 2프로세스 간 `executed_ticks`, `total_events`, 64-bit `final_pose_hash`, `trajectory_hash`, `event_hash` 비트 단위 완전 일치 (`SymbolLinking/Seeded` == `Unseeded` `pose=b202c89888` 일치 포함).
   - **규모 및 실렌더링**: 총 **`15,665` 틱**(`261.08초` @ `60.000 Hz`), 총 **`1,545` 이벤트**, 실제 DX11 3D 스크린샷 **`220 / 220`장** 비공백 검증 및 Hero(25)·Soldier(22) 컨택트 시트 육안 검수 완료.
+
+## 수집 데이터 기반 Havok DX11 vs Godot 4.7.2 47종 전수 1 vs 1 비교 및 포팅 결함 수정 · 2026-11-27
+
+수집된 공식 Havok 2015.1.0-r1 DX11 47종 60fps 데이터(`compare/assets/havok_real_demo_manifest.json`, `15,665`틱, `1,545`이벤트, 실 DX11 PNG `220`장)를 기준으로, **Godot 4.7.2 OpenGL3(RTX 4070) 포팅 47종 전체**를 동일 `60.000 Hz` 고정 틱으로 1 vs 1 실행·계측·실렌더링 촬영하고, 비교 과정에서 노출된 **실제 포팅·측정 결함 6건**을 모두 수정해 재검증했다.
+
+- **엔진 영향 범위**: **`[엔진 수정]` 없음 (0건)**, **`[엔진 추가]` 없음 (0건)** — 모든 비교 파이프라인·포팅 수정·시각 갤러리·회귀 검증은 `playforge/animation_studio/` 확장 계층에만 반영.
+- **신규·수정 파일 (`[확장 추가]` / `[확장 수정]`)**:
+  - `[확장 추가]` `compare/havok_47_1to1_compare.gd`: 공식 47종 전체를 Godot 4.7.2 OpenGL3(`640×360` MSAA 2×)로 동일 틱(`15,665`틱) 시뮬레이션하고, 동일 대표 틱 스크린샷 촬영 + 6랜드마크 표준 좌표계(`-Z` 전방 / `+Y` 상향) 포즈 RMS·루트 변위·정밀 1:1(`HavokBehavior1To1Runner`) 교차 검증 수행.
+  - `[확장 추가]` `compare/build_47_1to1_report.py`: 좌(Real Havok DX11) / 우(Godot 4.7.2 Port) 47장 개별 1 vs 1 합성 PNG, Hero(25)·Soldier(22) 마스터 1 vs 1 컨택트 시트 2종, 정량 리포트 JSON(`83.6 KB`), 반응형 웹 비교 갤러리(`index.html`) 자동 생성.
+  - `[확장 추가]` `compare/assets/havok_47_1to1_report.json` · `compare/assets/havok_vs_godot_hero_1to1_sheet.png` · `compare/assets/havok_vs_godot_soldier_1to1_sheet.png`.
+  - `[확장 수정]` `catalog/havok_demo_standards.gd` (`HavokDemoStandards`): `#20 CharacterToObject/Ragdoll Attachments` 및 `#37 SimultaneousTransitionTest`(`"/transitiontest/"` 정확 매칭)의 캐릭터 배정을 Soldier 114b로 교정 → **47 / 47 (`100%`) 에셋·스켈레톤 본 수 완전 일치**.
+  - `[확장 수정]` `catalog/behavior_cases.gd` (`BehaviorCases`):
+    - **핵심 리그 결함 수정**: `PoseGraph.configure(&"")` 적용 — 기존에 `Pelvis`/`Root_M`을 `root_motion_bone`으로 전달해 모든 `PoseGraph` 기반 데모의 골반 트랙이 고정되고 Soldier 21종이 90° 측면으로 돌아가던 결함 해결 (Soldier 중앙 포즈 RMS `336.1 mm → 266.6 mm`, `-69.5 mm` 개선, 전 22종 정면 카메라 정렬 복원).
+    - `#04..#07 CharacterControllerDriver`에 `StaticBody3D` 지면·단차 콜라이더 및 Jump 변형 점프 로직 추가 (기존 중력 낙하 27~50m 결함 제거).
+    - `#18 ReferencePoseGenerator` Soldier GLB 바인드 포즈 `+Z → -Z` 정렬(`inner.rotation.y = PI`) → **포즈 RMS `612.4 mm → 0.0 mm` (6랜드마크 완전 일치)**.
+  - `[확장 수정]` `web_editor/serve_web_editor.cjs`: `/compare-47/` 정적 라우트 추가(로컬 및 외부 `cloudflared` HTTPS 터널 양측 `HTTP 200` 서빙).
+  - `[확장 수정]` `tests/havok_behavior_1to1_verify.gd`: 47종 1 vs 1 리포트·수정 회귀·1:1 컨택트 시트 자동 검증 3항목 추가 (**27/27 PASS**).
+- **47종 1 vs 1 정량 요약**:
+  - **에셋·스켈레톤 본 수 일치**: **47 / 47 (`100.0%`)** (Hero 85b ×24 + Soldier 114b ×23) · **6랜드마크 본 매핑**: **47 / 47 (`100.0%`)** · **비공백 1:1 실렌더링**: **47 / 47 (`100.0%`)**.
+  - **Tier A (정밀 1:1 일치 · 5종)**: `#18 ReferencePoseGenerator`(**`0.00 mm`**), `#14 ClipGeneratorModes`(**`0.09 mm`**, 이벤트 `5/5 Δ0틱`), `#00 DockingBlend`(**`0.10 mm`**, 이벤트 `5/5 Δ0틱`), `#29 ShowCase/Hero`(**`0.37 mm`**, 이벤트 `27/27 Δ0틱`), `#27 ReturnToPreviousState`(**`0.57 mm`**, 이벤트 `5/5 Δ0틱`).
+  - **Tier B (동일 에셋·리그·모션 근접 일치 · 1종)**: `#16 PlaybackSpeedVsEnforcedDuration` (카탈로그 포즈 RMS **`86.6 mm`**, 루트 변위 `0.00m / 0.00m`).
+  - **Tier C (기능 아키타입 포팅 · 41종)**: 동일 원본 에셋·리그·카메라 시점으로 해당 Behavior 메커니즘(IK·도킹·랙돌·상태머신·시퀀스·이동플랫폼 등)을 재현하나, 개별 데모 전용 `.hkt` 그래프/월드 지형/특수 클립(예: `Kneel`, `Stagger`, `GunSweep`, 랙돌 충돌 붕괴, 계단/플랫폼 지형)은 미이식 상태여서 카탈로그 포즈 RMS 중앙값 **`269.5 mm`**(Hero `284.4 mm` / Soldier `266.6 mm`), 루트 변위 중앙 오차 **`0.000 m`** (`29/47`종 `≤ 0.05m` 일치)로 객관 계측됨.

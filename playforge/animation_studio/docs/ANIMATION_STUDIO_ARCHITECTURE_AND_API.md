@@ -260,6 +260,7 @@ playforge/animation_studio/
 - **HTTP 엔드포인트 (`web_editor/serve_web_editor.cjs`, 기본 포트 `4792`)**:
   - `GET /` · `GET /editor-frame.html`: Godot 4.7.2 Web Editor WASM (COOP/COEP + `canvasResizePolicy: 2` 전체 창 iframe)
   - `GET /local-fork`: 로컬 포크 빌드·테스트·데모 통합 런처 대시보드
+  - `GET /compare-47/`: 공식 Havok DX11 vs Godot 4.7.2 47종 1 vs 1 전수 비교 인터랙티브 갤러리(`index.html`, 47장 개별 1:1 PNG, Hero/Soldier 1:1 컨택트 시트, `havok_47_1to1_report.json`)
   - `GET /api/health` · `GET /api/project-manifest`: 로컬 포크 바이너리·C++ DLL 상태 및 프로젝트 파일 목록 조회
   - `GET /launch-local-editor` *(루프백 `127.0.0.1` 전용, 외부 `403`)*: 로컬 포크 Godot 에디터로 `hero_arena_world.tscn` 실행 (`?dry_run=1` 지원)
   - `GET /launch-local-demo?scene=ai_hero|arena|world|roster|quadruped|soldier|lab` *(루프백 전용)*: 로컬 포크 플레이 데모 실행
@@ -284,5 +285,5 @@ playforge/animation_studio/
 | `animation_editor_docks` | `tests/editor_docks_verify.gd` | `hero_arena_world.tscn` 4인스턴스·3종 도크 연동·동적 스폰 | **7/7 PASS** |
 | `animation_motion_v3` | `tests/motion_journal_v3_verify.gd` | 16종 SVG·테마·4단계 Agent 저널·읽기전용 검토·`b001` 분기·멱등성·JSON 체크섬·3D 오버레이·3서브탭 | **7/7 PASS** |
 | `animation_havok_port_parity` | `tests/havok_port_parity_verify.gd` | 30종 원본 내재화·414개 데모 Godot 표준 좌표계/카메라(`45° KEEP_HEIGHT`)/루프 기본값 일치 | **7/7 PASS** |
-| `animation_havok_behavior_1to1` | `tests/havok_behavior_1to1_verify.gd` | 실제 Havok C++ SDK vs Godot 1:1 5시나리오(1,445틱·48이벤트 `Δ0틱`·`0.09~0.57mm` 포즈·뷰어 UI) + 공식 Havok DX11 Hero/Soldier 47종 전수 60fps 결정론 매니페스트·컨택트 시트 검증 | **24/24 PASS** |
+| `animation_havok_behavior_1to1` | `tests/havok_behavior_1to1_verify.gd` | 실제 Havok C++ SDK vs Godot 1:1 5시나리오(1,445틱·48이벤트 `Δ0틱`·`0.09~0.57mm` 포즈·뷰어 UI) + 공식 Havok DX11 Hero/Soldier 47종 결정론 매니페스트 + 47종 1 vs 1 비교 리포트·컨택트 시트·결함 회귀 검증 | **27/27 PASS** |
 | *(코어·갤러리 스위트)* | `coexistence`, `graph_rewind`, `crowd_benchmark`, `active_ragdoll`, `havok_demo`, `hero_behavior`, `hero_parity`, `hero_same_asset`, `animation_gallery`, `native_parity` | 포즈 공존·Rewind·65×200 벤치마크·랙돌·414개 Havok Animation/Behavior 갤러리 | 전체 구현 완료 |

@@ -381,13 +381,21 @@ static func resolve_demo_spec(path: String, variant_name: String = "") -> Dictio
 			spec["hk_to"] = Vector3(0.0, 0.95, 0.0)
 			spec["hk_zup"] = false
 			spec["align_camera_to_char"] = false
+		elif "charactertoobject" in p and "ragdoll" in v:
+			# CharacterToObjectAttachmentDemo variant 1 (Ragdoll Attachments) uses Soldier 114b!
+			spec["primary_char"] = "soldier"
+			spec["primary_clip"] = "run"
+			spec["secondary_clip"] = "idle"
+			spec["hk_from"] = Vector3(2.8, 1.8, 2.2)
+			spec["hk_to"] = Vector3(0.0, 0.95, 0.0)
+			spec["hk_zup"] = false
 		elif (
 			"/docking/" in p or "/showcase/hero/" in p or "/drivers/charactercontroller" in p
 			or "/drivers/footik" in p or "/drivers/handik" in p or "lookatmodifier" in p
 			or "movingplatforms" in p or "partialanimation" in p or "determinism" in p
-			or "nestedbehaviors" in p or "transitiontest" in p or "generatortransition" in p
-			or "ondemandassetloading" in p or "behaviorviewers" in p or "symbollinking" in p
-			or "charactertoobject" in p
+			or "nestedbehaviors" in p or "/transitiontest/" in p or p.ends_with("/transitiontest")
+			or "generatortransition" in p or "ondemandassetloading" in p
+			or "behaviorviewers" in p or "symbollinking" in p or "charactertoobject" in p
 		):
 			spec["primary_char"] = "hero"
 			spec["primary_clip"] = "run" if ("hero" in p or "docking" in p) else "walk"

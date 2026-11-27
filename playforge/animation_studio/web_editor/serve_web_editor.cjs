@@ -29,6 +29,7 @@ const DEMO_SCENES = {
   roster: 'res://characters/character_showcase.tscn',
   quadruped: 'res://quadruped/quadruped_locomotor_studio.tscn',
   soldier: 'res://soldier/soldier_demo.tscn',
+  compare: 'res://compare/havok_1to1_compare.tscn',
   lab: 'res://demo/animation_lab.tscn',
 };
 
@@ -106,7 +107,7 @@ const MIME = {
   '.godot': 'text/plain; charset=utf-8',
 };
 
-const SKIP_DIRS = new Set(['.godot', 'generated', 'native', 'web_editor', 'bin', '__pycache__', 'tests']);
+const SKIP_DIRS = new Set(['.godot', 'generated', 'captures', 'native', 'web_editor', 'bin', '__pycache__', 'tests']);
 const SKIP_FILES = new Set(['animation_studio.gdextension', '.gitignore', '.gdignore']);
 const SKIP_EXTS = new Set(['.cpp', '.h', '.cmd', '.py', '.md', '.dll', '.lib', '.exp', '.obj', '.dblite', '.uid', '.import']);
 
@@ -165,6 +166,19 @@ const server = http.createServer((req, res) => {
   }
   if (p === '/editor-frame.html') {
     sendFile(res, path.join(WEB_DIR, 'editor_frame.html'));
+    return;
+  }
+  if (p === '/compare-47' || p === '/compare-47/' || p.startsWith('/compare-47/')) {
+    const compareRoot = path.join(PROJECT_DIR, 'compare', 'captures', 'compare_47_report');
+    const relRaw = p.replace(/^\/compare-47\/?/, '') || 'index.html';
+    const rel = path.normalize(relRaw).replace(/^(\.\.(\/|\\|$))+/, '');
+    const abs = path.resolve(compareRoot, rel);
+    if (!abs.startsWith(compareRoot)) {
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
+    sendFile(res, abs);
     return;
   }
   if (p === '/local-fork' || p === '/local-fork.html') {

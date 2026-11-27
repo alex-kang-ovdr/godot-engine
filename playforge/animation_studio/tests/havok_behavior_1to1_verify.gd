@@ -11,6 +11,9 @@ const COMPARE_SCENE := "res://compare/havok_1to1_compare.tscn"
 const REAL_MANIFEST_JSON := "res://compare/assets/havok_real_demo_manifest.json"
 const HERO_CONTACT_SHEET := "res://compare/assets/havok_real_hero_contact_sheet.png"
 const SOLDIER_CONTACT_SHEET := "res://compare/assets/havok_real_soldier_contact_sheet.png"
+const COMPARE_47_REPORT_JSON := "res://compare/assets/havok_47_1to1_report.json"
+const COMPARE_47_HERO_SHEET := "res://compare/assets/havok_vs_godot_hero_1to1_sheet.png"
+const COMPARE_47_SOLDIER_SHEET := "res://compare/assets/havok_vs_godot_soldier_1to1_sheet.png"
 
 var _pass := 0
 var _fail := 0
@@ -22,6 +25,7 @@ func _initialize() -> void:
 	_verify_all_five_scenarios()
 	_verify_interactive_viewer()
 	_verify_real_havok_47_demos_dataset()
+	_verify_47_demos_1to1_comparison_report()
 	Runner.clear_caches()
 	Store.clear_caches()
 	_emit("SUMMARY", {"suite": "animation_havok_behavior_1to1", "pass": _pass, "fail": _fail})
@@ -228,6 +232,70 @@ func _verify_real_havok_47_demos_dataset() -> void:
 			hero_img.get_height() if hero_img != null else 0,
 			soldier_img.get_width() if soldier_img != null else 0,
 			soldier_img.get_height() if soldier_img != null else 0,
+		])
+
+
+func _verify_47_demos_1to1_comparison_report() -> void:
+	var exists := FileAccess.file_exists(COMPARE_47_REPORT_JSON)
+	_check("compare_47_1to1_report_exists", exists, COMPARE_47_REPORT_JSON)
+	if not exists:
+		return
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(COMPARE_47_REPORT_JSON))
+	if not (parsed is Dictionary):
+		_check("compare_47_1to1_totals_and_fixes", false, "invalid json")
+		return
+	var report: Dictionary = parsed as Dictionary
+	var totals: Dictionary = report.get("totals", {}) as Dictionary
+	var demos: Array = report.get("demos", []) as Array
+	var by_path: Dictionary = {}
+	for d_raw in demos:
+		if d_raw is Dictionary:
+			by_path[String((d_raw as Dictionary).get("menu_path", ""))] = d_raw
+
+	var ref_pose: Dictionary = by_path.get("Behavior/Api/Generators/ReferencePoseGenerator", {}) as Dictionary
+	var sim_trans: Dictionary = by_path.get("Behavior/Test/Feature/SimultaneousTransitionTest", {}) as Dictionary
+	var cc_proxy: Dictionary = by_path.get("Behavior/Api/Drivers/CharacterControllerDriver/Character Proxy", {}) as Dictionary
+	var cc_jump: Dictionary = by_path.get("Behavior/Api/Drivers/CharacterControllerDriver/Character Rigid Body With Jump", {}) as Dictionary
+
+	var totals_ok := (
+		int(totals.get("total_demos", 0)) == 47
+		and int(totals.get("asset_rig_match_count", 0)) == 47
+		and int(totals.get("landmarks_full_match_count", 0)) == 47
+		and int(totals.get("non_blank_pairs", 0)) == 47
+		and int(totals.get("total_ticks_compared", 0)) == 15665
+		and int(totals.get("tier_a_count", 0)) >= 5
+		and float(ref_pose.get("catalog_pose_rms_mm", 999.0)) <= 0.5
+		and String(sim_trans.get("godot_char", "")) == "soldier"
+		and int(sim_trans.get("godot_bones", 0)) == 114
+		and float(cc_proxy.get("godot_max_disp_m", 999.0)) <= 15.0
+		and float(cc_jump.get("godot_max_disp_m", 999.0)) <= 15.0
+	)
+	_check("compare_47_1to1_totals_and_fixes", totals_ok,
+		"asset=%d/47 lm=%d/47 non_blank=%d/47 tierA=%d tierB=%d ref_pose=%.1fmm sim_trans=%s(%db) cc_disp=%.2fm/%.2fm" % [
+			int(totals.get("asset_rig_match_count", 0)),
+			int(totals.get("landmarks_full_match_count", 0)),
+			int(totals.get("non_blank_pairs", 0)),
+			int(totals.get("tier_a_count", 0)),
+			int(totals.get("tier_b_count", 0)),
+			float(ref_pose.get("catalog_pose_rms_mm", 999.0)),
+			String(sim_trans.get("godot_char", "")),
+			int(sim_trans.get("godot_bones", 0)),
+			float(cc_proxy.get("godot_max_disp_m", 999.0)),
+			float(cc_jump.get("godot_max_disp_m", 999.0)),
+		])
+
+	var h_img := Image.load_from_file(ProjectSettings.globalize_path(COMPARE_47_HERO_SHEET))
+	var s_img := Image.load_from_file(ProjectSettings.globalize_path(COMPARE_47_SOLDIER_SHEET))
+	var sheets_ok := (
+		h_img != null and h_img.get_width() >= 1500 and h_img.get_height() >= 1000
+		and s_img != null and s_img.get_width() >= 1500 and s_img.get_height() >= 1000
+	)
+	_check("compare_47_1to1_contact_sheets_valid", sheets_ok,
+		"hero_1to1=%dx%d soldier_1to1=%dx%d" % [
+			h_img.get_width() if h_img != null else 0,
+			h_img.get_height() if h_img != null else 0,
+			s_img.get_width() if s_img != null else 0,
+			s_img.get_height() if s_img != null else 0,
 		])
 
 
