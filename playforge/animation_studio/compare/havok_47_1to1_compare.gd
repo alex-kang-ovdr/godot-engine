@@ -14,7 +14,8 @@ const Store := preload("res://characters/character_store.gd")
 const BehaviorCases := preload("res://catalog/behavior_cases.gd")
 const Runner1To1 := preload("res://compare/behavior_1to1_runner.gd")
 const HavokGraphRuntime := preload("res://compare/havok_behavior_graph_runtime.gd")
-const FloorShader := preload("res://demo/floor.gdshader")
+const HavokDemoEnv := preload("res://compare/havok_demo_environment.gd")
+const HavokRagdollRt := preload("res://compare/havok_ragdoll_runtime.gd")
 
 const MANIFEST_PATH := "res://compare/assets/havok_real_demo_manifest.json"
 const OUT_DIR := "res://compare/captures/godot_47_60fps"
@@ -35,7 +36,7 @@ var _viewport: SubViewport
 var _world_root: Node3D
 var _camera: Camera3D
 var _stage_holder: Node3D
-var _floor_mesh: MeshInstance3D
+var _havok_env: HavokDemoEnv
 
 
 func _initialize() -> void:
@@ -54,37 +55,11 @@ func _setup_gpu_stage() -> void:
 	_world_root.name = "Compare47World"
 	_viewport.add_child(_world_root)
 
-	# Clean neutral studio environment matching Havok DX11 daylight/dusk readability
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.26, 0.24, 0.32, 1.0)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.85, 0.88, 0.94)
-	env.ambient_light_energy = 0.72
-	var we := WorldEnvironment.new()
-	we.environment = env
-	_world_root.add_child(we)
-
-	var key := DirectionalLight3D.new()
-	key.light_energy = 1.25
-	key.rotation_degrees = Vector3(-42.0, -35.0, 0.0)
-	key.shadow_enabled = false
-	_world_root.add_child(key)
-
-	var fill := DirectionalLight3D.new()
-	fill.light_energy = 0.45
-	fill.light_color = Color(0.75, 0.85, 1.0)
-	fill.rotation_degrees = Vector3(-20.0, 145.0, 0.0)
-	_world_root.add_child(fill)
-
-	_floor_mesh = MeshInstance3D.new()
-	var pm := PlaneMesh.new()
-	pm.size = Vector2(40.0, 40.0)
-	var fmat := ShaderMaterial.new()
-	fmat.shader = FloorShader
-	pm.material = fmat
-	_floor_mesh.mesh = pm
-	_world_root.add_child(_floor_mesh)
+	# Official Havok 2015.1.0-r1 Skybox, Lighting & Per-Demo Environment Restorer
+	_havok_env = HavokDemoEnv.new()
+	_havok_env.name = "HavokDemoEnvironment"
+	_world_root.add_child(_havok_env)
+	_havok_env.setup_lighting_and_sky()
 
 	_camera = Camera3D.new()
 	_camera.fov = Standards.DEFAULT_FOV_DEG
@@ -206,11 +181,24 @@ func _find_first_skeleton(n: Node) -> Skeleton3D:
 	return null
 
 
-func _frame_camera_for_demo(demo: Dictionary, spec: Dictionary, actor_node: Node3D, skel: Skeleton3D, is_soldier_swizzled: bool) -> Dictionary:
+func _frame_camera_for_demo(
+	demo: Dictionary,
+	spec: Dictionary,
+	actor_node: Node3D,
+	skel: Skeleton3D,
+	is_soldier_swizzled: bool,
+	env_kind: String = "studio",
+	ragdoll_rt: HavokRagdollRt = null,
+	hk_yaw0: float = 0.0
+) -> Dictionary:
 	# Match Havok's viewing distance & angle cleanly in Godot Standard (-Z forward, +Y up)
 	var center := Vector3(0.0, 0.95, 0.0)
 	if actor_node != null and is_instance_valid(actor_node):
 		center = actor_node.global_position + Vector3(0.0, 0.95, 0.0)
+	if ragdoll_rt != null and is_instance_valid(ragdoll_rt) and not ragdoll_rt.bodies.is_empty():
+		var pelvis_p := ragdoll_rt.bodies[0].global_position
+		if pelvis_p.y < 0.65:
+			center = Vector3(pelvis_p.x, maxf(0.28, pelvis_p.y + 0.12), pelvis_p.z)
 	var cam_hk: Dictionary = demo.get("camera_initial", {}) as Dictionary
 	var cid := str(spec.get("primary_char", "hero"))
 	var dist := 3.4
@@ -232,12 +220,16 @@ func _frame_camera_for_demo(demo: Dictionary, spec: Dictionary, actor_node: Node
 			var z_up := bool(demo.get("z_up", true))
 			var dg := Standards.hk_zup_to_godot(delta_hk) if z_up else delta_hk
 			var align_yaw := float(Standards.get_alignment(cid).get("yaw", PI))
-			delta_g = Basis(Vector3.UP, align_yaw) * dg
+			# For character-following third-person levels (hkAnimLevel), undo tick-0 world yaw so camera aligns with Godot -Z
+			var cam_yaw := (align_yaw - hk_yaw0) if env_kind.begins_with("hk_anim_level") else align_yaw
+			delta_g = Basis(Vector3.UP, cam_yaw) * dg
 		if delta_g.length() > 0.3:
-			# Preserve exact Havok viewing azimuth/elevation while clamping distance so the character is always crisply full-body framed
-			var clamped_dist := clampf(delta_g.length(), 2.6, 5.2)
+			# Preserve exact Havok viewing azimuth/elevation while framing wide platforms cleanly
+			var max_dist := 8.8 if (env_kind == "moving_platforms" or env_kind == "docking_moving") else (6.0 if env_kind == "attachment_scene" else 5.2)
+			var clamped_dist := clampf(delta_g.length(), 2.6, max_dist)
 			var from_p := center + delta_g.normalized() * clamped_dist
-			from_p.y = clampf(from_p.y, 0.55, center.y + 3.2)
+			var max_y := center.y + (6.0 if env_kind == "moving_platforms" else 3.4)
+			from_p.y = clampf(from_p.y, 0.55, max_y)
 			_camera.fov = clampf(float(cam_hk.get("fov", 45.0)), 30.0, 65.0)
 			_camera.position = from_p
 			_camera.look_at(center, Vector3.UP)
@@ -290,21 +282,36 @@ func _run_all() -> void:
 		var lm_names: Array = SOLDIER_LANDMARKS if hk_expected_char == "soldier" else HERO_LANDMARKS
 		var hk_keyframes: Array = demo.get("keyframes", []) as Array
 
-		# Build keyframe tick lookup
+		# Build keyframe tick lookup & extract tick-0 / shot-tick Havok world anchor for exact environment placement
 		var kf_by_tick: Dictionary = {}
 		var is_soldier_swizzled := false
+		var hk_yaw0 := 0.0
+		var hk_shot_root_g := Vector3.ZERO
+		var hk_shot_yaw := 0.0
+		var best_shot_dist := 999999
 		for kf_raw in hk_keyframes:
 			var kf: Dictionary = kf_raw as Dictionary
-			kf_by_tick[int(kf.get("tick", -1))] = kf
-			if not is_soldier_swizzled:
-				var kc: Array = kf.get("chars", []) as Array
-				if not kc.is_empty():
-					var lm0: Dictionary = (kc[0] as Dictionary).get("lm", {}) as Dictionary
+			var kt := int(kf.get("tick", -1))
+			kf_by_tick[kt] = kf
+			var kc: Array = kf.get("chars", []) as Array
+			if not kc.is_empty():
+				var ch0: Dictionary = kc[0] as Dictionary
+				if kt == 0:
+					hk_yaw0 = float(ch0.get("yaw_g", 0.0))
+				var dt_s := absi(kt - target_shot_tick)
+				if dt_s < best_shot_dist:
+					best_shot_dist = dt_s
+					var rg: Array = ch0.get("root_g", [0.0, 0.0, 0.0]) as Array
+					hk_shot_root_g = Vector3(float(rg[0]), float(rg[1]), float(rg[2]))
+					hk_shot_yaw = float(ch0.get("yaw_g", 0.0))
+				if not is_soldier_swizzled:
+					var lm0: Dictionary = ch0.get("lm", {}) as Dictionary
 					if _is_soldier_maya_yup_swizzled(lm0):
 						is_soldier_swizzled = true
 
-		# Instantiate REAL Godot catalog port (catalog/behavior_cases.gd) & attach real Havok Behavior Graph runtime
+		# Instantiate REAL Godot catalog port (catalog/behavior_cases.gd) & attach real Havok Behavior Graph + Environment + Ragdoll!
 		var spec := Standards.resolve_demo_spec(demo_path, variant_name)
+		var env_kind := _havok_env.configure_for_demo(menu_path, demo_path, hk_expected_char, null, hk_shot_root_g)
 		var case_node := BehaviorCases.new()
 		case_node.name = "BehCase_%02d" % d_idx
 		_stage_holder.add_child(case_node)
@@ -312,7 +319,7 @@ func _run_all() -> void:
 		case_node.set_physics_process(false)
 		case_node.start_case(demo_path, variant_name)
 		var graph_attached := case_node.attach_havok_behavior_graph(menu_path)
-		# Flush PhysicsServer3D once so newly added StaticBody3D colliders are active on tick 0
+		# Flush PhysicsServer3D once so newly added StaticBody3D colliders & ragdoll RigidBody3D/joints are active on tick 0
 		await physics_frame
 
 		var found := _find_primary_skeleton_and_actor(case_node)
@@ -366,8 +373,17 @@ func _run_all() -> void:
 		# Step exact 60.000 Hz ticks matching real Havok run!
 		for tick in executed_ticks:
 			case_node._physics_process(STEP)
+			_havok_env.step(STEP, actor_node)
 			if not graph_attached and hero_inst != null and is_instance_valid(hero_inst) and hero_inst.has_method("sample_at"):
 				hero_inst.call("sample_at", float(tick) * STEP)
+			# When an official multi-body ragdoll enters free-fall / dynamic physics (e.g. MultipleControllers Die / BrokenArm),
+			# advance Godot's REAL 3D PhysicsServer (RigidBody3D + Generic6DOFJoint3D + floor collision) at exact 60.000 Hz!
+			if case_node.havok_ragdoll_rt != null and is_instance_valid(case_node.havok_ragdoll_rt):
+				var cur_rag_st := str(case_node.havok_graph_last_step.get("state", ""))
+				if case_node.havok_ragdoll_rt.needs_live_physics_step(cur_rag_st):
+					await physics_frame
+					if skel != null:
+						case_node.havok_ragdoll_rt._apply_ragdoll_bodies_to_skeleton(skel)
 			if case_node.havok_graph_rt != null:
 				var rt_disp := case_node.havok_graph_rt.get_accum_root_position().length()
 				if rt_disp > gd_max_disp:
@@ -430,7 +446,11 @@ func _run_all() -> void:
 
 			# Capture REAL GPU screenshot at the EXACT same representative tick as Havok DX11!
 			if tick == target_shot_tick:
-				cam_used = _frame_camera_for_demo(demo, spec, actor_node, skel, is_soldier_swizzled)
+				if _havok_env.level_pivot != null and actor_node != null and is_instance_valid(actor_node):
+					var align_yaw := float(Standards.get_alignment(hk_expected_char).get("yaw", PI))
+					var rot_level := (align_yaw - hk_shot_yaw) if env_kind.begins_with("hk_anim_level") else (PI * 0.5 if hk_expected_char == "soldier" else align_yaw)
+					_havok_env.align_level_to_havok_frame(actor_node.global_position, hk_shot_root_g, rot_level)
+				cam_used = _frame_camera_for_demo(demo, spec, actor_node, skel, is_soldier_swizzled, env_kind, case_node.havok_ragdoll_rt, hk_yaw0)
 				await process_frame
 				await process_frame
 				var img := _viewport.get_texture().get_image()
@@ -523,6 +543,10 @@ func _run_all() -> void:
 			"catalog_pose_max_mm": snappedf(pose_max_mm, 0.1),
 			"catalog_lm_rms_mm": lm_rms_map,
 			"godot_family": gd_family,
+			"godot_env_kind": env_kind,
+			"godot_ragdoll_bodies": case_node.havok_ragdoll_rt.bodies.size() if case_node.havok_ragdoll_rt != null else 0,
+			"godot_ragdoll_joints": case_node.havok_ragdoll_rt.joints.size() if case_node.havok_ragdoll_rt != null else 0,
+			"godot_ragdoll_palette": case_node.havok_ragdoll_rt.current_palette if case_node.havok_ragdoll_rt != null else "",
 			"godot_transitions": gd_transitions,
 			"godot_status": gd_status,
 			"godot_camera": cam_used,
@@ -565,5 +589,7 @@ func _run_all() -> void:
 
 	Runner1To1.clear_caches()
 	HavokGraphRuntime.clear_caches()
+	HavokDemoEnv.clear_caches()
+	HavokRagdollRt.clear_caches()
 	Store.clear_caches()
 	quit(0)

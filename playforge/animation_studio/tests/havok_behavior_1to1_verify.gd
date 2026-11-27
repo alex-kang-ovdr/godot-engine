@@ -7,6 +7,9 @@ extends SceneTree
 
 const Runner := preload("res://compare/behavior_1to1_runner.gd")
 const Store := preload("res://characters/character_store.gd")
+const Standards := preload("res://catalog/havok_demo_standards.gd")
+const HavokDemoEnv := preload("res://compare/havok_demo_environment.gd")
+const HavokRagdollRt := preload("res://compare/havok_ragdoll_runtime.gd")
 const COMPARE_SCENE := "res://compare/havok_1to1_compare.tscn"
 const REAL_MANIFEST_JSON := "res://compare/assets/havok_real_demo_manifest.json"
 const HERO_CONTACT_SHEET := "res://compare/assets/havok_real_hero_contact_sheet.png"
@@ -20,13 +23,20 @@ var _fail := 0
 
 
 func _initialize() -> void:
+	call_deferred("_run_all")
+
+
+func _run_all() -> void:
 	_emit("START", {"suite": "animation_havok_behavior_1to1", "engine": Engine.get_version_info().get("hash", "")})
 	_verify_sdk_free_assets()
 	_verify_all_five_scenarios()
 	_verify_interactive_viewer()
 	_verify_real_havok_47_demos_dataset()
 	_verify_47_demos_1to1_comparison_report()
+	await _verify_restored_environments_and_ragdoll()
 	Runner.clear_caches()
+	HavokDemoEnv.clear_caches()
+	HavokRagdollRt.clear_caches()
 	Store.clear_caches()
 	_emit("SUMMARY", {"suite": "animation_havok_behavior_1to1", "pass": _pass, "fail": _fail})
 	quit(1 if _fail > 0 else 0)
@@ -303,6 +313,92 @@ func _verify_47_demos_1to1_comparison_report() -> void:
 			s_img.get_width() if s_img != null else 0,
 			s_img.get_height() if s_img != null else 0,
 		])
+
+
+func _verify_restored_environments_and_ragdoll() -> void:
+	# 1. Verify all offline-extracted official Havok environment assets exist & load cleanly (zero .hkt runtime dep)
+	var sky_tex := HavokDemoEnv.get_skybox_texture()
+	var sky_ok := sky_tex != null and sky_tex.get_width() == 1024 and sky_tex.get_height() == 512
+	var lvl_exists := FileAccess.file_exists(HavokDemoEnv.HK_ANIM_LEVEL_GLB)
+	var att_exists := FileAccess.file_exists(HavokDemoEnv.ATTACHMENT_SCENE_GLB)
+	var props := HavokDemoEnv.get_attachment_props()
+	var props_ok := not props.is_empty() and not bool(props.get("contains_sdk_hkt_runtime_dep", true)) and (props.get("bodies", []) as Array).size() == 7
+	_check("extracted_official_environments_sdk_free", sky_ok and lvl_exists and att_exists and props_ok,
+		"sky=%s hkAnimLevel=%s attachmentScene=%s props_bodies=%d" % [
+			str(sky_ok), str(lvl_exists), str(att_exists), (props.get("bodies", []) as Array).size()])
+
+	# 2. Verify HavokDemoEnvironment builds all 10 official scene archetypes without errors
+	var env_node := HavokDemoEnv.new()
+	env_node.name = "VerifyHavokEnv"
+	root.add_child(env_node)
+	var env_samples := [
+		["Behavior/ShowCase/Hero", "Behavior/ShowCase/Hero/HeroDemo.cpp", "hero", "hero_environment"],
+		["Behavior/Api/Drivers/CharacterControllerDriver/Character Proxy", "Behavior/Api/Drivers/CharacterControllerDriver/CharacterControllerDriverDemo.cpp", "hero", "hk_anim_level_cc"],
+		["Behavior/Api/Drivers/FootIkDriver/Foot Ik", "Behavior/Api/Drivers/FootIkDriver/FootIkDriverDemo.cpp", "hero", "hk_anim_level_footik"],
+		["Behavior/Api/Modifiers/AttachmentModifier/CharacterToObject/Keyframe Attachments", "Behavior/Api/Modifiers/AttachmentModifier/CharacterToObject/CharacterToObjectAttachmentDemo.cpp", "hero", "attachment_scene"],
+		["Behavior/Api/Docking/DockingBlend", "Behavior/Api/Docking/DockingBlend/DockingBlendDemo.cpp", "hero", "docking_blend"],
+		["Behavior/Api/Docking/DockingConstrainedMotion", "Behavior/Api/Docking/DockingConstrainedMotion/DockingConstrainedMotionDemo.cpp", "hero", "docking_constrained"],
+		["Behavior/Api/Docking/DockingMovingTarget", "Behavior/Api/Docking/DockingMovingTarget/DockingMovingTargetDemo.cpp", "hero", "docking_moving"],
+		["Behavior/Api/Docking/DockingMultipleTargets", "Behavior/Api/Docking/DockingMultipleTargets/DockingMultipleTargetsDemo.cpp", "hero", "docking_multiple"],
+		["Behavior/Test/Feature/MovingPlatforms/MovingPlatforms - Character Proxy", "Behavior/Test/Feature/MovingPlatforms/MovingPlatforms.cpp", "hero", "moving_platforms"],
+		["Behavior/Api/Drivers/RagdollDriver/ControlPalettes", "Behavior/Api/Drivers/RagdollDriver/ControlPalettes/ControlPalettesDemo.cpp", "soldier", "studio"],
+	]
+	var env_ok := true
+	for smp in env_samples:
+		var got := env_node.configure_for_demo(str(smp[0]), str(smp[1]), str(smp[2]))
+		env_node.step(1.0 / 60.0)
+		if got != str(smp[3]) or env_node.stage_root.get_child_count() == 0:
+			env_ok = false
+	_check("havok_demo_environment_all_10_archetypes", env_ok, "10/10 official Havok level & procedural scenes")
+
+	# 3. Verify extracted official Soldier Ragdoll Spec (17 bones, 15 bodies, 14 constraints, 4 mappers, 19 behavior controls)
+	var rspec := HavokRagdollRt.load_spec()
+	var spec_ok := (
+		not rspec.is_empty()
+		and not bool(rspec.get("contains_sdk_hkt_runtime_dep", true))
+		and int(rspec.get("bone_count", 0)) == 17
+		and int(rspec.get("body_count", 0)) == 15
+		and int(rspec.get("constraint_count", 0)) == 14
+		and (rspec.get("mappers", []) as Array).size() == 4
+		and (rspec.get("behavior_controls", []) as Array).size() == 19
+	)
+	_check("official_soldier_ragdoll_spec_complete", spec_ok,
+		"bones=%d bodies=%d joints=%d mappers=%d controls=%d" % [
+			int(rspec.get("bone_count", 0)),
+			int(rspec.get("body_count", 0)),
+			int(rspec.get("constraint_count", 0)),
+			(rspec.get("mappers", []) as Array).size(),
+			(rspec.get("behavior_controls", []) as Array).size(),
+		])
+
+	# 4. Verify live 15-RigidBody3D + 14-Generic6DOFJoint3D physics collapse over official studio floor!
+	env_node.configure_for_demo("Behavior/Api/Drivers/RagdollDriver/MultipleControllers", "Behavior/Api/Drivers/RagdollDriver/MultipleControllers/MultipleControllersDemo.cpp", "soldier")
+	var sol_pack := Standards.spawn_aligned_character("soldier", "VerifyRagdollSoldier", Animation.LOOP_LINEAR)
+	var sol_outer: Node3D = sol_pack["outer"] as Node3D
+	var sol_skel: Skeleton3D = sol_pack["skeleton"] as Skeleton3D
+	(sol_pack["player"] as AnimationPlayer).active = false
+	root.add_child(sol_outer)
+	var rag := HavokRagdollRt.new()
+	rag.name = "VerifyHavokRagdoll"
+	root.add_child(rag)
+	var built := rag.setup(sol_skel, "Behavior/Api/Drivers/RagdollDriver/MultipleControllers", true)
+	await physics_frame
+	var start_y := rag.bodies[0].global_position.y if not rag.bodies.is_empty() else 0.0
+	rag.step(1.0 / 60.0, sol_skel, "", 80, ["GoFullRagdoll"])
+	for _i in 90:
+		await physics_frame
+		rag.step(1.0 / 60.0, sol_skel, "", 81 + _i, [])
+	var end_y := rag.bodies[0].global_position.y if not rag.bodies.is_empty() else 0.0
+	var collapse_ok := built and rag.bodies.size() == 15 and rag.joints.size() == 14 and start_y > 0.80 and end_y < 0.55 and end_y > 0.03 and is_finite(end_y)
+	_check("havok_multibody_ragdoll_real_physics_collapse", collapse_ok,
+		"bodies=%d joints=%d pelvis_y=%.3fm->%.3fm" % [rag.bodies.size(), rag.joints.size(), start_y, end_y])
+
+	root.remove_child(rag)
+	rag.free()
+	root.remove_child(sol_outer)
+	sol_outer.free()
+	root.remove_child(env_node)
+	env_node.free()
 
 
 func _check(name: String, cond: bool, detail: String = "") -> void:

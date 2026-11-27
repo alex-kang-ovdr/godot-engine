@@ -1,0 +1,189 @@
+{
+  "schema": "havok-attachment-scene-props-v1",
+  "source": "Resources/Behavior/GameAssets/Terrain/AttachmentScene_np.hkt",
+  "contains_sdk_hkt_runtime_dep": false,
+  "bodies": [
+    {
+      "index": 0,
+      "name": "Rectangle01",
+      "motion_type": "STATIC",
+      "mass": -1.0,
+      "position_godot": [
+        0.0,
+        -0.50215,
+        -0.0
+      ],
+      "orientation_godot": [
+        0.0,
+        0.0,
+        -0.0,
+        1.0
+      ],
+      "shape": {
+        "type": "CONVEX_POLYTOPE",
+        "extents_godot": [
+          29.94,
+          0.44,
+          29.94
+        ],
+        "convex_radius": 0.03
+      }
+    },
+    {
+      "index": 1,
+      "name": "Skull05",
+      "motion_type": "DYNAMIC",
+      "mass": 10.0,
+      "position_godot": [
+        9.59615,
+        1.93325,
+        1.95832
+      ],
+      "orientation_godot": [
+        0.0,
+        0.14315,
+        0.100205,
+        0.984615
+      ],
+      "shape": {
+        "type": "CONVEX_POLYTOPE",
+        "extents_godot": [
+          0.34315,
+          0.36637,
+          0.38245
+        ],
+        "convex_radius": 0.009061
+      }
+    },
+    {
+      "index": 2,
+      "name": "Skull04",
+      "motion_type": "DYNAMIC",
+      "mass": 10.0,
+      "position_godot": [
+        5.55328,
+        0.97886,
+        -6.34194
+      ],
+      "orientation_godot": [
+        -0.0,
+        -0.158516,
+        -0.275679,
+        0.94809
+      ],
+      "shape": {
+        "type": "CONVEX_POLYTOPE",
+        "extents_godot": [
+          0.34528,
+          0.36626,
+          0.38237
+        ],
+        "convex_radius": 0.009061
+      }
+    },
+    {
+      "index": 3,
+      "name": "Skull03",
+      "motion_type": "DYNAMIC",
+      "mass": 10.0,
+      "position_godot": [
+        -9.28314,
+        1.46952,
+        -6.89129
+      ],
+      "orientation_godot": [
+        -0.0,
+        -0.122945,
+        0.676195,
+        0.726391
+      ],
+      "shape": {
+        "type": "CONVEX_POLYTOPE",
+        "extents_godot": [
+          0.34238,
+          0.36712,
+          0.3813
+        ],
+        "convex_radius": 0.009061
+      }
+    },
+    {
+      "index": 4,
+      "name": "Skull02",
+      "motion_type": "DYNAMIC",
+      "mass": 10.0,
+      "position_godot": [
+        1.86764,
+        1.12287,
+        0.73058
+      ],
+      "orientation_godot": [
+        -0.0,
+        0.090104,
+        0.303076,
+        0.948697
+      ],
+      "shape": {
+        "type": "CONVEX_POLYTOPE",
+        "extents_godot": [
+          0.34311,
+          0.3674,
+          0.38171
+        ],
+        "convex_radius": 0.009061
+      }
+    },
+    {
+      "index": 5,
+      "name": "Skull01",
+      "motion_type": "DYNAMIC",
+      "mass": 10.0,
+      "position_godot": [
+        -6.20929,
+        0.62054,
+        8.48132
+      ],
+      "orientation_godot": [
+        -0.0,
+        -0.036778,
+        -0.286871,
+        0.957263
+      ],
+      "shape": {
+        "type": "CONVEX_POLYTOPE",
+        "extents_godot": [
+          0.34397,
+          0.36656,
+          0.38238
+        ],
+        "convex_radius": 0.009061
+      }
+    },
+    {
+      "index": 6,
+      "name": "Skull00",
+      "motion_type": "DYNAMIC",
+      "mass": 10.0,
+      "position_godot": [
+        -1.88419,
+        0.68025,
+        -0.83411
+      ],
+      "orientation_godot": [
+        -0.0,
+        -0.090729,
+        -0.272186,
+        0.957958
+      ],
+      "shape": {
+        "type": "CONVEX_POLYTOPE",
+        "extents_godot": [
+          0.34539,
+          0.36713,
+          0.3823
+        ],
+        "convex_radius": 0.009061
+      }
+    }
+  ]
+}

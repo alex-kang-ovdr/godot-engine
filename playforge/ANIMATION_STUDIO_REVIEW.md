@@ -318,6 +318,27 @@ Havok SDK 2015.1.0-r1의 `Demo/Demos/Behavior/` 전체 중 **Hero 및 Soldier �
 - **승격 전후 47종 정량 비교 결과**:
   - **Tier A (정밀 1:1 · `≤15 mm`, 상태 100%, 이벤트 `Δ0틱`)**: **`5종 → 27 / 47종 (57.4%)`** *(이 중 **`18종 ≤ 2.0 mm`**, **`22종 ≤ 5.0 mm`**)*
   - **Tier B (실그래프 근접 · `≤80 mm`)**: **`1종 → 16 / 47종 (34.0%)`** → **Tier A+B 합계 `43 / 47종 (91.5%)`**
+
+## 공식 Havok SDK 배경·지형·스카이박스 및 다관절 래그돌 동일 에셋·동일 세팅 추출 및 복원 · 2026-11-28
+
+47종 Hero/Soldier Behavior 데모의 배경·지형·스카이박스·절차적 프롭과 공식 Soldier 래그돌 물리 리그(`US_Leader_Ragdoll_np.hkt` + `hkaSkeletonMapper` + 5종 Behavior `.hkt` 래그돌 제어 팔레트)를 **Havok SDK 파일 무수정·런타임 `.hkt` 의존 0건** 원칙으로 오프라인 추출해 Godot 4.7.2 네이티브 런타임으로 완전 복원했다.
+
+- **엔진 영향 범위**: **`[엔진 수정]` 없음 (0건)**, **`[엔진 추가]` 없음 (0건)** — 모든 오프라인 추출기·내재화 에셋·환경/래그돌 런타임·테스트는 `playforge/animation_studio/` 확장 영역에만 구현.
+- **신규·수정 파일 및 클래스 (`[확장 추가]` / `[확장 수정]`)**:
+  - `[확장 추가]` `compare/extract_havok_env_and_ragdoll.cpp` · `compare/export_env_and_ragdoll.py`: Havok 2015.1.0-r1 C++ SDK(`hkSceneData`, `hknpPhysics`, `hkaPhysicsBridge`, `hkpConstraint`, `hkbBehavior`)를 링크하는 오프라인 통합 추출기.
+    - **배경·레벨·스카이박스 추출 (`[확장 추가]`)**:
+      - `compare/assets/havok_default_skybox.png` (`1024×512`): 공식 `Resources/Common/Graphics/defaultskybox_{UP,DN,LF,RT,FR,BK}.png` 6면 큐브맵을 12모서리 연속성 솔버(평균 `MSE = 0.35 / 65,025`)로 무이음새 파노라마 텍스처로 스티칭.
+      - `compare/assets/env_hk_anim_level.glb` (`1,217 KB`, 19,377정점 · 9,958삼각형 · 내장 PNG 5종 · `COLOR_0` 정점 컬러): `#04..#07 CharacterControllerDriver` 및 `#08..#10 FootIkDriver`의 공식 `hkAnimLevel_VertexColors_np.hkt` 석조 던전 계단실 추출.
+      - `compare/assets/env_attachment_scene.glb` (`132 KB`, 7메시: `Rectangle01` + `Skull00..Skull05`) · `compare/assets/env_attachment_props.json` (`7` 물리 바디): `#19 Keyframe Attachments`, `#20 Ragdoll Attachments`, `#45/#46 SymbolLinking`의 공식 `AttachmentScene_np.hkt` 추출.
+      - `#29 ShowCase/Hero`, `#40 BehaviorViewers`, `#43 OnDemandAssetLoading`: 기존 내재화 `hero/assets/hero_environment.glb`(`Hero/Terrain/Environment.hkt`) 연동.
+    - **공식 Soldier 래그돌 물리 리그·매퍼·제어 팔레트 추출 (`[확장 추가]`)**:
+      - `compare/assets/havok_soldier_ragdoll_spec.json` (`233 KB`, `contains_sdk_hkt_runtime_dep: false`): `US_Leader_Ragdoll_np.hkt`(17 래그돌 본 · **15 강체** [`10/55/5/8/5/2/8/5/4/18/10/5/18/10/5 kg`, `dynamic_friction=0.85`, `angular_damping=0.05`, `CAPSULE`/`COMPOUND`/`CONVEX_POLYTOPE` 정확한 표면 메시 포함] · **14 제약** [12 `hkpRagdollConstraintData` 콘/평면/트위스트 한계 + 2 `hkpLimitedHingeConstraintData` 손목 힌지]), `hkaSkeletonMapper` 4종(`ragdoll_HipBase_M 17b ↔ US_Soldier 114b` 15개 단순 매핑 + 1개 척추 체인 매핑 및 정확한 `aFromBTransform` 포함), 5종 공식 Behavior `.hkt`(`ControlPalettes`, `MultipleControllers`, `Stagger`, `CharacterWithRagdollAttachments`, `AnimationTest`)의 **19개 래그돌 제어 모디파이어**(`hkbPoweredRagdollControlsModifier`, `hkbRigidBodyRagdollControlsModifier`, `hkbKeyframeBonesModifier`) 전수 추출.
+  - `[확장 추가]` `compare/havok_demo_environment.gd` (`HavokDemoEnvironment`): 공식 `defaultskybox` `PanoramaSkyMaterial` + Havok DX11 조명 + 10종 데모 환경(`hero_environment`, `hk_anim_level_cc`, `hk_anim_level_footik`, `attachment_scene` 체커보드 바닥+6해골, `docking_blend/constrained/moving/multiple` 공식 치수 벽/실린더/보라색 이동 플랫폼, `moving_platforms` 보라색 `(12,12,0.25)` 회전 플랫폼 + 반투명 적색 캐릭터 프록시 캡슐, `studio` `StaticBody3D` 지면) 복원.
+  - `[확장 추가]` `compare/havok_ragdoll_runtime.gd` (`HavokRagdollRuntime`): 15개 실 `RigidBody3D`(정확한 질량·마찰·감쇠·`CapsuleShape3D`/`ConvexPolygonShape3D` + 공식 `buildSurfaceGeometry` 황금색 반투명 메시)와 14개 실 `Generic6DOFJoint3D`(정확한 피벗·로컬 축·콘/평면/트위스트/힌지 한계)를 동적 생성하고, `ControlPalettes`(`LocalSpace`/`ModelSpace`), `MultipleControllers`(`ToBrokenArm` 왼팔 `maxForce=1.0` / `GoFullRagdoll` `maxForce=0.0` 자유낙하 물리 붕괴 및 `hkaSkeletonMapper` 역매핑), `Stagger`, `Ragdoll Attachments`, `AnimationTest`를 60 Hz 실시간 구동.
+  - `[확장 수정]` `catalog/behavior_cases.gd` (`BehaviorCases`) · `compare/havok_47_1to1_compare.gd`: 합성 2박스 시안 래그돌 프록시와 그리드 바닥을 공식 `HavokRagdollRuntime` 및 `HavokDemoEnvironment`로 교체하고, `#12 MultipleControllers` 자유낙하 구간에서 실제 Godot 3D `PhysicsServer3D` 60 Hz 스텝을 연동.
+  - `[확장 수정]` `tests/havok_behavior_1to1_verify.gd`: 추출 환경 에셋 무결성, `HavokDemoEnvironment` 10종 아키타입, `havok_soldier_ragdoll_spec.json` 완정성(17본/15바디/14조인트/4매퍼/19제어기), 실제 `HavokRagdollRuntime` 15바디·14조인트 중력 붕괴(`pelvis_y` 실물리 낙하·지면 정착) 회귀 4항목 추가.
+- **검증**: 47종 OpenGL3 1 vs 1 재실행(**오류 0건**, `Tier A 27/47`, `Tier A+B 43/47`, 중앙 포즈 RMS `8.6 mm` / Soldier `2.6 mm`, 이벤트 `1,545/1,545 Δ0틱`, 상태 `100.0%`), Hero(25)·Soldier(22) 마스터 1 vs 1 컨택트 시트 및 주요 개별 쌍(`#04` 석조 계단실, `#11` ControlPalettes 황금 래그돌, `#12` MultipleControllers 자유낙하 붕괴, `#19/#20` 체커보드·해골·래그돌 어태치먼트, `#32` 보라색 회전 플랫폼, `#44` Stagger) 실렌더링 육안 검수 완료.
+
   - **Tier C (물리 랙돌·다중전이 갭 · `>80 mm`)**: **`41종 → 4 / 47종 (8.5%)`** (`#12 MultipleControllers` 815.3 mm, `#20 Ragdoll Attachments` 360.3 mm, `#45/#46 SymbolLinking` 149.7 mm)
   - **전체 6랜드마크 포즈 RMS 중앙값**: **`269.5 mm → 8.6 mm` (`31.3×` 정밀화)** · Soldier 중앙값 **`266.6 mm → 2.6 mm` (`102.5×`)** · Hero 중앙값 **`284.4 mm → 19.3 mm` (`14.7×`)**
   - **실그래프 이벤트·상태 일치**: **`1,545 / 1,545` (`100.0%`, `max Δ0틱`)** · 활성 상태 **`100.0%`** (`15,665`틱 전수).

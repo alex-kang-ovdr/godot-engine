@@ -16,6 +16,7 @@ const RewindRecorder := preload("res://addons/animation_studio/rewind_recorder.g
 const ActiveRagdollJoint := preload("res://addons/animation_studio/active_ragdoll_joint.gd")
 const CrowdEvaluator := preload("res://addons/animation_studio/crowd_evaluator.gd")
 const HavokGraphRuntime := preload("res://compare/havok_behavior_graph_runtime.gd")
+const HavokRagdollRuntime := preload("res://compare/havok_ragdoll_runtime.gd")
 
 const FIREFIGHTER_SKIN_ROSTER := ["firefighter", "desert_dan", "jungle_joe", "snow_sam"]
 
@@ -36,8 +37,10 @@ var hero_instance: Node3D
 var graph: PoseGraph
 var graph_b: PoseGraph
 var havok_graph_rt: HavokGraphRuntime
+var havok_ragdoll_rt: HavokRagdollRuntime
 var havok_graph_menu_path := ""
 var havok_graph_last_step: Dictionary = {}
+var havok_ragdoll_last_step: Dictionary = {}
 var havok_graph_events_fired := 0
 var _actor_inner: Node3D
 var recorder: RewindRecorder
@@ -726,6 +729,37 @@ func attach_havok_behavior_graph(menu_path: String) -> bool:
 	if _actor_inner != null and is_instance_valid(_actor_inner):
 		var cid := str(_spec.get("primary_char", "soldier"))
 		_actor_inner.rotation.y = float(Standards.get_alignment(cid).get("yaw", PI))
+	# Hide synthetic placeholder props/toys whenever official Havok Behavior Graph + HavokDemoEnvironment drives the scene
+	if target_marker != null and is_instance_valid(target_marker):
+		target_marker.visible = false
+	if look_target != null and is_instance_valid(look_target):
+		look_target.visible = false
+	if ik_target != null and is_instance_valid(ik_target):
+		ik_target.visible = false
+	if platform != null and is_instance_valid(platform):
+		for ch in platform.get_children():
+			if ch is MeshInstance3D:
+				(ch as MeshInstance3D).visible = false
+	if attached_obj != null and is_instance_valid(attached_obj) and attached_obj is MeshInstance3D:
+		(attached_obj as MeshInstance3D).visible = false
+	for ch in get_children():
+		if ch is MeshInstance3D:
+			(ch as MeshInstance3D).visible = false
+	# Center ragdoll/docking actors cleanly at origin when driven by official Havok Behavior Graph
+	if actor != null and is_instance_valid(actor) and (family == "ragdoll_driver" or family == "docking" or family == "moving_platform"):
+		actor.position = Vector3.ZERO
+		actor.rotation = Vector3.ZERO
+	# Mount REAL 15-body official Havok Soldier multi-body ragdoll (US_Leader_Ragdoll_np.hkt spec)
+	if HavokRagdollRuntime.is_ragdoll_demo(menu_path) and actor_skel != null and is_instance_valid(actor_skel):
+		for j in ragdoll_joints:
+			if is_instance_valid(j):
+				j.visible = false
+		if havok_ragdoll_rt != null and is_instance_valid(havok_ragdoll_rt):
+			havok_ragdoll_rt.queue_free()
+		havok_ragdoll_rt = HavokRagdollRuntime.new()
+		havok_ragdoll_rt.name = "OfficialHavokRagdoll"
+		add_child(havok_ragdoll_rt)
+		havok_ragdoll_rt.setup(actor_skel, menu_path, true)
 	return true
 
 
@@ -739,8 +773,8 @@ func _physics_process(delta: float) -> void:
 			target_skel = hero_instance.get("rig") as Skeleton3D
 			rm_node = null
 		elif family == "moving_platform":
-			platform_angle += delta * 0.7
-			platform.position = Vector3(sin(elapsed * 1.2) * 0.8, 0.0, cos(elapsed * 1.2) * 0.4)
+			platform_angle += delta * 0.1
+			platform.position = Vector3.ZERO
 			platform.rotation.y = platform_angle
 			rm_node = null
 		elif family == "driver_ik" and controller != null:
@@ -756,6 +790,12 @@ func _physics_process(delta: float) -> void:
 				state_transitions += 1
 			last_state = new_st
 		havok_graph_events_fired += (info.get("events", []) as Array).size()
+		# Step REAL 15-body official Havok Ragdoll Runtime when attached (#11, #12, #20, #30, #44)
+		if havok_ragdoll_rt != null and is_instance_valid(havok_ragdoll_rt) and target_skel != null:
+			havok_ragdoll_last_step = havok_ragdoll_rt.step(delta, target_skel, new_st, ticks, info.get("events", []) as Array)
+			ragdoll_palette = str(havok_ragdoll_last_step.get("palette", ragdoll_palette))
+			ragdoll_torque = float(havok_ragdoll_last_step.get("torque_nm", ragdoll_torque))
+			ragdoll_angle_deg = float(havok_ragdoll_last_step.get("max_err_deg", ragdoll_angle_deg))
 		# Keep auxiliary demo subsystems (recorder, ragdoll preview joints, attachments, LookAt marker) alive
 		if family == "save_state" and recorder != null and target_skel != null:
 			recorder.queue_metadata({"state": new_st, "tick": ticks})
@@ -767,7 +807,7 @@ func _physics_process(delta: float) -> void:
 				recorder.apply_frame(0, target_skel, actor)
 				var restored := PoseBuffer.capture_from_skeleton(target_skel)
 				restore_err_rad = restored.max_diff(expected).max_rot_rad
-		elif family == "ragdoll_driver":
+		elif family == "ragdoll_driver" and havok_ragdoll_rt == null:
 			for idx in ragdoll_joints.size():
 				var j := ragdoll_joints[idx]
 				j.target_angle_rad = deg_to_rad((38.0 if idx == 0 else -32.0) * sin(elapsed * 2.0 + 0.6))
