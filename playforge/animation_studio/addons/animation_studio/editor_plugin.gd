@@ -1,15 +1,14 @@
 @tool
 extends EditorPlugin
-## Standard Godot EditorPlugin for Animation Studio.
-## Uses Godot's native 3D Viewport (no custom main-screen override) and registers
-## three standard dockable editor panels:
+## Standard Godot EditorPlugin for Animation Studio (Design v3).
+## Uses Godot's native 3D Viewport (no custom main-screen override) and registers:
+##   - 3D Viewport Menu Bar Overlay Pills (CONTAINER_SPATIAL_EDITOR_MENU):
+##       [NavMesh] [UserEdges] [A* Path] [도킹 라인] [Skeleton]
 ##   - Left Dock  (DOCK_SLOT_LEFT_BR):  "AnimStudio · 계층"
 ##   - Right Dock (DOCK_SLOT_RIGHT_BL): "AnimStudio · 상태"
-##   - Bottom Panel:                    "Animation Flow"
-##
-## All three docks automatically synchronize with whichever AnimationStudioInstance
-## node is selected in the 3D Viewport, Scene Tree dock, or Hierarchy dock.
+##   - Bottom Panel:                    "Animation Flow" (Flow Graph / Event Timeline / Agent Replay)
 
+const StudioTheme := preload("res://addons/animation_studio/ui/studio_theme.gd")
 const HierarchyDockScript := preload("res://addons/animation_studio/docks/hierarchy_dock.gd")
 const StateDockScript := preload("res://addons/animation_studio/docks/state_dock.gd")
 const FlowBottomPanelScript := preload("res://addons/animation_studio/docks/flow_bottom_panel.gd")
@@ -28,13 +27,23 @@ const TOOL_OPEN_AI_HERO := "Animation Studio · AI Pathfinding Hero 전체 맵 �
 var _hierarchy_dock: Control = null
 var _state_dock: Control = null
 var _flow_panel: Control = null
+var _viewport_overlay_bar: HBoxContainer = null
+var _overlay_btns: Dictionary = {}
+
 var _bound_instance: Node3D = null
 var _live_timer: Timer = null
 var _selection_connected: bool = false
 var _spawn_counter: int = 0
 var _initial_focus_done: bool = false
+var _camera_follow_enabled: bool = false
 var _last_bound_pos: Vector3 = Vector3.ZERO
 var _has_last_bound_pos: bool = false
+
+var _show_navmesh: bool = false
+var _show_user_edges: bool = false
+var _show_astar_path: bool = true
+var _show_docking_lines: bool = true
+var _show_skeleton: bool = false
 
 
 func _has_main_screen() -> bool:
@@ -46,18 +55,26 @@ func _get_plugin_name() -> String:
 
 
 func _enter_tree() -> void:
+	_build_viewport_overlay_bar()
+	add_control_to_container(EditorPlugin.CONTAINER_SPATIAL_EDITOR_MENU, _viewport_overlay_bar)
+
 	_hierarchy_dock = HierarchyDockScript.new()
 	_hierarchy_dock.connect("instance_selected", _on_dock_instance_selected)
 	_hierarchy_dock.connect("spawn_requested", _on_dock_spawn_requested)
 	_hierarchy_dock.connect("focus_requested", _on_dock_focus_requested)
+	_hierarchy_dock.connect("follow_toggled", _on_dock_follow_toggled)
 	_hierarchy_dock.connect("refresh_requested", _refresh_scene_instances)
 	add_control_to_dock(EditorPlugin.DOCK_SLOT_LEFT_BR, _hierarchy_dock)
 
 	_state_dock = StateDockScript.new()
 	_state_dock.connect("docking_lines_toggled", _on_docking_lines_toggled)
+	_state_dock.connect("select_hero_requested", _on_select_hero_requested)
+	_state_dock.connect("quick_spawn_requested", func(): _on_dock_spawn_requested("character", "ninja_blue"))
+	_state_dock.connect("authoring_changed", _on_authoring_changed)
 	add_control_to_dock(EditorPlugin.DOCK_SLOT_RIGHT_BL, _state_dock)
 
 	_flow_panel = FlowBottomPanelScript.new()
+	_flow_panel.connect("authoring_changed", _on_authoring_changed)
 	add_control_to_bottom_panel(_flow_panel, "Animation Flow")
 
 	add_tool_menu_item(TOOL_OPEN_WORLD, _open_world_scene)
@@ -82,7 +99,7 @@ func _enter_tree() -> void:
 	_live_timer.timeout.connect(_on_live_tick)
 	add_child(_live_timer)
 
-	print("ANIMATION_STUDIO_EDITOR_READY mode=standard_docks scene=hero_arena_world.tscn web=%s" % OS.has_feature("web"))
+	print("ANIMATION_STUDIO_EDITOR_READY mode=standard_docks_v3 scene=hero_arena_world.tscn web=%s" % OS.has_feature("web"))
 	call_deferred("_bootstrap_workspace")
 
 
@@ -108,6 +125,12 @@ func _exit_tree() -> void:
 		_live_timer.queue_free()
 	_live_timer = null
 
+	if is_instance_valid(_viewport_overlay_bar):
+		remove_control_from_container(EditorPlugin.CONTAINER_SPATIAL_EDITOR_MENU, _viewport_overlay_bar)
+		_viewport_overlay_bar.queue_free()
+	_viewport_overlay_bar = null
+	_overlay_btns.clear()
+
 	if is_instance_valid(_hierarchy_dock):
 		remove_control_from_docks(_hierarchy_dock)
 		_hierarchy_dock.queue_free()
@@ -123,6 +146,52 @@ func _exit_tree() -> void:
 		_flow_panel.queue_free()
 	_flow_panel = null
 	_bound_instance = null
+
+
+func _build_viewport_overlay_bar() -> void:
+	_viewport_overlay_bar = HBoxContainer.new()
+	_viewport_overlay_bar.name = "AnimStudioOverlayPills"
+	_viewport_overlay_bar.add_theme_constant_override("separation", 4)
+	_overlay_btns.clear()
+
+	var specs := [
+		["navmesh", "NavMesh", "navmesh", StudioTheme.ACCENT_TEAL, _show_navmesh],
+		["user_edges", "UserEdges", "ai-path", StudioTheme.TRAV_VAULT, _show_user_edges],
+		["astar_path", "A* Path", "ai-path", StudioTheme.ACCENT_AMBER, _show_astar_path],
+		["docking_lines", "도킹 라인", "cover", StudioTheme.SEMANTIC_INFO, _show_docking_lines],
+		["skeleton", "Skeleton", "bone", StudioTheme.ACCENT_TEAL, _show_skeleton],
+	]
+	for sp in specs:
+		var key: String = str(sp[0])
+		var btn := Button.new()
+		btn.text = str(sp[1])
+		btn.icon = StudioTheme.get_icon(str(sp[2]), sp[3] as Color, 13)
+		btn.toggle_mode = true
+		btn.button_pressed = bool(sp[4])
+		StudioTheme.style_button(btn, "pill", sp[3] as Color)
+		btn.toggled.connect(func(v: bool): _on_viewport_pill_toggled(key, v))
+		_viewport_overlay_bar.add_child(btn)
+		_overlay_btns[key] = btn
+
+
+func _on_viewport_pill_toggled(key: String, enabled: bool) -> void:
+	match key:
+		"navmesh": _show_navmesh = enabled
+		"user_edges": _show_user_edges = enabled
+		"astar_path": _show_astar_path = enabled
+		"docking_lines":
+			_show_docking_lines = enabled
+			_on_docking_lines_toggled(enabled)
+			if is_instance_valid(_state_dock) and _state_dock.has_method("set_docking_lines_checked"):
+				_state_dock.call("set_docking_lines_checked", enabled)
+		"skeleton": _show_skeleton = enabled
+	_apply_overlays_to_scene()
+
+
+func _apply_overlays_to_scene() -> void:
+	for inst in _collect_scene_instances():
+		if inst.has_method("set_overlay_flags"):
+			inst.call("set_overlay_flags", _show_navmesh, _show_user_edges, _show_astar_path, _show_skeleton)
 
 
 func _bootstrap_workspace() -> void:
@@ -180,11 +249,15 @@ func _on_editor_selection_changed() -> void:
 	if sel == null:
 		return
 	var nodes := sel.get_selected_nodes()
+	if nodes.is_empty():
+		return
 	for n in nodes:
 		var inst := _find_enclosing_instance(n)
 		if inst != null:
 			_bind_instance(inst)
 			return
+	# Non-instance node selected -> show Empty State card cleanly
+	_bind_instance(null)
 
 
 func _find_enclosing_instance(node: Node) -> Node3D:
@@ -217,7 +290,6 @@ func _refresh_scene_instances() -> void:
 	var instances := _collect_scene_instances()
 	var active: Node3D = null
 
-	# Prefer currently selected AnimationStudioInstance in Editor
 	var sel := EditorInterface.get_selection()
 	if sel != null:
 		for n in sel.get_selected_nodes():
@@ -234,6 +306,7 @@ func _refresh_scene_instances() -> void:
 	if is_instance_valid(_hierarchy_dock):
 		_hierarchy_dock.call("set_scene_instances", instances, active)
 	_bind_instance(active)
+	_apply_overlays_to_scene()
 
 	if active != null and not _initial_focus_done:
 		_initial_focus_done = true
@@ -278,13 +351,35 @@ func _on_dock_focus_requested(inst: Node3D) -> void:
 	_frame_3d_viewport_on(inst)
 
 
+func _on_dock_follow_toggled(enabled: bool) -> void:
+	_camera_follow_enabled = enabled
+	if enabled and is_instance_valid(_bound_instance):
+		_frame_3d_viewport_on(_bound_instance)
+
+
+func _on_select_hero_requested() -> void:
+	for inst in _collect_scene_instances():
+		if str(inst.get("role")) == "hero_arena":
+			_on_dock_focus_requested(inst)
+			return
+	var all := _collect_scene_instances()
+	if not all.is_empty():
+		_on_dock_focus_requested(all[0])
+
+
+func _on_authoring_changed() -> void:
+	if is_instance_valid(_state_dock) and _state_dock.has_method("bind_instance") and is_instance_valid(_bound_instance):
+		_state_dock.call("bind_instance", _bound_instance)
+	if is_instance_valid(_flow_panel) and _flow_panel.has_method("refresh_authoring_views"):
+		_flow_panel.call("refresh_authoring_views")
+
+
 func _frame_3d_viewport_on(inst: Node3D) -> void:
 	if not is_instance_valid(inst):
 		return
 	var main_screen := EditorInterface.get_editor_main_screen()
 	if main_screen == null:
 		return
-	# Trigger Godot's standard Node3DEditorViewport "Focus Selection" (VIEW_CENTER_TO_SELECTION = 10)
 	var vps := main_screen.find_children("*", "Node3DEditorViewport", true, false)
 	if vps.is_empty():
 		return
@@ -325,6 +420,9 @@ func _on_dock_spawn_requested(role: String, character_id: String) -> void:
 
 
 func _on_docking_lines_toggled(show_lines: bool) -> void:
+	_show_docking_lines = show_lines
+	if _overlay_btns.has("docking_lines"):
+		(_overlay_btns["docking_lines"] as Button).set_pressed_no_signal(show_lines)
 	var root := EditorInterface.get_edited_scene_root()
 	if root == null:
 		return
@@ -336,7 +434,7 @@ func _on_docking_lines_toggled(show_lines: bool) -> void:
 func _on_live_tick() -> void:
 	if is_instance_valid(_bound_instance):
 		var cur_p := _bound_instance.global_position
-		if _has_last_bound_pos and cur_p.distance_to(_last_bound_pos) > 2.5:
+		if _camera_follow_enabled and _has_last_bound_pos and cur_p.distance_to(_last_bound_pos) > 1.8:
 			_frame_3d_viewport_on(_bound_instance)
 		_last_bound_pos = cur_p
 		_has_last_bound_pos = true

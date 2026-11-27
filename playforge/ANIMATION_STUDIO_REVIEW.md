@@ -197,3 +197,23 @@ Havok AI SDK(`SpatialAnalysisDemo`, `AbstractTraversalDemo`, `UserEdgesDemo`, `P
   - 단독 데모([hero_ai_demo.tscn](animation_studio/hero/ai/hero_ai_demo.tscn), [hero_ai_demo.gd](animation_studio/hero/ai/hero_ai_demo.gd)): 6종 미션 프리셋, 3D 맵 아무 지점 좌클릭 A\* 이동, CostModifier·UserEdge 필터·동적 장애물·오버레이 실시간 토글 및 12/12 커버리지 체크리스트 HUD.
   - 표준 3D 뷰포트 `Hero_Arena`([animation_studio_instance.gd](animation_studio/addons/animation_studio/animation_studio_instance.gd)) 및 우측 도크 **`AnimStudio · 상태`**([state_dock.gd](animation_studio/addons/animation_studio/docks/state_dock.gd))에서도 AI 자율 주행·오버레이를 직접 켜고 제어할 수 있으며, 로컬 포크 런처(`/local-fork`, `/launch-local-demo?scene=ai_hero`, `run_local_fork_demo.cmd`, `build_and_test_local_fork.cmd`)에 연동했다.
 - **검증**: `animation_hero_ai_pathfinding` **8/8 PASS**([hero_ai_pathfinding_verify.gd](animation_studio/tests/hero_ai_pathfinding_verify.gd): 6종 Traversal 추출, 지면→`10.25m` 정상 A\*, `PreferHigh` 평균고도 `0.00m→4.12m`, `TacticalCover` `CoverWalk 3 + CoverRoll 2`, `FLAG_CLIMB` 필터 차단, 동적 장애물 회피 `min_dist=2.83m`, Grand Tour `Y=-3.00m~+10.25m` 및 12/12 기능 완주) + 전체 Animation Studio 7종 스위트 **61/61 PASS**, GPU 3종 스크린샷 육안 검수 완료.
+
+## 디자인 시안 v3 반영 · 표준 도킹 UI 고도화 & Agent 리플레이/저널 구현 · 2026-11-27
+
+`PlayForge_Motion_Studio_Final_v3_20261127` 디자인 시안(Hero·Quadruped·Character 도킹 뷰, NaturalMotion Network/Events/Physics, Agent Review/Branch & MCP 툴 계약)을 실제 Godot 4.7.2 표준 `EditorPlugin` 애드온에 내재화했다.
+
+- **엔진 영향 범위**: **`[엔진 수정]` 없음 (0건)**, **`[엔진 추가]` 없음 (0건)** — 모든 구현은 `playforge/animation_studio/` 및 테스트 러너 이하 확장 영역에만 반영했다.
+- **공통 테마·16종 벡터 SVG 아이콘 (`[확장 추가]`)**:
+  - `addons/animation_studio/ui/studio_theme.gd` (`AnimationStudioTheme`): `design-tokens.json` 다크 토큰(`#12151b`/`#181d26`/`#151a22`/`#1e2430`, Amber `#f39c2b`, Teal `#2cc7b8`), `StyleBoxFlat` 카드·KPI·4족 접지·세그먼트 버튼·배너 빌더 및 `Image.load_svg_from_string()` 런타임 캐시.
+  - `addons/animation_studio/icons/*.svg` (16종: `hero`, `quadruped`, `character`, `bone`, `ai-path`, `navmesh`, `vault`, `climb`, `leap`, `drop`, `cover`, `focus`, `play`, `pause`, `step`, `benchmark`).
+- **v3 불변 저널 & 도메인 명령 코어 (`[확장 추가]`)**:
+  - `addons/animation_studio/authoring/motion_journal.gd` (`MotionJournal`): `playforge.motion-journal/v1` 스키마, FNV-1a 32-bit 체크섬, 구조적 diff/inverseDiff, 분기(`b000 Main`, `b001...`), 읽기 전용 스냅샷 검토(`inspect`/`exit_review`), 트랜잭션 `undo`/`redo`, `requestId` 멱등성·충돌 검증, 세션 JSON 내보내기/체크섬 검증 복원.
+  - `addons/animation_studio/authoring/motion_commands.gd` (`MotionCommands`): 8종 검증 도메인 명령(`set_parameters`, `set_event_range`, `set_event_strength`, `set_event_enabled`, `set_physics`, `set_transition`, `rename_node`, `move_node`), 8종 MCP 툴 계약 메서드(`motion_read_state`~`motion_redo_transaction`), `replace_step` 분기 교체, 4단계 Agent 시나리오 및 `sourceCommitId`/`sourceRevision` 연결 `frame_trace`.
+- **표준 도킹 패널·3D 뷰포트 오버레이·웹 에디터 고도화 (`[확장 수정]` / `[확장 추가]`)**:
+  - `[확장 수정]` `editor_plugin.gd`: 표준 3D 뷰포트 상단 메뉴 바(`CONTAINER_SPATIAL_EDITOR_MENU`)에 **5종 오버레이 필**(`NavMesh`, `UserEdges`, `A* Path`, `도킹 라인`, `Skeleton`) 추가, `따라가기` 카메라 추적 토글 및 빈 상태 CTA 연동.
+  - `[확장 수정]` `animation_studio_instance.gd`: 개별 3D 오버레이 메시(`_ai_navmesh_mi`, `_ai_annot_mi`, `_ai_path_mi`, `_skeleton_wire_mi`, `_ai_obstacle_mi`), UserEdge 플래그 필터(`set_ai_allowed_flag`), 동적 장애물 토글(`set_ai_dynamic_obstacle`), 다음 A\* 상태(`next_ai_state`), 인스턴스별 `MotionCommands` 저널 바인딩 추가.
+  - `[확장 수정]` `hierarchy_dock.gd`: 좌측 Amber 선택 바·역할 아이콘·상태 필·포커스 버튼이 포함된 리치 인스턴스 카드, `+ 배치`/`포커스`/`따라가기` 액션 바, 하단 고정 본 포즈 인스펙터 카드.
+  - `[확장 수정]` `state_dock.gd`: 4종 컨텍스트 뷰 완성 — **Hero + AI**(6미션·`CostModifier`·5종 `UserEdge` 아이콘 칩·동적 장애물·12/12 커버리지 미니그리드·물리 리그 반응 Lab), **Quadruped**(5버튼 세그먼트 보행 바·2×2 `FL/FR/HL/HR` 접지 카드), **Character**(Float32/16-bit 세그먼트·네이티브 C++/Web 폴백 배너·2×2 KPI 카드·200체 벤치마크), **Empty State**(`Hero_Arena 선택하기`/`+ 새 캐릭터 배치` CTA).
+  - `[확장 수정]` `flow_bottom_panel.gd` · `flow_graph_canvas.gd` + `[확장 추가]` `event_timeline_canvas.gd` · `agent_replay_panel.gd`: 하단 `Animation Flow` 3종 서브탭(**`플로우 그래프`** 5상태 노드·`AI 예정` 점선 배지·화살표·전이 시간 / **`이벤트 타임라인`** 3트랙 Behaviour Event 보드·속성 편집기·Frame Trace / **`Agent 리플레이 / 분기`** 4단계 실행·읽기 전용 Replay·중간 단계 미리보기 및 새 분기 교체·Undo/Redo·JSON 저장/복원).
+  - `[확장 수정]` `web_editor/index.html`: v3 다크 헤더·배지·로컬 포크 런처 버튼 반영.
+- **검증**: 신규 스위트 `animation_motion_v3`([motion_journal_v3_verify.gd](animation_studio/tests/motion_journal_v3_verify.gd)) **7/7 PASS** 포함 핵심 8종 회귀 **68/68 PASS (0 FAIL)**, 로컬 포크 Godot 4.7.2 에디터 기동(`ANIMATION_STUDIO_EDITOR_READY mode=standard_docks_v3`, 오류 0건), 라이브 Chrome **Godot 4.7.2 웹 에디터** 5개 뷰(Hero + AI 기본 도킹, 이벤트 타임라인, Agent 리플레이 4단계, Quadruped 4족 접지 그리드, Soldier 16-bit KPI) 실렌더링 스크린샷 육안 검수 통과(네트워크 오류 0건, 콘솔 오류 0건).

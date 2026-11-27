@@ -2,9 +2,10 @@
 class_name AnimationStudioInstance
 extends Node3D
 ## Standard @tool 3D scene component placed directly inside Godot's native 3D Viewport.
-## Connects any placed character instance (Hero Arena + 10 Lua scripts, 28-bone Quadruped
-## Procedural Locomotor, or any of the 28 internalized Havok characters) to the standard
-## Animation Studio Editor docks (Hierarchy, State & Parameters, and Animation Flow).
+## Connects any placed character instance (Hero Arena + 10 Lua scripts + AI Spatial Analysis,
+## 28-bone Quadruped Procedural Locomotor, or any of the 28 internalized Havok characters)
+## to the standard Animation Studio Editor docks (Hierarchy, State & Parameters, Animation Flow,
+## Behaviour Event Timeline, and Agent Replay / Branching Journal).
 
 const Store := preload("res://characters/character_store.gd")
 const CrowdEval := preload("res://addons/animation_studio/crowd_evaluator.gd")
@@ -15,6 +16,7 @@ const PathfinderScript := preload("res://hero/ai/hero_ai_pathfinder.gd")
 const AiDriverScript := preload("res://hero/ai/hero_ai_behavior_driver.gd")
 const QuadRigScript := preload("res://quadruped/quadruped_rig.gd")
 const QuadLocomotorScript := preload("res://quadruped/quadruped_locomotor.gd")
+const MotionCommandsScript := preload("res://addons/animation_studio/authoring/motion_commands.gd")
 
 const HERO_ARENA_MOTION_RES := "res://hero/assets/hero_arena_motion.res"
 const HERO_SKIN_GLB := "res://hero/assets/hero_skin.glb"
@@ -46,6 +48,17 @@ var library: AnimationLibrary = null
 var motion_dict: Dictionary = {}
 var skin_stats: Dictionary = {}
 
+# v3 Authoring Journal + MotionCommands controller per instance
+var motion_authoring: RefCounted = null
+var _trace_frame_counter: int = 0
+
+# Individual 3D Viewport overlay flags (controlled by 3D Viewport top-left pill bar)
+var overlay_navmesh: bool = false
+var overlay_user_edges: bool = false
+var overlay_astar_path: bool = true
+var overlay_skeleton: bool = false
+var _skeleton_wire_mi: MeshInstance3D = null
+
 # Role: hero_arena
 var hero_ctrl: ControllerScript = null
 var _hero_tour_clock: float = 0.0
@@ -56,9 +69,12 @@ var _hero_has_driven: bool = false
 var ai_spatial: SpatialScript = null
 var ai_pathfinder: PathfinderScript = null
 var ai_driver: AiDriverScript = null
+var ai_dynamic_obstacle_enabled: bool = false
 var _ai_overlay_root: Node3D = null
+var _ai_navmesh_mi: MeshInstance3D = null
 var _ai_annot_mi: MeshInstance3D = null
 var _ai_path_mi: MeshInstance3D = null
+var _ai_obstacle_mi: MeshInstance3D = null
 
 # Role: quadruped
 var quad_actor_root: Node3D = null
@@ -84,6 +100,37 @@ func _ready() -> void:
 	rebuild_instance()
 
 
+func get_motion_authoring() -> RefCounted:
+	if motion_authoring == null:
+		motion_authoring = MotionCommandsScript.new(name, role)
+	return motion_authoring
+
+
+func sync_from_motion_authoring() -> void:
+	if motion_authoring == null:
+		return
+	var st: Dictionary = motion_authoring.call("motion_read_state")
+	var doc: Dictionary = st.get("selected_document", {}) as Dictionary
+	var params: Dictionary = doc.get("defaultParameters", {}) as Dictionary
+	var spd := float(params.get("speed", 2.2))
+	if role == "quadruped":
+		quad_speed = clampf(spd, 0.0, 5.5)
+	else:
+		playback_speed = clampf(spd / 2.2, 0.25, 2.0)
+
+
+func trigger_physics_impulse(impulse_strength: float) -> Dictionary:
+	var auth := get_motion_authoring()
+	var res: Dictionary = auth.call("apply_user_commands", [
+		{"op": "set_physics", "values": {"impulse": clampf(impulse_strength, 0.0, 1.0)}}
+	], "물리 충격 시험 (%.2f)" % impulse_strength)
+	if role == "hero_arena" and hero_ctrl != null and impulse_strength >= 0.35:
+		# Visually express impulse reaction on Hero when not in AI mode
+		if not ai_driven:
+			hero_ctrl.raise_event("JumpButton", _raycast_world)
+	return res
+
+
 func rebuild_instance() -> void:
 	if is_instance_valid(runtime_root):
 		runtime_root.queue_free()
@@ -103,8 +150,11 @@ func rebuild_instance() -> void:
 	if is_instance_valid(_ai_overlay_root):
 		_ai_overlay_root.queue_free()
 	_ai_overlay_root = null
+	_ai_navmesh_mi = null
 	_ai_annot_mi = null
 	_ai_path_mi = null
+	_ai_obstacle_mi = null
+	_skeleton_wire_mi = null
 	quad_actor_root = null
 	quad_bone_ids.clear()
 	quad_locomotor = null
@@ -122,10 +172,11 @@ func rebuild_instance() -> void:
 			_build_roster_character()
 
 	_add_selection_proxy()
+	_ensure_skeleton_overlay_mesh()
+	motion_authoring = MotionCommandsScript.new(name, role)
 
 
 func _add_selection_proxy() -> void:
-	# Provides reliable click-selection inside Godot's standard 3D Viewport
 	var sb := StaticBody3D.new()
 	sb.name = "_ViewportPickProxy"
 	sb.collision_layer = 0
@@ -138,6 +189,59 @@ func _add_selection_proxy() -> void:
 	col.position = Vector3(0.0, 0.95, 0.0)
 	sb.add_child(col)
 	runtime_root.add_child(sb)
+
+
+func _ensure_skeleton_overlay_mesh() -> void:
+	if skeleton == null:
+		return
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.no_depth_test = true
+	_skeleton_wire_mi = MeshInstance3D.new()
+	_skeleton_wire_mi.name = "_SkeletonWireOverlay"
+	_skeleton_wire_mi.material_override = mat
+	_skeleton_wire_mi.visible = overlay_skeleton
+	skeleton.add_child(_skeleton_wire_mi)
+	if overlay_skeleton:
+		_refresh_skeleton_wire_mesh()
+
+
+func _refresh_skeleton_wire_mesh() -> void:
+	if not is_instance_valid(_skeleton_wire_mi) or skeleton == null:
+		return
+	_skeleton_wire_mi.visible = overlay_skeleton
+	if not overlay_skeleton:
+		return
+	var im := ImmediateMesh.new()
+	im.surface_begin(Mesh.PRIMITIVE_LINES)
+	var bc := skeleton.get_bone_count()
+	for i in bc:
+		var p_idx := skeleton.get_bone_parent(i)
+		if p_idx < 0:
+			continue
+		var p0 := skeleton.get_bone_global_pose(p_idx).origin
+		var p1 := skeleton.get_bone_global_pose(i).origin
+		var col := Color("#2cc7b8") if (i % 2 == 0) else Color("#f39c2b")
+		im.surface_set_color(col)
+		im.surface_add_vertex(p0)
+		im.surface_set_color(col)
+		im.surface_add_vertex(p1)
+	im.surface_end()
+	_skeleton_wire_mi.mesh = im
+
+
+func set_overlay_flags(navmesh: bool, user_edges: bool, astar_path: bool, skeleton_wire: bool) -> void:
+	overlay_navmesh = navmesh
+	overlay_user_edges = user_edges
+	overlay_astar_path = astar_path
+	overlay_skeleton = skeleton_wire
+	if role == "hero_arena" and hero_ctrl != null and (navmesh or user_edges or (astar_path and ai_driven)):
+		_ensure_ai_stack()
+		_refresh_ai_overlays()
+	else:
+		_apply_ai_overlay_visibility()
+	_refresh_skeleton_wire_mesh()
 
 
 func _build_hero_arena() -> void:
@@ -326,12 +430,24 @@ func step_once(dt: float) -> void:
 			_step_quadruped(dt)
 		_:
 			_step_roster_character(dt)
+	if overlay_skeleton:
+		_refresh_skeleton_wire_mesh()
+	_trace_frame_counter = (_trace_frame_counter + 1) % 180
+	if motion_authoring != null and (_trace_frame_counter % 6 == 0):
+		var st_name := active_clip
+		var spd := playback_speed
+		if role == "hero_arena" and hero_ctrl != null:
+			st_name = str(hero_ctrl.state["active_state"])
+			spd = float(hero_ctrl.variables.get("CharacterSpeed", 0.0))
+		elif role == "quadruped":
+			st_name = str(_quad_last_snap.get("gait", "idle"))
+			spd = float(_quad_last_snap.get("speed", 0.0))
+		motion_authoring.call("record_frame_trace", _trace_frame_counter, play_time, st_name, spd)
 
 
 func _step_hero_arena(dt: float) -> void:
 	if hero_ctrl == null or skeleton == null or player == null:
 		return
-	# Respect manual 3D Viewport gizmo drags by syncing hero_ctrl to user-moved position
 	if _hero_has_driven and global_position.distance_to(_hero_last_driven_pos) > 0.05:
 		hero_ctrl.teleport_hero(global_position, rotation.y)
 		_hero_last_driven_pos = hero_ctrl.hero_pos
@@ -454,6 +570,10 @@ func get_skeleton() -> Skeleton3D:
 	return skeleton
 
 
+func is_native_gdextension_active() -> bool:
+	return ClassDB.class_exists(&"AnimationStudioPoseSampler")
+
+
 func get_display_title() -> String:
 	match role:
 		"hero_arena": return "%s  [Hero 85본 · 10 Lua]" % name
@@ -461,6 +581,16 @@ func get_display_title() -> String:
 		_:
 			var e := Store.get_entry(character_id)
 			return "%s  [%s · %d본]" % [name, str(e.get("name", character_id)), int(e.get("bones", 0))]
+
+
+func get_display_subtitle() -> String:
+	match role:
+		"hero_arena": return "85본 · GDScript 복원 10종 + AI"
+		"quadruped": return "28본 · 절차적 IK · 4보행"
+		_:
+			var e := Store.get_entry(character_id)
+			var b := int(e.get("bones", skeleton.get_bone_count() if skeleton != null else 0))
+			return "%d본 · Float32/16-bit 비교" % b if character_id == "soldier" else "%d본 · 캐릭터 로스터" % b
 
 
 func get_clip_names() -> PackedStringArray:
@@ -517,7 +647,7 @@ func trigger_hero_scenario(scenario_id: String) -> void:
 	if role != "hero_arena" or hero_ctrl == null:
 		return
 	ai_driven = false
-	_set_ai_overlays_visible(false)
+	_apply_ai_overlay_visibility()
 	hero_ctrl.gamepad.set_raw_input(0.0, 0.0, 0.0, 0.0, 0.0)
 	match scenario_id:
 		"locomotion":
@@ -580,7 +710,7 @@ func raise_hero_event(event_name: String) -> bool:
 	if role != "hero_arena" or hero_ctrl == null:
 		return false
 	ai_driven = false
-	_set_ai_overlays_visible(false)
+	_apply_ai_overlay_visibility()
 	return hero_ctrl.raise_event(event_name, _raycast_world)
 
 
@@ -608,10 +738,22 @@ func _build_ai_overlays() -> void:
 	_ai_overlay_root.name = "_AiSpatialOverlays"
 	host.add_child(_ai_overlay_root)
 
+	var nav_mat := StandardMaterial3D.new()
+	nav_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	nav_mat.vertex_color_use_as_albedo = true
+	nav_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	nav_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_ai_navmesh_mi = MeshInstance3D.new()
+	_ai_navmesh_mi.name = "_AiNavMesh"
+	_ai_navmesh_mi.material_override = nav_mat
+	_ai_navmesh_mi.mesh = ai_spatial.build_navmesh_mesh()
+	_ai_overlay_root.add_child(_ai_navmesh_mi)
+
 	var line_mat := StandardMaterial3D.new()
 	line_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	line_mat.vertex_color_use_as_albedo = true
 	_ai_annot_mi = MeshInstance3D.new()
+	_ai_annot_mi.name = "_AiUserEdges"
 	_ai_annot_mi.material_override = line_mat
 	_ai_overlay_root.add_child(_ai_annot_mi)
 
@@ -620,8 +762,25 @@ func _build_ai_overlays() -> void:
 	pmat.vertex_color_use_as_albedo = true
 	pmat.no_depth_test = true
 	_ai_path_mi = MeshInstance3D.new()
+	_ai_path_mi.name = "_AiPathRibbon"
 	_ai_path_mi.material_override = pmat
 	_ai_overlay_root.add_child(_ai_path_mi)
+
+	var obs_mat := StandardMaterial3D.new()
+	obs_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	obs_mat.albedo_color = Color(0.95, 0.28, 0.28, 0.42)
+	obs_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 2.1
+	cyl.bottom_radius = 2.1
+	cyl.height = 2.6
+	_ai_obstacle_mi = MeshInstance3D.new()
+	_ai_obstacle_mi.name = "_AiDynamicObstacle"
+	_ai_obstacle_mi.mesh = cyl
+	_ai_obstacle_mi.material_override = obs_mat
+	_ai_obstacle_mi.position = Vector3(-11.0, 1.3, 10.0)
+	_ai_obstacle_mi.visible = ai_dynamic_obstacle_enabled
+	_ai_overlay_root.add_child(_ai_obstacle_mi)
 
 
 func _refresh_ai_overlays() -> void:
@@ -631,12 +790,26 @@ func _refresh_ai_overlays() -> void:
 		_ai_annot_mi.mesh = ai_spatial.build_annotations_mesh(ai_pathfinder.allowed_flags)
 	if is_instance_valid(_ai_path_mi):
 		_ai_path_mi.mesh = ai_pathfinder.build_path_mesh(ai_driver.active_path)
-	_set_ai_overlays_visible(ai_driven)
+	if is_instance_valid(_ai_obstacle_mi):
+		_ai_obstacle_mi.visible = ai_dynamic_obstacle_enabled
+	_apply_ai_overlay_visibility()
 
 
-func _set_ai_overlays_visible(v: bool) -> void:
-	if is_instance_valid(_ai_overlay_root):
-		_ai_overlay_root.visible = v
+func _apply_ai_overlay_visibility() -> void:
+	if not is_instance_valid(_ai_overlay_root):
+		return
+	var show_nav := overlay_navmesh
+	var show_edges := overlay_user_edges or (ai_driven and overlay_astar_path)
+	var show_path := ai_driven and overlay_astar_path
+	_ai_overlay_root.visible = show_nav or show_edges or show_path or ai_dynamic_obstacle_enabled
+	if is_instance_valid(_ai_navmesh_mi):
+		_ai_navmesh_mi.visible = show_nav
+	if is_instance_valid(_ai_annot_mi):
+		_ai_annot_mi.visible = show_edges
+	if is_instance_valid(_ai_path_mi):
+		_ai_path_mi.visible = show_path
+	if is_instance_valid(_ai_obstacle_mi):
+		_ai_obstacle_mi.visible = ai_dynamic_obstacle_enabled
 
 
 func set_ai_driven(enabled: bool) -> void:
@@ -648,7 +821,7 @@ func set_ai_driven(enabled: bool) -> void:
 		_ensure_ai_stack()
 		_refresh_ai_overlays()
 	else:
-		_set_ai_overlays_visible(false)
+		_apply_ai_overlay_visibility()
 
 
 func start_ai_mission(mission_id: String) -> void:
@@ -672,6 +845,61 @@ func set_ai_cost_mode(mode: String) -> void:
 	ai_pathfinder.cost_mode = mode
 	ai_driver.replan_now()
 	_refresh_ai_overlays()
+
+
+func set_ai_allowed_flag(flag_bit: int, enabled: bool) -> int:
+	if role != "hero_arena" or hero_ctrl == null:
+		return SpatialScript.FLAG_ALL
+	_ensure_ai_stack()
+	if enabled:
+		ai_pathfinder.allowed_flags = ai_pathfinder.allowed_flags | flag_bit
+	else:
+		ai_pathfinder.allowed_flags = ai_pathfinder.allowed_flags & (~flag_bit)
+	ai_driver.replan_now()
+	_refresh_ai_overlays()
+	return ai_pathfinder.allowed_flags
+
+
+func get_ai_allowed_flags() -> int:
+	if ai_pathfinder != null:
+		return ai_pathfinder.allowed_flags
+	return SpatialScript.FLAG_ALL
+
+
+func set_ai_dynamic_obstacle(enabled: bool) -> void:
+	if role != "hero_arena" or hero_ctrl == null:
+		return
+	ai_dynamic_obstacle_enabled = enabled
+	_ensure_ai_stack()
+	ai_pathfinder.dynamic_obstacles.clear()
+	if enabled:
+		var obs_pos := Vector3(-11.0, 0.0, 10.0)
+		var segs: Array = ai_driver.active_path.get("segments", [])
+		if segs.size() > 1:
+			var mid_seg: Dictionary = segs[mini(1, segs.size() - 1)]
+			obs_pos = ((mid_seg["from"] as Vector3) + (mid_seg["to"] as Vector3)) * 0.5
+		ai_pathfinder.dynamic_obstacles.append({"pos": obs_pos, "radius": 2.2})
+		if is_instance_valid(_ai_obstacle_mi):
+			_ai_obstacle_mi.position = Vector3(obs_pos.x, obs_pos.y + 1.3, obs_pos.z)
+	ai_driver.replan_now()
+	_refresh_ai_overlays()
+
+
+func _compute_next_ai_state() -> String:
+	if not ai_driven or ai_driver == null:
+		return ""
+	var segs: Array = ai_driver.active_path.get("segments", [])
+	for i in range(ai_driver.seg_idx, segs.size()):
+		var t := int((segs[i] as Dictionary).get("type", SpatialScript.TRAVERSAL_WALK))
+		if t == SpatialScript.TRAVERSAL_WALK:
+			continue
+		match t:
+			SpatialScript.TRAVERSAL_VAULT: return "Vault"
+			SpatialScript.TRAVERSAL_CLIMB_UP: return "ClimbUp"
+			SpatialScript.TRAVERSAL_LEAP: return "Leap"
+			SpatialScript.TRAVERSAL_DROP_DOWN: return "Jump"
+			SpatialScript.TRAVERSAL_COVER_WALK, SpatialScript.TRAVERSAL_COVER_ROLL: return "Cover"
+	return ""
 
 
 func run_crowd_benchmark_200() -> Dictionary:
@@ -707,6 +935,8 @@ func run_crowd_benchmark_200() -> Dictionary:
 
 
 func get_state_snapshot() -> Dictionary:
+	var auth := get_motion_authoring()
+	var m_state: Dictionary = auth.call("motion_read_state")
 	var base := {
 		"name": name,
 		"role": role,
@@ -718,6 +948,12 @@ func get_state_snapshot() -> Dictionary:
 		"auto_demo": auto_demo,
 		"bones": skeleton.get_bone_count() if skeleton != null else 0,
 		"world_pos": global_position,
+		"native_gdextension_active": is_native_gdextension_active(),
+		"motion_revision": int(m_state.get("revision", 0)),
+		"motion_branch_id": str(m_state.get("branch_id", "b000")),
+		"motion_cursor_id": str(m_state.get("cursor_id", "c000")),
+		"motion_reviewing": bool(m_state.get("reviewing", false)),
+		"next_ai_state": "",
 	}
 	if role == "hero_arena" and hero_ctrl != null:
 		base["active_state"] = hero_ctrl.state["active_state"]
@@ -727,6 +963,10 @@ func get_state_snapshot() -> Dictionary:
 		base["dock_target"] = hero_ctrl.line_world.docking_target.duplicate()
 		base["cam_mode"] = hero_ctrl.cam.mode
 		base["ai_driven"] = ai_driven
+		base["ai_allowed_flags"] = get_ai_allowed_flags()
+		base["ai_cost_mode"] = ai_pathfinder.cost_mode if ai_pathfinder != null else PathfinderScript.COST_PARKOUR_EXPRESS
+		base["ai_dynamic_obstacle"] = ai_dynamic_obstacle_enabled
+		base["next_ai_state"] = _compute_next_ai_state()
 		if ai_driver != null:
 			base["ai_telemetry"] = ai_driver.get_telemetry()
 			base["ai_stats"] = ai_spatial.stats.duplicate() if ai_spatial != null else {}

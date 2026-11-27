@@ -60,6 +60,7 @@ SUITES = [
     ("animation_hero_arena", "res://tests/hero_arena_lua_verify.gd", ["--fixed-fps", "60"], [], 90, "Hero Environment Map & 10 Lua Scripts Restored", ANIMATION_PROJECT),
     ("animation_hero_ai_pathfinding", "res://tests/hero_ai_pathfinding_verify.gd", ["--fixed-fps", "60"], [], 120, "AI Pathfinding + Spatial Analysis + Behavior Hero Full-Map", ANIMATION_PROJECT),
     ("animation_editor_docks", "res://tests/editor_docks_verify.gd", ["--fixed-fps", "60"], [], 90, "Standard Godot 3D Viewport & Dockable Addon Panels", ANIMATION_PROJECT),
+    ("animation_motion_v3", "res://tests/motion_journal_v3_verify.gd", ["--fixed-fps", "60"], [], 90, "PlayForge Motion Studio v3 UI, Journal & Agent Replay", ANIMATION_PROJECT),
     ("animation_gallery", "res://tests/animation_gallery.gd", ["--fixed-fps", "60"], [], 120, "Animation Studio", ANIMATION_PROJECT),
     ("animation_pose_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], [], 30, "Animation Studio", ANIMATION_PROJECT),
     ("animation_compressed_parity", "res://tests/native_parity.gd", ["--fixed-fps", "60"], ["--compressed"], 30, "Animation Studio", ANIMATION_PROJECT),

@@ -5,44 +5,47 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <meta name="theme-color" content="#14181f">
   <link rel="icon" href="/vendor/favicon.png" type="image/png">
-  <title>Godot Web Editor · Animation Studio Standard Addon</title>
+  <title>Godot 4.7.2 Web Editor · PlayForge Animation Studio v3</title>
   <style>
     *{box-sizing:border-box}
-    html,body{width:100%;height:100%;margin:0;background:#12151b;color:#e8f0f8;font:13px system-ui,-apple-system,"Malgun Gothic",sans-serif;overflow:hidden}
-    #topbar{height:34px;display:flex;align-items:center;padding:0 12px;gap:10px;background:#181d26;border-bottom:1px solid #2b3344}
-    #brand{font-weight:700;color:#f39c2b;letter-spacing:.3px;white-space:nowrap}
-    #subtitle{color:#9eb0c7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    #pill{padding:2px 8px;border-radius:999px;background:#1d2b2a;border:1px solid #2cc7b8;color:#62e6d8;font-size:11px;font-weight:600;white-space:nowrap}
-    #status{margin-left:auto;color:#a5b7cf;font-size:12px;white-space:nowrap}
-    .top-btn{padding:3px 9px;border:1px solid #3c465a;border-radius:4px;background:#232936;color:#dce6f4;font-size:12px;cursor:pointer;text-decoration:none;white-space:nowrap}
-    .top-btn:hover{background:#303849}
-    #local-fork-btn{border-color:#d88a22;background:#2e2315;color:#ffd08a}
+    html,body{width:100%;height:100%;margin:0;background:#12151b;color:#e8f0f8;font:13px "Pretendard","Noto Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;overflow:hidden}
+    #topbar{height:36px;display:flex;align-items:center;padding:0 12px;gap:10px;background:#181d26;border-bottom:1px solid #2b3344}
+    #brand{font-weight:700;color:#f39c2b;letter-spacing:.35px;white-space:nowrap;display:flex;align-items:center;gap:6px}
+    #brand-dot{width:8px;height:8px;border-radius:2px;background:#f39c2b;transform:rotate(45deg);display:inline-block}
+    #subtitle{color:#9eb0c7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+    #pill{padding:2px 9px;border-radius:999px;background:#1d2b2a;border:1px solid #2cc7b8;color:#62e6d8;font-size:11px;font-weight:600;white-space:nowrap}
+    #v3-pill{padding:2px 8px;border-radius:999px;background:#2e2315;border:1px solid #f39c2b;color:#ffd08a;font-size:11px;font-weight:600;white-space:nowrap}
+    #status{margin-left:auto;color:#a5b7cf;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+    .top-btn{padding:4px 10px;border:1px solid #3c465a;border-radius:4px;background:#232936;color:#dce6f4;font-size:12px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background .12s ease,border-color .12s ease}
+    .top-btn:hover{background:#303849;border-color:#53637d}
+    #local-fork-btn{border-color:#f39c2b;background:#2e2315;color:#ffd08a;font-weight:600}
     #local-fork-btn:hover{background:#3e2f1c}
-    #editor-frame{display:block;width:100%;height:calc(100% - 34px);border:0;background:#12151b}
-    #loading{position:fixed;inset:34px 0 0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#13171e;padding:24px;text-align:center}
+    #editor-frame{display:block;width:100%;height:calc(100% - 36px);border:0;background:#12151b}
+    #loading{position:fixed;inset:36px 0 0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#13171e;padding:24px;text-align:center}
     #loading[hidden]{display:none}
     #loading-title{font-size:16px;font-weight:700;color:#edf3fa}
     #loading-bar-wrap{width:min(420px,84vw);height:8px;border-radius:999px;background:#1c222d;border:1px solid #313b4d;overflow:hidden}
     #loading-bar{width:6%;height:100%;background:linear-gradient(90deg,#2cc7b8,#f39c2b);transition:width .18s ease}
-    #loading-detail{font-size:12px;color:#93a5bc;max-width:480px}
+    #loading-detail{font-size:12px;color:#93a5bc;max-width:500px}
     #error-box{display:none;max-width:520px;padding:12px 14px;border:1px solid #d96b6b;border-radius:6px;background:#2a171b;color:#ffd3d3;font-size:12px;text-align:left;white-space:pre-wrap}
   </style>
 </head>
 <body>
   <div id="topbar">
-    <span id="brand">◆ GODOT 4.7.2 WEB EDITOR</span>
-    <span id="subtitle">Animation Studio · 표준 3D 뷰포트 + 도킹 패널 애드온</span>
+    <span id="brand"><span id="brand-dot"></span>GODOT 4.7.2 WEB EDITOR</span>
+    <span id="subtitle">PlayForge Animation Studio · 표준 3D 뷰포트 + 도킹 패널 · Agent 리플레이</span>
     <span id="pill">3D Viewport · Dockable Addon</span>
+    <span id="v3-pill">v3 Design · Journal &amp; Events</span>
     <span id="status" aria-live="polite">초기화 중…</span>
-    <a id="local-fork-hub-btn" class="top-btn" href="/local-fork" target="_blank" rel="noopener" title="로컬 포크 엔진 빌드·테스트·플레이 데모 런처 열기">로컬 포크 런처</a>
-    <a id="local-fork-btn" class="top-btn" href="/launch-local-editor" target="_blank" rel="noopener" title="로컬 PC의 Forge-Refactoring-engine 포크 Godot 에디터로 hero_arena_world.tscn 바로 열기">로컬 포크 에디터 열기</a>
+    <a id="local-fork-hub-btn" class="top-btn" href="/local-fork" target="_blank" rel="noopener" title="로컬 포크 엔진 빌드·테스트·플레이 데모 런처 열기">로컬 런처 ↗</a>
+    <a id="local-fork-btn" class="top-btn" href="/launch-local-editor" target="_blank" rel="noopener" title="로컬 PC의 Forge-Refactoring-engine 포크 Godot 에디터로 hero_arena_world.tscn 바로 열기">로컬 에디터 열기</a>
     <button id="reload-btn" class="top-btn" type="button" onclick="location.reload()">새로고침</button>
   </div>
   <iframe id="editor-frame" src="/editor-frame.html" title="Godot 4.7.2 Web Editor"></iframe>
   <div id="loading" role="status" aria-live="polite">
-    <div id="loading-title">Godot 웹 에디터 + Animation Studio 표준 도킹 애드온 준비 중…</div>
+    <div id="loading-title">Godot 웹 에디터 + Animation Studio v3 표준 도킹 애드온 준비 중…</div>
     <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
-    <div id="loading-detail">3D 아레나 씬(hero_arena_world.tscn)과 내재화 캐릭터 28종 GLB/RES 에셋을 불러오고 있습니다.</div>
+    <div id="loading-detail">3D 아레나 씬(hero_arena_world.tscn), AI Spatial Analysis, 내재화 캐릭터 28종, Agent 리플레이 저널을 불러오고 있습니다.</div>
     <div id="error-box"></div>
   </div>
   <script>
@@ -103,7 +106,7 @@
             st.addonReady = true;
             st.phase = 'ready';
             loadingEl.hidden = true;
-            statusEl.textContent = '표준 3D 뷰포트 + 도킹 패널(계층·상태·Animation Flow) 활성';
+            statusEl.textContent = '표준 3D 뷰포트 + v3 도킹 패널(계층·상태·Flow·이벤트·Agent 리플레이) 활성';
             break;
           case 'fatal':
             st.errors.push(msg.message);

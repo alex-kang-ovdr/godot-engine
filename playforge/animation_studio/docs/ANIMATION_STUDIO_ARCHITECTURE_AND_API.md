@@ -23,12 +23,12 @@
 | 영역 | 구현 상태 | 핵심 성과 / 실측 지표 | 검증 스위트 |
 | :--- | :---: | :--- | :--- |
 | **코어 포즈 런타임 & C++ GDExtension** | 완료 | 16-bit `QuantizedClip` 메모리 **73.0% 절감**, 8T C++ 병렬 크라우드 평가 **65본×200체 0.59ms / 114본×200체 1.18ms** (포즈 기준 7.2~16.0배 가속), 관성 블렌딩·상체 마스크·Rewind·능동 랙돌 | `animation_coexistence` · `animation_graph_rewind` · `animation_crowd_benchmark` · `animation_active_ragdoll` · `animation_pose_parity` · `animation_compressed_parity` |
-| **표준 Godot EditorPlugin 도킹 애드온** | 완료 | `_has_main_screen()=false` 표준 애드온 전환, Godot 기본 **3D 뷰포트** + 도킹 가능 패널 3종(`AnimStudio · 계층`, `AnimStudio · 상태`, `Animation Flow`), 배치 인스턴스 양방향 선택·28종 즉시 스폰 | `animation_editor_docks` (**7/7 PASS**), 로컬 포크 에디터 & 웹 에디터 라이브 검증 |
+| **표준 Godot EditorPlugin 도킹 애드온 (v3)** | 완료 | `_has_main_screen()=false` 표준 애드온 + 3D 뷰포트 5종 오버레이 필(`NavMesh`/`UserEdges`/`A* Path`/`도킹 라인`/`Skeleton`) + 도킹 패널 3종(`AnimStudio · 계층` 리치 카드, `AnimStudio · 상태` 4종 뷰·KPI·4족 접지·AI 12/12, `Animation Flow` 3서브탭: 플로우 그래프·이벤트 타임라인·Agent 리플레이/분기) + 16종 벡터 SVG 아이콘 & 불변 저널(`MotionJournal`/`MotionCommands`) | `animation_editor_docks` (**7/7 PASS**), `animation_motion_v3` (**7/7 PASS**), 로컬 포크 & 웹 에디터 5뷰 라이브 검증 |
 | **28종 내재화 캐릭터 로스터** | 완료 | 총 **28종 · 1,863본 · 119메시 · 225,471정점 · 83클립** (`.glb` + 압축 `HeroMotionData` `.res`, SDK 토큰 0건), Float32 vs 16-bit C++ 실시간 비교 & 9체 퍼레이드 | `animation_character_roster` (**5/5 PASS**), `animation_soldier_compare` (**7/7 PASS**) |
 | **Hero 배경맵 & 10종 Lua 복원** | 완료 | `hero_environment.glb` (4,992정점·1,664삼각형·CompleteMap+1m그리드 셰이더), **31클립**, **90개 도킹 라인**, 10종 Lua 로직 1:1 GDScript 복원, 엄폐·등반·난간넘기 좌표/오프셋 교정 | `animation_hero_arena` (**9/9 PASS**) |
 | **4족 절차적 Locomotor** | 완료 | 클립 0개, 28본 프로시저럴 릭 + Walk/Trot/Pace/Gallop 보행 스케줄러 + 지면 접지 월드락(`0.0mm` 슬립) + 4지 2-Bone IK + 제작 과정 리플레이 | `animation_quadruped_locomotor` (**12/12 PASS**) |
 | **AI Pathfinding · Spatial Analysis · AI+Behavior** | 완료 | 다층 2.5D NavGraph(**1,823 NavNodes · 13,472 WalkEdges**), 6종 공간 분석기 **140개 UserEdges**, 4종 `CostModifier`, 동적 장애물 회피, 텔레포트 없는 **지하 참호(`-3m`)~정상(`+10.25m`) 12/12 기능 자율 완주** | `animation_hero_ai_pathfinding` (**8/8 PASS**) |
-| **로컬 포크 빌드/실행 & 웹 에디터** | 완료 | 원클릭 `.cmd` 3종(엔진/C++ DLL 빌드·테스트·실행), 루프백 전용 `/local-fork`·`/launch-local-editor`·`/launch-local-demo`, 전체 창 `iframe(canvasResizePolicy=2)` 웹 에디터 + HTTPS 외부 터널 | 로컬 포크 7종 핵심 스위트 **61/61 PASS** |
+| **로컬 포크 빌드/실행 & 웹 에디터** | 완료 | 원클릭 `.cmd` 3종(엔진/C++ DLL 빌드·테스트·실행), 루프백 전용 `/local-fork`·`/launch-local-editor`·`/launch-local-demo`, 전체 창 `iframe(canvasResizePolicy=2)` 웹 에디터 + HTTPS 외부 터널 | 로컬 포크 8종 핵심 스위트 **68/68 PASS** |
 
 ---
 
@@ -198,13 +198,19 @@ playforge/animation_studio/
   - **로스터 비교/벤치마크**: `set_use_quantized_16bit(v: bool)`, `run_crowd_benchmark_200() -> Dictionary` (`{agents, bones_per_tick, ms, native}`)
   - **통합 텔레메트리**: `get_state_snapshot() -> Dictionary` (역할별 상태·클립·시간·본 수·좌표·Lua 변수·AI 텔레메트리·4족 발 접지·16-bit 오차 지표 반환)
 
-#### 3) 표준 도킹 패널 3종 (`addons/animation_studio/docks/`) `[확장 추가]`
-| 스크립트 | 기반 클래스 | 시그널 (`signal`) | 공개 메서드 |
-| :--- | :--- | :--- | :--- |
-| `hierarchy_dock.gd` (`AnimStudio · 계층`) | `VBoxContainer` (`@tool`) | `instance_selected(inst: Node3D)`<br>`spawn_requested(role: String, character_id: String)`<br>`focus_requested(inst: Node3D)`<br>`refresh_requested()` | `set_scene_instances(instances, active)`<br>`bind_instance(inst)`<br>`update_live()` |
-| `state_dock.gd` (`AnimStudio · 상태`) | `VBoxContainer` (`@tool`) | `docking_lines_toggled(visible: bool)` | `bind_instance(inst)`<br>`update_live()` |
-| `flow_bottom_panel.gd` (`Animation Flow`) | `VBoxContainer` (`@tool`) | *(내부 캔버스 클릭을 바인딩 인스턴스에 직접 전달)* | `bind_instance(inst)`<br>`update_live()` |
-| `flow_graph_canvas.gd` | `Control` (`@tool`) | `node_clicked(node_id: String)` | `set_flow_state(role, active_state, sub_label)` |
+#### 3) 표준 도킹 패널 · 테마 · Agent 리플레이 저널 (`addons/animation_studio/`)
+| 스크립트 / 클래스 | 변경 성격 | 기반 | 주요 시그널 & 공개 API |
+| :--- | :---: | :--- | :--- |
+| `ui/studio_theme.gd` (`AnimationStudioTheme`) | `[확장 추가]` | `@tool RefCounted` | `design-tokens.json` 팔레트 상수, `get_icon(id, tint, size_px)`, `style_card()`, `style_button()`, `style_kpi_card()`, `style_foot_card()`, `style_banner()` |
+| `icons/*.svg` (16종 벡터 아이콘) | `[확장 추가]` | SVG 16×16 | `hero`, `quadruped`, `character`, `bone`, `ai-path`, `navmesh`, `vault`, `climb`, `leap`, `drop`, `cover`, `focus`, `play`, `pause`, `step`, `benchmark` |
+| `authoring/motion_journal.gd` (`MotionJournal`) | `[확장 추가]` | `@tool RefCounted` | `create(doc)`, `restore(session)`, `record(before, after, meta)`, `undo()`, `redo()`, `inspect(cid)`, `exit_review()`, `fork(cid, label)`, `get_state()`, `get_view()`, `lookup_receipt()`, `export_session()` |
+| `authoring/motion_commands.gd` (`MotionCommands`) | `[확장 추가]` | `@tool RefCounted` | 8종 명령 검증(`set_parameters`~`move_node`), `motion_read_state()`, `motion_preview_commands()`, `motion_apply_commands()`, `motion_history()`, `motion_review_snapshot()`, `motion_fork_snapshot()`, `motion_undo_transaction()`, `motion_redo_transaction()`, `replace_step()`, `run_next_agent_step()`, `run_all_remaining_agent_steps()`, `record_frame_trace()` |
+| `docks/hierarchy_dock.gd` (`AnimStudio · 계층`) | `[확장 수정]` | `@tool VBoxContainer` | `instance_selected`, `spawn_requested`, `focus_requested`, `follow_toggled`, `refresh_requested` / 리치 인스턴스 카드, `+ 배치`/`포커스`/`따라가기`, 본 포즈 인스펙터 카드 |
+| `docks/state_dock.gd` (`AnimStudio · 상태`) | `[확장 수정]` | `@tool VBoxContainer` | `docking_lines_toggled`, `select_hero_requested`, `quick_spawn_requested`, `authoring_changed` / Hero+AI(6미션·CostModifier·5 UserEdge 칩·12/12·Physics Lab)·Quadruped(2×2 접지)·Character(2×2 KPI·백엔드 배너)·Empty State |
+| `docks/flow_bottom_panel.gd` (`Animation Flow`) | `[확장 수정]` | `@tool VBoxContainer` | `authoring_changed` / 트랜스포트 바 + 3종 서브탭(`select_sub_tab(0|1|2)`), `refresh_authoring_views()` |
+| `docks/flow_graph_canvas.gd` | `[확장 수정]` | `@tool Control` | `node_clicked(node_id)` / `set_flow_state(role, active_state, sub_label, next_ai_state)`, `set_transition_durations()` (5상태 노드·`AI 예정` 점선 배지·화살표) |
+| `docks/event_timeline_canvas.gd` | `[확장 추가]` | `@tool HBoxContainer` | `authoring_changed` / 3트랙 Behaviour Event 보드 + 인라인 속성 편집기 + Frame Trace(`sourceCommitId`/`sourceRevision`) |
+| `docks/agent_replay_panel.gd` | `[확장 추가]` | `@tool VBoxContainer` | `authoring_changed` / 4단계 Agent 실행, 작업 이력·읽기 전용 Replay 스크러버, Diff·수정안 미리보기·분기 교체(`b001`), Undo/Redo, 세션 JSON 저장/복원 |
 
 ---
 
@@ -275,4 +281,5 @@ playforge/animation_studio/
 | `animation_hero_arena` | `tests/hero_arena_lua_verify.gd` | `Environment.glb` 트라이메시·90 도킹 라인·10종 Lua 전 동작 | **9/9 PASS** |
 | `animation_hero_ai_pathfinding` | `tests/hero_ai_pathfinding_verify.gd` | Spatial Analysis 140 UserEdges·3D A\*·CostModifier·12/12 자율 완주 | **8/8 PASS** |
 | `animation_editor_docks` | `tests/editor_docks_verify.gd` | `hero_arena_world.tscn` 4인스턴스·3종 도크 연동·동적 스폰 | **7/7 PASS** |
+| `animation_motion_v3` | `tests/motion_journal_v3_verify.gd` | 16종 SVG·테마·4단계 Agent 저널·읽기전용 검토·`b001` 분기·멱등성·JSON 체크섬·3D 오버레이·3서브탭 | **7/7 PASS** |
 | *(코어·갤러리 스위트)* | `coexistence`, `graph_rewind`, `crowd_benchmark`, `active_ragdoll`, `havok_demo`, `hero_behavior`, `hero_parity`, `hero_same_asset`, `animation_gallery`, `native_parity` | 포즈 공존·Rewind·65×200 벤치마크·랙돌·138종 Havok Behavior 갤러리 | 전체 구현 완료 |
