@@ -259,3 +259,24 @@ Havok 2015.1.0-r1 SDK의 `Animation`(62소스·276항목) + `Behavior`(59소스�
 | **`quadruped_siegefiend`** | SiegeFiend (34본) | 250 | **6 / 6 (`Δ0틱 · 0.00ms`)** | **100.0%** | **0.02 ms** | **34.98 mm** (`2.02°`) | `Pelvis 2.46 mm` *(4다리 FootIK 차이 포함 84.71 mm)* |
 
 - **검증**: 신규 회귀 스위트 `animation_havok_behavior_1to1`([havok_behavior_1to1_verify.gd](animation_studio/tests/havok_behavior_1to1_verify.gd) `[확장 추가]`) **20/20 PASS** 포함 Animation Studio 12종 전체 스위트 통과 및 RTX 4070 실 GPU 5종 스크린샷 육안 검수 완료.
+
+## 실제 Havok 2015.1.0-r1 공식 Behavior 데모 빌드·실행·DX11 실스크린샷 및 60fps 결정론 데이터 수집 (Hero·Soldier 47종 전수) · 2026-11-27
+
+Havok SDK 2015.1.0-r1의 `Demo/Demos/Behavior/` 전체 중 **Hero 및 Soldier 에셋을 사용하는 모든 Behavior 데모(43개 원본 `.cpp` · 활성 등록 47종 전수)**를 SDK 파일 무수정 상태로 실제 공식 `DemoCommon` 프레임워크 + DX11 하드웨어 렌더러(`hkgDx11.lib`)와 링크·빌드하여, **독립 OS 프로세스 2회 실행 교차 결정론 검증 @ 정확 `60.000 Hz`** 및 **실제 DX11 3D GPU 스크린샷(`1280×720`)**을 전수 수집했다.
+
+- **엔진 영향 범위**: **`[엔진 수정]` 없음 (0건)**, **`[엔진 추가]` 없음 (0건)** — Havok SDK 파일 및 Godot 엔진 코어 모두 무수정.
+- **신규 빌드·캡처·수집 자산 (`[확장 추가]` / `[확장 수정]`)**:
+  - `[확장 추가]` `compare/build_havok_real_demos.py`: 공식 `DemoCommon` 45개 + Hero/Soldier Behavior 원본 `.cpp` 43개 + 하네스 1개(총 89 TU)를 VS2022 `cl /MP` 증분 빌드하고 `Lib/x64_vs2015/release/*.lib`와 링크해 `%TEMP%\codex_havok_real_demos\havok_hero_soldier_demos.exe` 생성.
+  - `[확장 추가]` `compare/havok_real_demo_capture.cpp` (`BehaviorDemoAccessor`, `RealDemoEventListener`, `InMemoryStateFileSystem`):
+    - VS2022 Win10 SDK `dxguid.lib`와 `hkgDx11.lib`(DirectX June 2010 / `D3Dcompiler_43.dll`) 간의 `IID_ID3D11ShaderReflection` GUID 불일치를 `{0A233719-3960-4578-9D7C-203B8B1D9CC1}`로 정합해 실제 DX11 셰이더 리플렉션·3D 스킨·스카이박스·3D 디버그 오버레이·HUD 실렌더링 복원.
+    - `m_input->getGamePad(0)` 강제 버튼(`ClipGeneratorModesDemo`)을 `m_env->m_gamePad`로 전달·즉시 해제하고, `SaveBehaviorStateDemo`의 버퍼링 미플러시(`internalState.hkt`)를 `InMemoryStateFileSystem`으로 SDK 무수정·디스크 무기록 해결.
+    - `hkbWorldListener::eventsRaisedCallback`, 활성 상태머신/클립, 루트(Havok·Godot Y-up), 6랜드마크 본, 카메라, 64-bit FNV-1a 전체 스켈레톤 `pose_hash`/`trajectory_hash`/`event_hash`를 정확 `1/60s` 싱글스레드 고정 틱으로 기록.
+  - `[확장 추가]` `compare/run_havok_real_demo_capture.py`: 등록된 47종 전체를 데모별 독립 프로세스 2회(Run A: 풀 60fps JSON + DX11 BMP→PNG / Run B: `--no-shots --no-json` 해시 검증)로 일괄 실행하고 마스터 비교 데이터셋과 컨택트 시트를 자동 생성(완료 후 SDK 폴더 임시 파일 자동 정리).
+  - `[확장 추가]` `compare/.gitignore`: 대용량 원시 틱 트레이스·개별 220장 풀해상도 PNG 출력(`compare/captures/`) 제외.
+  - `[확장 추가]` `compare/assets/havok_real_demo_manifest.json` (`1,360.9 KB`): 47종 전수 메타데이터, 교차 프로세스 결정론 해시, 무손실 이벤트 타임라인(1,545건), 상태 전이, 60fps 키프레임(루트/6랜드마크/클립/포즈 해시), 카메라, 스크린샷 통계 내재화.
+  - `[확장 추가]` `compare/assets/havok_real_hero_contact_sheet.png` (25종 Hero / Hero+Soldier DX11 그리드) · `compare/assets/havok_real_soldier_contact_sheet.png` (22종 Soldier DX11 그리드).
+  - `[확장 수정]` `tests/havok_behavior_1to1_verify.gd`: 47종 매니페스트·결정론·비공백 스크린샷·컨택트 시트·`Seeded==Unseeded` 해시 동일성 자동 검증 4항목 추가 (**24/24 PASS**).
+- **전수 수집 결과 요약 (`47 / 47` = `100.0%` 통과, 실패 `0건`)**:
+  - **대상 범위**: 등록 활성 **47종** = Hero 전용 **23종** + Hero+Soldier 공용 **2종**(`CharacterToObjectAttachment` Keyframe/Ragdoll) = Hero 계 **25종**, Soldier 전용 **22종** *(SDK 자체 비활성 3파일: `DockingHangingDemo.cpp` `#if !defined(HK_PLATFORM_X64)`, `DockingReRooting.cpp` SDK 주석 처리, `Determinism.cpp` `#ifdef HK_ENABLE_DETERMINISM_CHECKS`)*.
+  - **결정론 검증**: **47 / 47 (`100.0%`)** 독립 2프로세스 간 `executed_ticks`, `total_events`, 64-bit `final_pose_hash`, `trajectory_hash`, `event_hash` 비트 단위 완전 일치 (`SymbolLinking/Seeded` == `Unseeded` `pose=b202c89888` 일치 포함).
+  - **규모 및 실렌더링**: 총 **`15,665` 틱**(`261.08초` @ `60.000 Hz`), 총 **`1,545` 이벤트**, 실제 DX11 3D 스크린샷 **`220 / 220`장** 비공백 검증 및 Hero(25)·Soldier(22) 컨택트 시트 육안 검수 완료.

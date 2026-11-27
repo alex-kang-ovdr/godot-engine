@@ -8,6 +8,9 @@ extends SceneTree
 const Runner := preload("res://compare/behavior_1to1_runner.gd")
 const Store := preload("res://characters/character_store.gd")
 const COMPARE_SCENE := "res://compare/havok_1to1_compare.tscn"
+const REAL_MANIFEST_JSON := "res://compare/assets/havok_real_demo_manifest.json"
+const HERO_CONTACT_SHEET := "res://compare/assets/havok_real_hero_contact_sheet.png"
+const SOLDIER_CONTACT_SHEET := "res://compare/assets/havok_real_soldier_contact_sheet.png"
 
 var _pass := 0
 var _fail := 0
@@ -18,6 +21,7 @@ func _initialize() -> void:
 	_verify_sdk_free_assets()
 	_verify_all_five_scenarios()
 	_verify_interactive_viewer()
+	_verify_real_havok_47_demos_dataset()
 	Runner.clear_caches()
 	Store.clear_caches()
 	_emit("SUMMARY", {"suite": "animation_havok_behavior_1to1", "pass": _pass, "fail": _fail})
@@ -150,6 +154,81 @@ func _verify_interactive_viewer() -> void:
 	viewer.cleanup()
 	root.remove_child(viewer)
 	viewer.free()
+
+
+func _verify_real_havok_47_demos_dataset() -> void:
+	var exists := FileAccess.file_exists(REAL_MANIFEST_JSON)
+	_check("real_havok_manifest_exists", exists, REAL_MANIFEST_JSON)
+	if not exists:
+		return
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(REAL_MANIFEST_JSON))
+	var ok_dict := parsed is Dictionary
+	if not ok_dict:
+		_check("real_havok_manifest_valid_json", false, "invalid json")
+		return
+	var manifest: Dictionary = parsed as Dictionary
+	var totals: Dictionary = manifest.get("totals", {}) as Dictionary
+	var demos: Array = manifest.get("demos", []) as Array
+
+	var counts_ok := (
+		int(totals.get("registered_demos", 0)) == 47
+		and int(totals.get("captured_ok", 0)) == 47
+		and int(totals.get("cross_process_deterministic_ok", 0)) == 47
+		and int(totals.get("all_shots_non_blank_ok", 0)) == 47
+		and int(totals.get("hero_demos", 0)) == 25
+		and int(totals.get("soldier_demos", 0)) == 22
+		and int(totals.get("failures", 1)) == 0
+		and demos.size() == 47
+	)
+	_check("real_havok_47_demos_100pct_deterministic_and_non_blank", counts_ok,
+		"captured=%d/47 det=%d/47 non_blank=%d/47 hero=%d soldier=%d shots=%d frames=%d events=%d" % [
+			int(totals.get("captured_ok", 0)),
+			int(totals.get("cross_process_deterministic_ok", 0)),
+			int(totals.get("all_shots_non_blank_ok", 0)),
+			int(totals.get("hero_demos", 0)),
+			int(totals.get("soldier_demos", 0)),
+			int(totals.get("total_screenshots", 0)),
+			int(totals.get("total_frames_simulated", 0)),
+			int(totals.get("total_events_recorded", 0)),
+		])
+
+	var by_path: Dictionary = {}
+	var all_entries_valid := true
+	for item in demos:
+		if not (item is Dictionary):
+			all_entries_valid = false
+			continue
+		var d: Dictionary = item as Dictionary
+		by_path[String(d.get("menu_path", ""))] = d
+		if int(d.get("hz", 0)) != 60 or String(d.get("final_pose_hash", "")).length() != 16:
+			all_entries_valid = false
+		if not bool(d.get("cross_process_deterministic", false)) or not bool(d.get("all_shots_non_blank", false)):
+			all_entries_valid = false
+		if (d.get("keyframes", []) as Array).is_empty():
+			all_entries_valid = false
+
+	var seeded_hash := String((by_path.get("Behavior/UseCase/SymbolLinking/Seeded", {}) as Dictionary).get("final_pose_hash", ""))
+	var unseeded_hash := String((by_path.get("Behavior/UseCase/SymbolLinking/Unseeded", {}) as Dictionary).get("final_pose_hash", ""))
+	var hero_ok := int((by_path.get("Behavior/ShowCase/Hero", {}) as Dictionary).get("executed_ticks", 0)) == 600
+	var clip_ok := int((by_path.get("Behavior/Api/Generators/ClipGenerator/ClipGeneratorModes", {}) as Dictionary).get("total_events", 0)) == 6
+	var save_ok := int((by_path.get("Behavior/Test/Feature/SaveBehaviorState", {}) as Dictionary).get("executed_ticks", 0)) == 180
+	_check("real_havok_47_demos_telemetry_and_parity",
+		all_entries_valid and hero_ok and clip_ok and save_ok and not seeded_hash.is_empty() and seeded_hash == unseeded_hash,
+		"hero_600f=%s clip_6ev=%s save_180f=%s seeded==unseeded=%s" % [str(hero_ok), str(clip_ok), str(save_ok), str(seeded_hash == unseeded_hash)])
+
+	var hero_img := Image.load_from_file(ProjectSettings.globalize_path(HERO_CONTACT_SHEET))
+	var soldier_img := Image.load_from_file(ProjectSettings.globalize_path(SOLDIER_CONTACT_SHEET))
+	var sheets_ok := (
+		hero_img != null and hero_img.get_width() >= 1000 and hero_img.get_height() >= 1000
+		and soldier_img != null and soldier_img.get_width() >= 1000 and soldier_img.get_height() >= 1000
+	)
+	_check("real_havok_contact_sheets_valid", sheets_ok,
+		"hero=%dx%d soldier=%dx%d" % [
+			hero_img.get_width() if hero_img != null else 0,
+			hero_img.get_height() if hero_img != null else 0,
+			soldier_img.get_width() if soldier_img != null else 0,
+			soldier_img.get_height() if soldier_img != null else 0,
+		])
 
 
 func _check(name: String, cond: bool, detail: String = "") -> void:
