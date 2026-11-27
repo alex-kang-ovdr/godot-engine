@@ -1,299 +1,345 @@
 @tool
 extends EditorPlugin
-## Registers the NaturalMotion Morpheme-style Animation Studio as a Main Screen
-## workspace inside both Godot Web Editor (WASM) and Desktop Editor, hosting:
-##   Tab 1: Procedural Quadruped Locomotor (Unreal Engine Locomotor reference)
-##   Tab 2: Hero 85-Bone State-Machine Studio (native GLB/RES)
-## Plus Tools menu entries and live Editor dock virtual-pointer overlay.
+## Standard Godot EditorPlugin for Animation Studio.
+## Uses Godot's native 3D Viewport (no custom main-screen override) and registers
+## three standard dockable editor panels:
+##   - Left Dock  (DOCK_SLOT_LEFT_BR):  "AnimStudio · 계층"
+##   - Right Dock (DOCK_SLOT_RIGHT_BL): "AnimStudio · 상태"
+##   - Bottom Panel:                    "Animation Flow"
+##
+## All three docks automatically synchronize with whichever AnimationStudioInstance
+## node is selected in the 3D Viewport, Scene Tree dock, or Hierarchy dock.
 
-const HeroStudioScene := preload("res://hero/hero_locomotion_studio.tscn")
-const QuadrupedStudioScene := preload("res://quadruped/quadruped_locomotor_studio.tscn")
-const SoldierDemoScene := preload("res://soldier/soldier_demo.tscn")
-const CharacterShowcaseScene := preload("res://characters/character_showcase.tscn")
-const HeroArenaScene := preload("res://hero/arena/hero_arena.tscn")
-const CursorOverlay := preload("res://hero/authoring_cursor_overlay.gd")
-const PLUGIN_MAIN_SCREEN_NAME := "Morpheme Studio"
-const TOOL_MENU_QUADRUPED := "4족 절차적 Locomotor 제작 과정 다시보기"
-const TOOL_MENU_HERO := "Hero 제작 과정 가상 포인터 다시보기"
-const TOOL_MENU_SOLDIER := "Soldier 114본 · M4 데모 비교 열기"
-const TOOL_MENU_ROSTER := "전체 캐릭터 로스터 데모 (28종 GLB/RES)"
-const TOOL_MENU_ARENA := "Hero 배경맵 · Lua 복원 아레나 열기"
+const HierarchyDockScript := preload("res://addons/animation_studio/docks/hierarchy_dock.gd")
+const StateDockScript := preload("res://addons/animation_studio/docks/state_dock.gd")
+const FlowBottomPanelScript := preload("res://addons/animation_studio/docks/flow_bottom_panel.gd")
+const InstanceScript := preload("res://addons/animation_studio/animation_studio_instance.gd")
 
-var _root_shell: VBoxContainer = null
-var _quad_panel: Control = null
-var _hero_panel: Control = null
-var _soldier_panel: Control = null
-var _roster_panel: Control = null
-var _arena_panel: Control = null
-var _btn_quad: Button = null
-var _btn_hero: Button = null
-var _btn_soldier: Button = null
-var _btn_roster: Button = null
-var _btn_arena: Button = null
-var _active_tab: String = "quadruped"
-var _editor_overlay: CursorOverlay = null
-var _docks: Dictionary = {}
+const WORLD_SCENE_PATH := "res://hero/arena/hero_arena_world.tscn"
+const TOOL_OPEN_WORLD := "Animation Studio · 3D 아레나 씬 열기 (표준 뷰포트)"
+const TOOL_SHOW_FLOW := "Animation Studio · Animation Flow 하단 패널 열기"
+const TOOL_OPEN_QUADRUPED := "Animation Studio · 4족 절차적 Locomotor 씬 열기"
+const TOOL_OPEN_HERO := "Animation Studio · Hero 상태머신 스튜디오 씬 열기"
+const TOOL_OPEN_SOLDIER := "Animation Studio · Soldier 114본 · M4 비교 씬 열기"
+const TOOL_OPEN_ROSTER := "Animation Studio · 전체 28종 캐릭터 로스터 씬 열기"
+const TOOL_OPEN_ARENA := "Animation Studio · Hero 배경맵 단독 데모 씬 열기"
+
+var _hierarchy_dock: Control = null
+var _state_dock: Control = null
+var _flow_panel: Control = null
+var _bound_instance: Node3D = null
+var _live_timer: Timer = null
+var _selection_connected: bool = false
+var _spawn_counter: int = 0
+var _initial_focus_done: bool = false
+var _last_bound_pos: Vector3 = Vector3.ZERO
+var _has_last_bound_pos: bool = false
 
 
 func _has_main_screen() -> bool:
-	return true
+	return false
 
 
 func _get_plugin_name() -> String:
-	return PLUGIN_MAIN_SCREEN_NAME
-
-
-func _get_plugin_icon() -> Texture2D:
-	return EditorInterface.get_editor_theme().get_icon("AnimationTree", "EditorIcons")
-
-
-func _make_visible(visible: bool) -> void:
-	if is_instance_valid(_root_shell):
-		_root_shell.visible = visible
-	if not visible and is_instance_valid(_editor_overlay):
-		_editor_overlay.present(false, "assets", "search", "", Rect2(), "", 0.0, true)
+	return "Animation Studio"
 
 
 func _enter_tree() -> void:
-	_root_shell = VBoxContainer.new()
-	_root_shell.name = "MorphemeStudioShell"
-	_root_shell.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_root_shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_root_shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_root_shell.add_theme_constant_override("separation", 2)
-	_root_shell.visible = false
+	_hierarchy_dock = HierarchyDockScript.new()
+	_hierarchy_dock.connect("instance_selected", _on_dock_instance_selected)
+	_hierarchy_dock.connect("spawn_requested", _on_dock_spawn_requested)
+	_hierarchy_dock.connect("focus_requested", _on_dock_focus_requested)
+	_hierarchy_dock.connect("refresh_requested", _refresh_scene_instances)
+	add_control_to_dock(EditorPlugin.DOCK_SLOT_LEFT_BR, _hierarchy_dock)
 
-	var switcher := HBoxContainer.new()
-	switcher.add_theme_constant_override("separation", 6)
-	_root_shell.add_child(switcher)
+	_state_dock = StateDockScript.new()
+	_state_dock.connect("docking_lines_toggled", _on_docking_lines_toggled)
+	add_control_to_dock(EditorPlugin.DOCK_SLOT_RIGHT_BL, _state_dock)
 
-	_btn_quad = Button.new()
-	_btn_quad.text = "4족 절차적 Locomotor (UE 참고 · 28본 · 0클립)"
-	_btn_quad.toggle_mode = true
-	_btn_quad.pressed.connect(func(): _select_tab("quadruped"))
-	switcher.add_child(_btn_quad)
+	_flow_panel = FlowBottomPanelScript.new()
+	add_control_to_bottom_panel(_flow_panel, "Animation Flow")
 
-	_btn_hero = Button.new()
-	_btn_hero.text = "Hero 85본 로코모션 상태머신 (GLB/RES)"
-	_btn_hero.toggle_mode = true
-	_btn_hero.pressed.connect(func(): _select_tab("hero"))
-	switcher.add_child(_btn_hero)
+	add_tool_menu_item(TOOL_OPEN_WORLD, _open_world_scene)
+	add_tool_menu_item(TOOL_SHOW_FLOW, _show_flow_panel)
+	add_tool_menu_item(TOOL_OPEN_QUADRUPED, func(): _open_scene("res://quadruped/quadruped_locomotor_studio.tscn"))
+	add_tool_menu_item(TOOL_OPEN_HERO, func(): _open_scene("res://hero/hero_locomotion_studio.tscn"))
+	add_tool_menu_item(TOOL_OPEN_SOLDIER, func(): _open_scene("res://soldier/soldier_demo.tscn"))
+	add_tool_menu_item(TOOL_OPEN_ROSTER, func(): _open_scene("res://characters/character_showcase.tscn"))
+	add_tool_menu_item(TOOL_OPEN_ARENA, func(): _open_scene("res://hero/arena/hero_arena.tscn"))
 
-	_btn_soldier = Button.new()
-	_btn_soldier.text = "Soldier 114본 · M4 데모 비교 (GLB/RES)"
-	_btn_soldier.toggle_mode = true
-	_btn_soldier.pressed.connect(func(): _select_tab("soldier"))
-	switcher.add_child(_btn_soldier)
+	if not scene_changed.is_connected(_on_scene_changed):
+		scene_changed.connect(_on_scene_changed)
+	var sel := EditorInterface.get_selection()
+	if sel != null and not sel.selection_changed.is_connected(_on_editor_selection_changed):
+		sel.selection_changed.connect(_on_editor_selection_changed)
+		_selection_connected = true
 
-	_btn_roster = Button.new()
-	_btn_roster.text = "전체 캐릭터 로스터 (28종 GLB/RES)"
-	_btn_roster.toggle_mode = true
-	_btn_roster.pressed.connect(func(): _select_tab("roster"))
-	switcher.add_child(_btn_roster)
+	_live_timer = Timer.new()
+	_live_timer.wait_time = 0.08
+	_live_timer.autostart = true
+	_live_timer.timeout.connect(_on_live_tick)
+	add_child(_live_timer)
 
-	_btn_arena = Button.new()
-	_btn_arena.text = "Hero 배경맵 · Lua 복원 (Environment + 10 Lua)"
-	_btn_arena.toggle_mode = true
-	_btn_arena.pressed.connect(func(): _select_tab("arena"))
-	switcher.add_child(_btn_arena)
-
-	var content_host := Control.new()
-	content_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_host.clip_contents = true
-	_root_shell.add_child(content_host)
-
-	_quad_panel = QuadrupedStudioScene.instantiate()
-	_hero_panel = HeroStudioScene.instantiate()
-	_soldier_panel = SoldierDemoScene.instantiate()
-	_roster_panel = CharacterShowcaseScene.instantiate()
-	_arena_panel = HeroArenaScene.instantiate()
-	content_host.add_child(_quad_panel)
-	content_host.add_child(_hero_panel)
-	content_host.add_child(_soldier_panel)
-	content_host.add_child(_roster_panel)
-	content_host.add_child(_arena_panel)
-
-	EditorInterface.get_editor_main_screen().add_child(_root_shell)
-	add_tool_menu_item(TOOL_MENU_QUADRUPED, _open_quadruped_replay)
-	add_tool_menu_item(TOOL_MENU_HERO, _open_hero_replay)
-	add_tool_menu_item(TOOL_MENU_SOLDIER, _open_soldier_compare)
-	add_tool_menu_item(TOOL_MENU_ROSTER, _open_character_roster)
-	add_tool_menu_item(TOOL_MENU_ARENA, _open_hero_arena)
-	_setup_editor_overlay()
-
-	if _quad_panel.has_method("set_authoring_mode"):
-		_quad_panel.editor_cursor_callback = _on_authoring_cursor
-	if _hero_panel.has_method("set_authoring_mode"):
-		_hero_panel.editor_cursor_callback = _on_authoring_cursor
-
-	_select_tab("quadruped")
-	print("ANIMATION_STUDIO_EDITOR_READY main_screen=%s active_tab=%s web=%s" % [PLUGIN_MAIN_SCREEN_NAME, _active_tab, OS.has_feature("web")])
-	if OS.has_feature("web"):
-		call_deferred("_open_quadruped_replay")
+	print("ANIMATION_STUDIO_EDITOR_READY mode=standard_docks scene=hero_arena_world.tscn web=%s" % OS.has_feature("web"))
+	call_deferred("_bootstrap_workspace")
 
 
 func _exit_tree() -> void:
-	remove_tool_menu_item(TOOL_MENU_QUADRUPED)
-	remove_tool_menu_item(TOOL_MENU_HERO)
-	remove_tool_menu_item(TOOL_MENU_SOLDIER)
-	remove_tool_menu_item(TOOL_MENU_ROSTER)
-	remove_tool_menu_item(TOOL_MENU_ARENA)
-	if is_instance_valid(_editor_overlay):
-		_editor_overlay.queue_free()
-	_editor_overlay = null
-	_docks.clear()
-	if is_instance_valid(_root_shell):
-		_root_shell.queue_free()
-	_root_shell = null
-	_quad_panel = null
-	_hero_panel = null
-	_soldier_panel = null
-	_roster_panel = null
-	_arena_panel = null
+	remove_tool_menu_item(TOOL_OPEN_WORLD)
+	remove_tool_menu_item(TOOL_SHOW_FLOW)
+	remove_tool_menu_item(TOOL_OPEN_QUADRUPED)
+	remove_tool_menu_item(TOOL_OPEN_HERO)
+	remove_tool_menu_item(TOOL_OPEN_SOLDIER)
+	remove_tool_menu_item(TOOL_OPEN_ROSTER)
+	remove_tool_menu_item(TOOL_OPEN_ARENA)
+
+	if scene_changed.is_connected(_on_scene_changed):
+		scene_changed.disconnect(_on_scene_changed)
+	if _selection_connected:
+		var sel := EditorInterface.get_selection()
+		if sel != null and sel.selection_changed.is_connected(_on_editor_selection_changed):
+			sel.selection_changed.disconnect(_on_editor_selection_changed)
+		_selection_connected = false
+
+	if is_instance_valid(_live_timer):
+		_live_timer.queue_free()
+	_live_timer = null
+
+	if is_instance_valid(_hierarchy_dock):
+		remove_control_from_docks(_hierarchy_dock)
+		_hierarchy_dock.queue_free()
+	_hierarchy_dock = null
+
+	if is_instance_valid(_state_dock):
+		remove_control_from_docks(_state_dock)
+		_state_dock.queue_free()
+	_state_dock = null
+
+	if is_instance_valid(_flow_panel):
+		remove_control_from_bottom_panel(_flow_panel)
+		_flow_panel.queue_free()
+	_flow_panel = null
+	_bound_instance = null
 
 
-func _select_tab(tab: String) -> void:
-	_active_tab = tab
-	var is_quad := tab == "quadruped"
-	var is_hero := tab == "hero"
-	var is_soldier := tab == "soldier"
-	var is_roster := tab == "roster"
-	var is_arena := tab == "arena"
-	if is_instance_valid(_btn_quad):
-		_btn_quad.set_pressed_no_signal(is_quad)
-	if is_instance_valid(_btn_hero):
-		_btn_hero.set_pressed_no_signal(is_hero)
-	if is_instance_valid(_btn_soldier):
-		_btn_soldier.set_pressed_no_signal(is_soldier)
-	if is_instance_valid(_btn_roster):
-		_btn_roster.set_pressed_no_signal(is_roster)
-	if is_instance_valid(_btn_arena):
-		_btn_arena.set_pressed_no_signal(is_arena)
-	if is_instance_valid(_quad_panel):
-		_quad_panel.visible = is_quad
-		_quad_panel.call("set_playing", is_quad)
-	if is_instance_valid(_hero_panel):
-		_hero_panel.visible = is_hero
-		_hero_panel.call("set_playing", is_hero)
-	if is_instance_valid(_soldier_panel):
-		_soldier_panel.visible = is_soldier
-		_soldier_panel.call("set_playing", is_soldier)
-	if is_instance_valid(_roster_panel):
-		_roster_panel.visible = is_roster
-		_roster_panel.call("set_playing", is_roster)
-	if is_instance_valid(_arena_panel):
-		_arena_panel.visible = is_arena
-		_arena_panel.call("set_playing", is_arena)
+func _bootstrap_workspace() -> void:
+	var root := EditorInterface.get_edited_scene_root()
+	if root == null or root.scene_file_path != WORLD_SCENE_PATH:
+		if ResourceLoader.exists(WORLD_SCENE_PATH):
+			EditorInterface.open_scene_from_path(WORLD_SCENE_PATH)
+	EditorInterface.set_main_screen_editor("3D")
+	_activate_all_studio_docks()
+	call_deferred("_refresh_scene_instances")
+	var t := get_tree().create_timer(0.8)
+	t.timeout.connect(_activate_all_studio_docks)
 
 
-func _open_hero_arena() -> void:
-	if not is_instance_valid(_root_shell):
+func _activate_all_studio_docks() -> void:
+	_activate_dock_tab(_hierarchy_dock)
+	_activate_dock_tab(_state_dock)
+	_show_flow_panel()
+
+
+func _activate_dock_tab(ctrl: Control) -> void:
+	if not is_instance_valid(ctrl):
 		return
-	if OS.has_feature("web"):
-		EditorInterface.set_distraction_free_mode(true)
-	EditorInterface.set_main_screen_editor(PLUGIN_MAIN_SCREEN_NAME)
-	_root_shell.visible = true
-	_select_tab("arena")
-	_arena_panel.call("set_playing", true)
+	var p := ctrl.get_parent()
+	if p is TabContainer:
+		(p as TabContainer).current_tab = ctrl.get_index()
 
 
-func _open_character_roster() -> void:
-	if not is_instance_valid(_root_shell):
+func _open_world_scene() -> void:
+	if ResourceLoader.exists(WORLD_SCENE_PATH):
+		EditorInterface.open_scene_from_path(WORLD_SCENE_PATH)
+	EditorInterface.set_main_screen_editor("3D")
+	_show_flow_panel()
+	call_deferred("_refresh_scene_instances")
+
+
+func _open_scene(path: String) -> void:
+	if ResourceLoader.exists(path):
+		EditorInterface.open_scene_from_path(path)
+	call_deferred("_refresh_scene_instances")
+
+
+func _show_flow_panel() -> void:
+	if is_instance_valid(_flow_panel):
+		make_bottom_panel_item_visible(_flow_panel)
+
+
+func _on_scene_changed(_scene_root: Node) -> void:
+	_initial_focus_done = false
+	call_deferred("_refresh_scene_instances")
+
+
+func _on_editor_selection_changed() -> void:
+	var sel := EditorInterface.get_selection()
+	if sel == null:
 		return
-	if OS.has_feature("web"):
-		EditorInterface.set_distraction_free_mode(true)
-	EditorInterface.set_main_screen_editor(PLUGIN_MAIN_SCREEN_NAME)
-	_root_shell.visible = true
-	_select_tab("roster")
-	_roster_panel.call("set_playing", true)
+	var nodes := sel.get_selected_nodes()
+	for n in nodes:
+		var inst := _find_enclosing_instance(n)
+		if inst != null:
+			_bind_instance(inst)
+			return
 
 
-func _open_soldier_compare() -> void:
-	if not is_instance_valid(_root_shell):
+func _find_enclosing_instance(node: Node) -> Node3D:
+	var cur: Node = node
+	while cur != null:
+		if cur is Node3D and cur.has_method("get_state_snapshot") and cur.has_method("get_skeleton"):
+			return cur as Node3D
+		cur = cur.get_parent()
+	return null
+
+
+func _collect_scene_instances() -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	var root := EditorInterface.get_edited_scene_root()
+	if root == null:
+		return out
+	_walk_collect(root, out)
+	return out
+
+
+func _walk_collect(node: Node, out: Array[Node3D]) -> void:
+	if node is Node3D and node.has_method("get_state_snapshot") and node.has_method("get_skeleton"):
+		out.append(node as Node3D)
 		return
-	if OS.has_feature("web"):
-		EditorInterface.set_distraction_free_mode(true)
-	EditorInterface.set_main_screen_editor(PLUGIN_MAIN_SCREEN_NAME)
-	_root_shell.visible = true
-	_select_tab("soldier")
-	_soldier_panel.call("set_compare_mode", true)
-	_soldier_panel.call("set_playing", true)
+	for c in node.get_children():
+		_walk_collect(c, out)
 
 
-func _open_quadruped_replay() -> void:
-	if not is_instance_valid(_root_shell):
+func _refresh_scene_instances() -> void:
+	var instances := _collect_scene_instances()
+	var active: Node3D = null
+
+	# Prefer currently selected AnimationStudioInstance in Editor
+	var sel := EditorInterface.get_selection()
+	if sel != null:
+		for n in sel.get_selected_nodes():
+			var enc := _find_enclosing_instance(n)
+			if enc != null and instances.has(enc):
+				active = enc
+				break
+
+	if active == null and is_instance_valid(_bound_instance) and instances.has(_bound_instance):
+		active = _bound_instance
+	if active == null and not instances.is_empty():
+		active = instances[0]
+
+	if is_instance_valid(_hierarchy_dock):
+		_hierarchy_dock.call("set_scene_instances", instances, active)
+	_bind_instance(active)
+
+	if active != null and not _initial_focus_done:
+		_initial_focus_done = true
+		_select_in_editor(active)
+		call_deferred("_frame_3d_viewport_on", active)
+
+
+func _bind_instance(inst: Node3D) -> void:
+	_bound_instance = inst
+	_has_last_bound_pos = is_instance_valid(inst)
+	if _has_last_bound_pos:
+		_last_bound_pos = inst.global_position
+	if is_instance_valid(_hierarchy_dock):
+		_hierarchy_dock.call("bind_instance", inst)
+	if is_instance_valid(_state_dock):
+		_state_dock.call("bind_instance", inst)
+	if is_instance_valid(_flow_panel):
+		_flow_panel.call("bind_instance", inst)
+
+
+func _select_in_editor(inst: Node3D) -> void:
+	var sel := EditorInterface.get_selection()
+	if sel == null or not is_instance_valid(inst):
 		return
-	if OS.has_feature("web"):
-		EditorInterface.set_distraction_free_mode(true)
-	EditorInterface.set_main_screen_editor(PLUGIN_MAIN_SCREEN_NAME)
-	_root_shell.visible = true
-	_select_tab("quadruped")
-	_quad_panel.call("set_authoring_mode", true)
-	_quad_panel.call("seek_authoring", 0.0, true)
-	_quad_panel.call("set_playing", true)
+	sel.clear()
+	sel.add_node(inst)
 
 
-func _open_hero_replay() -> void:
-	if not is_instance_valid(_root_shell):
+func _on_dock_instance_selected(inst: Node3D) -> void:
+	if not is_instance_valid(inst):
 		return
-	if OS.has_feature("web"):
-		EditorInterface.set_distraction_free_mode(true)
-	EditorInterface.set_main_screen_editor(PLUGIN_MAIN_SCREEN_NAME)
-	_root_shell.visible = true
-	_select_tab("hero")
-	_hero_panel.call("set_authoring_mode", true)
-	_hero_panel.call("seek_authoring", 0.0, true)
-	_hero_panel.call("set_playing", true)
+	_select_in_editor(inst)
+	_bind_instance(inst)
 
 
-func _setup_editor_overlay() -> void:
-	var base := EditorInterface.get_base_control()
-	if base == null:
+func _on_dock_focus_requested(inst: Node3D) -> void:
+	if not is_instance_valid(inst):
 		return
-	_docks.clear()
-	var scene_docks := base.find_children("*", "SceneTreeDock", true, false)
-	if not scene_docks.is_empty():
-		_docks["scene"] = scene_docks[0]
-	var files := EditorInterface.get_file_system_dock()
-	if files != null:
-		_docks["filesystem"] = files
-	var insp: Node = EditorInterface.get_inspector()
-	while insp != null and not insp.is_class("InspectorDock"):
-		insp = insp.get_parent()
-	if insp != null:
-		_docks["inspector"] = insp
-	_docks["viewport"] = EditorInterface.get_editor_main_screen()
-
-	_editor_overlay = CursorOverlay.new()
-	base.add_child(_editor_overlay)
+	EditorInterface.set_main_screen_editor("3D")
+	_select_in_editor(inst)
+	_bind_instance(inst)
+	_frame_3d_viewport_on(inst)
 
 
-func _on_authoring_cursor(active: bool, snap: Dictionary) -> void:
-	if not is_instance_valid(_editor_overlay):
+func _frame_3d_viewport_on(inst: Node3D) -> void:
+	if not is_instance_valid(inst):
 		return
-	var base := EditorInterface.get_base_control()
-	if not active or snap.is_empty() or base == null or not is_instance_valid(_root_shell) or not _root_shell.is_visible_in_tree():
-		_editor_overlay.present(false, "assets", "search", "", Rect2(), "", 0.0, true)
+	var main_screen := EditorInterface.get_editor_main_screen()
+	if main_screen == null:
 		return
-	var step: Dictionary = snap.get("step", {})
-	var dock_key := str(step.get("editor_dock", "bottom"))
-	if dock_key in ["bottom", "viewport"] or not _docks.has(dock_key):
-		_editor_overlay.present(false, "assets", "search", "", Rect2(), "", 0.0, true)
+	# Trigger Godot's standard Node3DEditorViewport "Focus Selection" (VIEW_CENTER_TO_SELECTION = 10)
+	var vps := main_screen.find_children("*", "Node3DEditorViewport", true, false)
+	if vps.is_empty():
 		return
-	var dock_ctrl := _docks[dock_key] as Control
-	if not is_instance_valid(dock_ctrl) or not dock_ctrl.is_visible_in_tree():
-		_editor_overlay.present(false, "assets", "search", "", Rect2(), "", 0.0, true)
+	var vp0: Node = vps[0]
+	for mb in vp0.find_children("*", "MenuButton", true, false):
+		var popup: PopupMenu = (mb as MenuButton).get_popup()
+		if popup != null and popup.item_count > 12:
+			for i in popup.item_count:
+				var txt := popup.get_item_text(i).to_lower()
+				if txt.contains("focus selection") or txt.contains("선택에 초점"):
+					popup.id_pressed.emit(popup.get_item_id(i))
+					return
+
+
+func _on_dock_spawn_requested(role: String, character_id: String) -> void:
+	var root := EditorInterface.get_edited_scene_root()
+	if root == null:
+		_open_world_scene()
 		return
-	var gr := dock_ctrl.get_global_rect()
-	var local_rect := Rect2(gr.position - base.global_position, gr.size)
-	_editor_overlay.present(
-		true,
-		str(step.get("role", "assets")),
-		str(step.get("phase", "search")),
-		str(step.get("caption", "")),
-		local_rect,
-		str(step.get("target_label", "")),
-		float(snap.get("click_pulse", 0.0)),
-		false
-	)
+	_spawn_counter += 1
+	var inst := Node3D.new()
+	inst.set_script(InstanceScript)
+	var base_name := "Hero_Arena" if role == "hero_arena" else ("Quadruped" if role == "quadruped" else character_id.capitalize())
+	inst.name = "%s_%d" % [base_name, _spawn_counter]
+	var angle := float(_spawn_counter) * 1.15
+	inst.position = Vector3(cos(angle) * 2.4, 0.0, sin(angle) * 2.2)
+	inst.set("role", role)
+	inst.set("character_id", character_id)
+	inst.set("playing", true)
+	inst.set("auto_demo", true)
+	root.add_child(inst)
+	inst.owner = root
+	EditorInterface.set_main_screen_editor("3D")
+	_refresh_scene_instances()
+	_select_in_editor(inst)
+	_bind_instance(inst)
+	_frame_3d_viewport_on(inst)
+
+
+func _on_docking_lines_toggled(show_lines: bool) -> void:
+	var root := EditorInterface.get_edited_scene_root()
+	if root == null:
+		return
+	for c in root.find_children("*", "", true, false):
+		if c.has_method("refresh_docking_lines"):
+			c.set("show_docking_lines", show_lines)
+
+
+func _on_live_tick() -> void:
+	if is_instance_valid(_bound_instance):
+		var cur_p := _bound_instance.global_position
+		if _has_last_bound_pos and cur_p.distance_to(_last_bound_pos) > 2.5:
+			_frame_3d_viewport_on(_bound_instance)
+		_last_bound_pos = cur_p
+		_has_last_bound_pos = true
+	if is_instance_valid(_hierarchy_dock):
+		_hierarchy_dock.call("update_live")
+	if is_instance_valid(_state_dock):
+		_state_dock.call("update_live")
+	if is_instance_valid(_flow_panel):
+		_flow_panel.call("update_live")

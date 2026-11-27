@@ -432,7 +432,10 @@ func vault_low_wall(line: Dictionary, distance: float, raycast_fn: Callable) -> 
 	action_end_pos = Vector3(closest.x + cross_dir.x * 1.45, land_y, closest.z + cross_dir.z * 1.45)
 	action_start_yaw = hero_yaw
 	action_end_yaw = atan2(cross_dir.x, cross_dir.z)
-	action_arc_height = maxf(0.45, (closest.y - minf(hero_pos.y, land_y)) + 0.35)
+	# vault_idle / vault_low already animate pelvis upward by ~0.5m over a 1.06m railing;
+	# only add extra vertical lift if railing exceeds 1.15m above ground!
+	var barrier_h := closest.y - minf(hero_pos.y, land_y)
+	action_arc_height = maxf(0.0, barrier_h - 1.15)
 	state["active_state"] = "Vaulting"
 	state["active_clip"] = "vault_idle" if distance < 2.5 else "vault_low"
 	state_timer = 0.0
@@ -454,11 +457,14 @@ func jump_to_platform(line: Dictionary) -> bool:
 
 	var closest := LinesScript.closest_point_on_line(line, hero_pos)
 	var n: Vector3 = line["edge_normal"]
-	action_start_pos = hero_pos
-	action_end_pos = closest + n * 0.32 + Vector3(0.0, -1.55, 0.0)
+	# In jump_grab_platform, frame 0 has feet at local Y = -2.82 and final frame has hands at local Y = +0.02, Z = 0.00!
+	# Therefore, origin (0,0,0) IS the exact ledge lip (closest.y) — zero -1.55m sinking!
+	# Start origin at max(ground_y + 2.80, closest.y) so feet begin cleanly on the ground and hands lock onto the exact lip.
+	action_start_pos = Vector3(hero_pos.x, hero_pos.y + 2.80, hero_pos.z)
+	action_end_pos = closest + n * 0.04
 	action_start_yaw = hero_yaw
 	action_end_yaw = atan2(-n.x, -n.z)
-	action_arc_height = 0.35
+	action_arc_height = 0.0
 	state["active_state"] = "Climbing"
 	state["active_clip"] = "jump_grab_platform"
 	state_timer = 0.0
@@ -480,6 +486,10 @@ func try_catch_platform() -> bool:
 	line_world.set_line_docking_target(line)
 	variables["PlatformStartState"] = 1
 	variables["ClimbAnimationIndex"] = 1 if int(line["line_type"]) == LinesScript.LINE_TYPE_LEDGE else 0
+	var closest := LinesScript.closest_point_on_line(line, hero_pos)
+	var n: Vector3 = line["edge_normal"]
+	hero_pos = closest + n * 0.04
+	hero_yaw = atan2(-n.x, -n.z)
 	state["active_state"] = "Hanging"
 	state["active_clip"] = "platform_idle"
 	_log_event("CatchPlatform")
@@ -489,17 +499,17 @@ func try_catch_platform() -> bool:
 func undock_platform(raycast_fn: Callable) -> bool:
 	if line_world.docking_target.is_empty():
 		return false
-	var from := hero_pos - get_hero_forward() * 0.75 + Vector3(0.0, 0.5, 0.0)
-	var to := from + Vector3(0.0, -6.5, 0.0)
+	var from := hero_pos - get_hero_forward() * 0.75 + Vector3(0.0, -0.5, 0.0)
+	var to := from + Vector3(0.0, -8.0, 0.0)
 	var hit: Dictionary = raycast_fn.call(from, to) if raycast_fn.is_valid() else {"hit": true, "position": Vector3(from.x, 0.0, from.z)}
 	if not bool(hit.get("hit", false)):
 		return false
 	line_world.set_plane_docking_target(Vector3.UP, hit["position"])
-	action_start_pos = hero_pos
+	action_start_pos = Vector3(hero_pos.x, maxf((hit["position"] as Vector3).y, hero_pos.y - 2.1), hero_pos.z)
 	action_end_pos = hit["position"]
 	action_start_yaw = hero_yaw
 	action_end_yaw = hero_yaw
-	action_arc_height = 0.1
+	action_arc_height = 0.05
 	state["active_state"] = "Drop"
 	state["active_clip"] = "platform_drop"
 	state_timer = 0.0
@@ -525,10 +535,13 @@ func take_cover() -> bool:
 	var line_dir := ((line["b"] as Vector3) - (line["a"] as Vector3)).normalized()
 	variables["IntoCoverStartState"] = 1 if line_dir.dot(get_hero_forward()) > 0.0 else 0
 
+	# Geometric audit of Environment.glb: cover wall solid sits on +n (+0.06m..+0.56m), open air is on -n!
+	# In cover_low_idle / cover_high_idle, Hero's back is at local Z = 0 and knees/feet extend into +Z (+0.00..+0.65m).
+	# Place Hero flush on the open-air face (-n * 0.04) facing -n (away from wall into open air)!
 	var closest := LinesScript.closest_point_on_line(line, hero_pos)
 	var n: Vector3 = line["edge_normal"]
-	hero_pos = Vector3(closest.x + n.x * 0.35, closest.y, closest.z + n.z * 0.35)
-	hero_yaw = atan2(n.x, n.z)
+	hero_pos = Vector3(closest.x - n.x * 0.04, closest.y, closest.z - n.z * 0.04)
+	hero_yaw = atan2(-n.x, -n.z)
 	state["active_state"] = "Cover"
 	state["active_clip"] = "cover_high_idle" if int(variables["DockingHeightSelector"]) == 1 else "cover_low_idle"
 	state["docked_speed"] = 0.0
@@ -555,10 +568,10 @@ func cover_to_cover() -> bool:
 	var closest := LinesScript.closest_point_on_line(line, hero_pos)
 	var n: Vector3 = line["edge_normal"]
 	action_start_pos = hero_pos
-	action_end_pos = Vector3(closest.x + n.x * 0.35, closest.y, closest.z + n.z * 0.35)
+	action_end_pos = Vector3(closest.x - n.x * 0.04, closest.y, closest.z - n.z * 0.04)
 	action_start_yaw = hero_yaw
-	action_end_yaw = atan2(n.x, n.z)
-	action_arc_height = 0.15
+	action_end_yaw = atan2(-n.x, -n.z)
+	action_arc_height = 0.12
 	state["active_state"] = "CoverRoll"
 	state["active_clip"] = "cover_roll"
 	state_timer = 0.0
@@ -598,10 +611,10 @@ func leap_to_platform(line: Dictionary, raycast_fn: Callable) -> bool:
 
 	var n: Vector3 = line["edge_normal"]
 	action_start_pos = hero_pos
-	action_end_pos = closest + n * 0.32 + Vector3(0.0, -1.55, 0.0)
+	action_end_pos = closest + n * 0.04
 	action_start_yaw = hero_yaw
 	action_end_yaw = atan2(-n.x, -n.z)
-	action_arc_height = maxf(0.85, height_diff + 0.75)
+	action_arc_height = maxf(0.45, height_diff * 0.5 + 0.55)
 	state["active_state"] = "Leaping"
 	state["active_clip"] = "leap_ledge"
 	state_timer = 0.0
@@ -722,11 +735,13 @@ func _update_active_state(dt: float, raycast_fn: Callable) -> void:
 				var line := line_world.docking_target
 				var top_pt := LinesScript.closest_point_on_line(line, hero_pos)
 				var n: Vector3 = line["edge_normal"]
-				action_start_pos = hero_pos
-				action_end_pos = Vector3(top_pt.x - n.x * 0.65, top_pt.y, top_pt.z - n.z * 0.65)
+				# platform_climb animates Hero from hanging (Y=-2.32) up to standing (Y=0.0, Z=+0.28) relative to the lip!
+				# Keep root anchored at the exact lip during the clip; bake forward offset upon completion.
+				action_start_pos = top_pt + n * 0.04
+				action_end_pos = top_pt + n * 0.04
 				action_start_yaw = hero_yaw
 				action_end_yaw = hero_yaw
-				action_arc_height = 0.25
+				action_arc_height = 0.0
 				state["active_state"] = "ClimbUp"
 				state["active_clip"] = "platform_climb"
 				state["docked_speed"] = 0.0
@@ -741,7 +756,7 @@ func _update_active_state(dt: float, raycast_fn: Callable) -> void:
 					hero_pos += dir * (spd * 1.15 * dt)
 					var clamped := LinesScript.closest_point_on_line(line, hero_pos)
 					var n: Vector3 = line["edge_normal"]
-					hero_pos = clamped + n * 0.32 + Vector3(0.0, -1.55, 0.0)
+					hero_pos = clamped + n * 0.04
 					state["active_clip"] = "platform_shuffle"
 				else:
 					state["active_clip"] = "platform_idle"
@@ -769,7 +784,7 @@ func _update_active_state(dt: float, raycast_fn: Callable) -> void:
 				hero_pos += dir * (spd * 1.55 * dt)
 				var clamped := LinesScript.closest_point_on_line(line, hero_pos)
 				var n: Vector3 = line["edge_normal"]
-				hero_pos = Vector3(clamped.x + n.x * 0.35, clamped.y, clamped.z + n.z * 0.35)
+				hero_pos = Vector3(clamped.x - n.x * 0.04, clamped.y, clamped.z - n.z * 0.04)
 				state["active_clip"] = "cover_high_walk" if is_high else "cover_low_walk"
 			else:
 				state["active_clip"] = "cover_high_idle" if is_high else "cover_low_idle"
@@ -821,12 +836,22 @@ func _finish_timed_state(act: String) -> void:
 			state["active_state"] = "Hanging"
 			state["active_clip"] = "platform_idle"
 			_log_event("DockedHanging")
-		"ClimbUp", "Drop":
+		"ClimbUp":
+			if not line_world.docking_target.is_empty():
+				var n: Vector3 = line_world.docking_target["edge_normal"]
+				var top_pt := LinesScript.closest_point_on_line(line_world.docking_target, hero_pos)
+				hero_pos = Vector3(top_pt.x - n.x * 0.48, top_pt.y, top_pt.z - n.z * 0.48)
 			line_world.clear_docking_target()
 			variables["LocomotionStartState"] = 1 if gamepad.pad_magnitude > 0.5 else 0
 			state["active_state"] = "Idle"
 			state["active_clip"] = "idle"
-			_log_event("ClimbFinished" if act == "ClimbUp" else "PlatformDropFinished")
+			_log_event("ClimbFinished")
+		"Drop":
+			line_world.clear_docking_target()
+			variables["LocomotionStartState"] = 1 if gamepad.pad_magnitude > 0.5 else 0
+			state["active_state"] = "Idle"
+			state["active_clip"] = "idle"
+			_log_event("PlatformDropFinished")
 		"Vaulting":
 			line_world.clear_docking_target()
 			state["active_state"] = "Idle"

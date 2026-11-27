@@ -163,3 +163,22 @@ Havok SDK 2015.1.0-r1의 공식 Hero 3인칭 액션 어드벤처 테스트 맵(`
   - 스틱 보간(`0.9`)·데드존(`mag²<0.1`)·유지 타이머, 3모드 카메라(3인칭 5.0m / 등반 3.5m / 오버더숄더 Strafe + 벽면 레이캐스트 오클루전), `IsRightFootForward`(좌우 종아리 본 투영), 3프레임 지면 지지 레이캐스트 + `GravityFactor=3.38`, 전방 벽 밀기 감지(`dot<-0.7`), `radialSelectAnimation(4/8)`, `115° Turn180`, `jumpActions()` 최근접 경쟁(등반/도약/난간넘기), 양방향 난간 넘기 + 착지 평면 레이캐스트, 엄폐 이동·엄폐간 구르기·배면 난간넘기, 검 발도/납도/공격을 모두 복원했다.
 - **플레이 가능 아레나 & 에디터 통합**: [hero_arena.tscn](animation_studio/hero/arena/hero_arena.tscn), [hero_arena.gd](animation_studio/hero/arena/hero_arena.gd). 6종 Lua 시나리오 즉시 시연 버튼, 자동 시연 투어, WASD/Space/E/R/F/Q 수동 조작, 90개 3D 도킹 라인 토글을 제공하며 `Morpheme Studio` 5번째 탭(`Hero 배경맵 · Lua 복원`) 및 런처 HUD에 연동했다.
 - **검증**: `animation_hero_arena` **9/9 PASS**(실제 `Environment.glb` 트라이메시 지면 레이캐스트 `y=-0.0002m`, 엄폐·난간넘기 `3.35m`·`y=2.0m` 플랫폼 등반 `final_y=1.9999m`·도약·Strafe 카메라 전환 및 전체 7개 애니메이션 스위트 ALL GREEN, GPU 4종 스크린샷 검수 완료).
+
+## Hero 맵 좌표·오프셋·비주얼 교정 & 표준 도킹 애드온(3D 뷰포트) 전환 · 2026-11-27
+
+1. **Hero 배경맵 좌표계·오프셋·비주얼 정밀 교정**:
+   - **원인 규명 (레이캐스트 + 85본 FK 감사)**:
+     - **엄폐(Cover)**: `LINE_TYPE 0/1`의 `+edge_normal`이 벽체 내부(`+0.06~0.56m`), `-edge_normal`이 개방 공간이었음에도 `+n*0.35m`로 밀착시켜 벽 안으로 파묻히던 문제를 `closest - n * 0.04`, `yaw = atan2(-n.x, -n.z)`로 교정.
+     - **등반·매달림(Climb/Hanging)**: `platform_idle`/`platform_climb` 클립 로컬 원점 `(0,0,0)` 자체가 이미 상단 립(양손 `Y=+0.02`, 몸통 `Y∈[-2.32, 0]`) 기준인데 추가로 `-1.55m`를 더해 바닥으로 파묻히던 문제를 `closest + n * 0.04` 립 기준 고정 앵커(완료 시 `closest - n * 0.48` 베이크)로 교정.
+     - **난간 넘기(Vault)**: 경사 램프 난간 대신 지면 수평 `y=1.06m` 난간을 선택하고 `action_arc_height = max(0, barrier_h - 1.15)`로 이중 공중 부양 제거.
+     - **비주얼(`HeroEnvironmentNode`)**: [hero_environment_node.gd](animation_studio/hero/arena/hero_environment_node.gd)에서 과노출 순백 바닥을 톤 보정(`tint_color=(0.64,0.69,0.75)`)하고 `1m/5m` 건축 바닥 그리드를 합성하면서 파쿠르 색상 띠(Red/Green/Blue/Yellow/Orange) 채도를 보존.
+2. **표준 Godot Addon 도킹 UI & 표준 3D 뷰포트 인스턴스 연동**:
+   - [editor_plugin.gd](animation_studio/addons/animation_studio/editor_plugin.gd)를 커스텀 메인 화면(`_has_main_screen()=true`)에서 **표준 Godot 애드온(`_has_main_screen()=false`)**으로 전환해 Godot 기본 `3D` 뷰포트를 그대로 사용.
+   - 표준 도킹 패널 3종 구현: 좌측 도크 **`AnimStudio · 계층`**([hierarchy_dock.gd](animation_studio/addons/animation_studio/docks/hierarchy_dock.gd)), 우측 도크 **`AnimStudio · 상태`**([state_dock.gd](animation_studio/addons/animation_studio/docks/state_dock.gd)), 하단 패널 **`Animation Flow`**([flow_bottom_panel.gd](animation_studio/addons/animation_studio/docks/flow_bottom_panel.gd), [flow_graph_canvas.gd](animation_studio/addons/animation_studio/docks/flow_graph_canvas.gd)).
+   - [animation_studio_instance.gd](animation_studio/addons/animation_studio/animation_studio_instance.gd) (`@tool class_name AnimationStudioInstance`)와 [hero_arena_world.tscn](animation_studio/hero/arena/hero_arena_world.tscn)으로 실제 3D 씬에 `Hero_Arena`(85본·10 Lua), `Soldier_M4`(114본), `Quadruped_Locomotor`(28본 절차적 IK), `OrcCaptain`(73본)을 배치해 3D 뷰포트·씬 트리·계층 도크 어느 곳에서 선택해도 3개 도킹 패널과 실시간 동기화되며, 28종 캐릭터 즉시 추가 배치(`+ 배치`) 및 3D 카메라 포커스를 지원.
+3. **로컬 포크 엔진 즉시 실행 링크 & 웹 에디터 전체 창 개선**:
+   - [serve_web_editor.cjs](animation_studio/web_editor/serve_web_editor.cjs)에 루프백(`127.0.0.1`/`::1`) 전용 `/launch-local-editor` 엔드포인트와 [open_local_fork_editor.cmd](animation_studio/open_local_fork_editor.cmd)를 추가해 로컬 포크 엔진(`Forge-Refactoring-engine`, Godot `4.7.2.stable.custom_build.31e7ebb19`)에서 `hero_arena_world.tscn`을 바로 열 수 있게 구성.
+   - [index.html](animation_studio/web_editor/index.html) + [editor_frame.html](animation_studio/web_editor/editor_frame.html)(`canvasResizePolicy: 2`)로 웹 에디터 캔버스 크롭 없이 브라우저 전체 창 1:1 렌더링 및 마우스 좌표를 보정.
+4. **검증**:
+   - 로컬 포크 엔진 헤드리스 회귀 6종 **53/53 PASS**(`animation_editor_docks` 7/7, `animation_hero_arena` 9/9, `animation_character_roster` 5/5, `animation_soldier_compare` 7/7, `animation_quadruped_locomotor` 12/12, `animation_hero_studio` 13/13).
+   - 로컬 포크 Godot 에디터 부팅(`ANIMATION_STUDIO_EDITOR_READY mode=standard_docks`, 오류 0건) 및 Godot 4.7.2 웹 에디터 라이브 브라우저 검증(`Hero_Arena` 매달림 + `Soldier_M4` 도크 전환·114본 트리·`Animation Flow` 그래프 동기화, 오류 0건) 완료.

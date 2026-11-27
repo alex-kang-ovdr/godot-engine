@@ -5,18 +5,20 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <meta name="theme-color" content="#14181f">
   <link rel="icon" href="/vendor/favicon.png" type="image/png">
-  <title>Godot Web Editor · NaturalMotion Morpheme Studio Addon</title>
+  <title>Godot Web Editor · Animation Studio Standard Addon</title>
   <style>
     *{box-sizing:border-box}
     html,body{width:100%;height:100%;margin:0;background:#12151b;color:#e8f0f8;font:13px system-ui,-apple-system,"Malgun Gothic",sans-serif;overflow:hidden}
-    #topbar{height:34px;display:flex;align-items:center;padding:0 12px;gap:12px;background:#181d26;border-bottom:1px solid #2b3344}
-    #brand{font-weight:700;color:#f39c2b;letter-spacing:.3px}
+    #topbar{height:34px;display:flex;align-items:center;padding:0 12px;gap:10px;background:#181d26;border-bottom:1px solid #2b3344}
+    #brand{font-weight:700;color:#f39c2b;letter-spacing:.3px;white-space:nowrap}
     #subtitle{color:#9eb0c7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    #pill{padding:2px 8px;border-radius:999px;background:#1d2b2a;border:1px solid #2cc7b8;color:#62e6d8;font-size:11px;font-weight:600}
+    #pill{padding:2px 8px;border-radius:999px;background:#1d2b2a;border:1px solid #2cc7b8;color:#62e6d8;font-size:11px;font-weight:600;white-space:nowrap}
     #status{margin-left:auto;color:#a5b7cf;font-size:12px;white-space:nowrap}
-    #reload-btn{padding:3px 9px;border:1px solid #3c465a;border-radius:4px;background:#232936;color:#dce6f4;font-size:12px;cursor:pointer}
-    #reload-btn:hover{background:#303849}
-    #editor-canvas{display:block;width:100%;height:calc(100% - 34px);outline:none;background:#12151b}
+    .top-btn{padding:3px 9px;border:1px solid #3c465a;border-radius:4px;background:#232936;color:#dce6f4;font-size:12px;cursor:pointer;text-decoration:none;white-space:nowrap}
+    .top-btn:hover{background:#303849}
+    #local-fork-btn{border-color:#d88a22;background:#2e2315;color:#ffd08a}
+    #local-fork-btn:hover{background:#3e2f1c}
+    #editor-frame{display:block;width:100%;height:calc(100% - 34px);border:0;background:#12151b}
     #loading{position:fixed;inset:34px 0 0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#13171e;padding:24px;text-align:center}
     #loading[hidden]{display:none}
     #loading-title{font-size:16px;font-weight:700;color:#edf3fa}
@@ -29,29 +31,33 @@
 <body>
   <div id="topbar">
     <span id="brand">◆ GODOT 4.7.2 WEB EDITOR</span>
-    <span id="subtitle">Animation Studio · NaturalMotion Morpheme Layout Addon</span>
-    <span id="pill">Native GLB/RES · Zero .hkt</span>
+    <span id="subtitle">Animation Studio · 표준 3D 뷰포트 + 도킹 패널 애드온</span>
+    <span id="pill">3D Viewport · Dockable Addon</span>
     <span id="status" aria-live="polite">초기화 중…</span>
-    <button id="reload-btn" type="button" onclick="location.reload()">새로고침</button>
+    <a id="local-fork-btn" class="top-btn" href="/launch-local-editor" target="_blank" rel="noopener" title="로컬 PC의 Forge-Refactoring-engine 포크 Godot 에디터로 hero_arena_world.tscn 바로 열기">로컬 포크 에디터 열기</a>
+    <button id="reload-btn" class="top-btn" type="button" onclick="location.reload()">새로고침</button>
   </div>
-  <canvas id="editor-canvas" tabindex="0"></canvas>
+  <iframe id="editor-frame" src="/editor-frame.html" title="Godot 4.7.2 Web Editor"></iframe>
   <div id="loading" role="status" aria-live="polite">
-    <div id="loading-title">Godot 웹 에디터 + Morpheme Studio 애드온 준비 중…</div>
+    <div id="loading-title">Godot 웹 에디터 + Animation Studio 표준 도킹 애드온 준비 중…</div>
     <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
-    <div id="loading-detail">프로젝트 매니페스트 및 네이티브 Hero 에셋(hero_motion.res, hero_skin.glb)을 불러오고 있습니다.</div>
+    <div id="loading-detail">3D 아레나 씬(hero_arena_world.tscn)과 내재화 캐릭터 28종 GLB/RES 에셋을 불러오고 있습니다.</div>
     <div id="error-box"></div>
   </div>
-  <script src="/vendor/godot.editor.js"></script>
   <script>
     (() => {
       'use strict';
-      const canvas = document.getElementById('editor-canvas');
       const statusEl = document.getElementById('status');
       const loadingEl = document.getElementById('loading');
       const titleEl = document.getElementById('loading-title');
       const barEl = document.getElementById('loading-bar');
       const detailEl = document.getElementById('loading-detail');
       const errorEl = document.getElementById('error-box');
+      const isLocalHost = ['127.0.0.1', 'localhost', '::1'].includes(window.location.hostname);
+      const localForkBtn = document.getElementById('local-fork-btn');
+      if (localForkBtn && !isLocalHost) {
+        localForkBtn.style.display = 'none';
+      }
 
       window.__ANIMATION_STUDIO_WEB_STATE__ = {
         phase: 'boot',
@@ -61,113 +67,50 @@
       };
 
       function setProgress(title, detail, pct) {
-        if (title !== null) titleEl.textContent = title;
-        if (detail !== null) detailEl.textContent = detail;
+        if (title !== null && title !== undefined) titleEl.textContent = title;
+        if (detail !== null && detail !== undefined) detailEl.textContent = detail;
         if (Number.isFinite(pct)) barEl.style.width = `${Math.max(4, Math.min(100, Math.round(pct)))}%`;
-        statusEl.textContent = detail || title;
+        statusEl.textContent = detail || title || statusEl.textContent;
       }
 
-      function showError(err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        window.__ANIMATION_STUDIO_WEB_STATE__.errors.push(msg);
-        window.__ANIMATION_STUDIO_WEB_STATE__.phase = 'error';
-        errorEl.style.display = 'block';
-        errorEl.textContent = msg;
-        statusEl.textContent = '오류 발생';
-      }
-
-      async function boot() {
-        try {
-          if (!window.crossOriginIsolated) {
-            throw new Error('Cross-Origin Isolation(COOP/COEP)이 비활성화되어 Godot Web Editor 스레드를 시작할 수 없습니다.');
-          }
-          if (!Engine.isWebGLAvailable()) {
-            throw new Error('이 브라우저는 WebGL2를 지원하지 않습니다.');
-          }
-          const missing = Engine.getMissingFeatures({ threads: true });
-          if (missing.length) {
-            throw new Error('Godot Web Editor 필수 기능 누락: ' + missing.join(', '));
-          }
-
-          setProgress('프로젝트 에셋 목록 조회 중…', '내재화 에셋(hero_motion.res, hero_skin.glb) 확인 중', 8);
-          const manifestRes = await fetch('/api/project-manifest', { cache: 'no-store' });
-          const manifest = await manifestRes.json();
-          if (!manifestRes.ok || !manifest.ok) throw new Error('프로젝트 매니페스트 조회 실패');
-
-          setProgress('프로젝트 파일 다운로드 중…', `0 / ${manifest.files.length}개 파일 수신 중`, 12);
-          const fetched = [];
-          let loadedBytes = 0;
-          const totalBytes = Math.max(1, manifest.totalBytes);
-          const batchSize = 6;
-          for (let i = 0; i < manifest.files.length; i += batchSize) {
-            const slice = manifest.files.slice(i, i + batchSize);
-            const results = await Promise.all(slice.map(async (f) => {
-              const r = await fetch('/project/' + f.path.split('/').map(encodeURIComponent).join('/'));
-              if (!r.ok) throw new Error(`파일 다운로드 실패: ${f.path} (${r.status})`);
-              const buf = new Uint8Array(await r.arrayBuffer());
-              loadedBytes += buf.byteLength;
-              return { path: f.path, buf };
-            }));
-            fetched.push(...results);
-            const ratio = Math.min(1, loadedBytes / totalBytes);
-            setProgress(null, `${fetched.length}/${manifest.files.length}개 파일 (${(loadedBytes / 1048576).toFixed(1)} MB)`, 12 + ratio * 24);
-          }
-
-          setProgress('Godot 4.7.2 웹 에디터 WASM 로딩 중…', '엔진 바이너리 수신 중 (브라우저 캐시 적용)', 38);
-          const concurrency = Math.min(16, Math.max(6, navigator.hardwareConcurrency || 4));
-          const engine = new Engine({
-            canvas,
-            canvasResizePolicy: 1,
-            unloadAfterInit: false,
-            emscriptenPoolSize: concurrency,
-            godotPoolSize: Math.max(2, Math.floor(concurrency / 3)),
-            onProgress: (current, total) => {
-              if (total > 0) {
-                const ratio = Math.min(1, current / total);
-                setProgress(null, `WASM ${(current / 1048576).toFixed(1)} / ${(total / 1048576).toFixed(1)} MB`, 38 + ratio * 48);
-              }
-            },
-            onPrint: (...args) => {
-              const line = args.join(' ');
-              window.__ANIMATION_STUDIO_WEB_STATE__.logs.push(line);
-              if (line.includes('ANIMATION_STUDIO_EDITOR_READY')) {
-                window.__ANIMATION_STUDIO_WEB_STATE__.addonReady = true;
-                window.__ANIMATION_STUDIO_WEB_STATE__.phase = 'ready';
-                statusEl.textContent = 'Morpheme Studio 애드온 활성 · 제작 과정 다시보기 실행 중';
-              }
-            },
-            onPrintError: (...args) => {
-              const line = args.join(' ');
-              window.__ANIMATION_STUDIO_WEB_STATE__.logs.push('[ERR] ' + line);
-              if (/SCRIPT ERROR:|Parse Error:/.test(line)) {
-                window.__ANIMATION_STUDIO_WEB_STATE__.errors.push(line);
-              }
-            },
-          });
-
-          await engine.init('/vendor/godot.editor');
-          setProgress('가상 파일시스템 마운트 중…', `${fetched.length}개 파일 복사 중`, 90);
-          const rootFs = '/home/web_user/animation_studio';
-          for (const item of fetched) {
-            engine.copyToFS(`${rootFs}/${item.path}`, item.buf);
-          }
-
-          setProgress('Morpheme Studio 애드온 시작 중…', 'Godot 웹 에디터 메인 화면으로 진입합니다.', 96);
-          window.__ANIMATION_STUDIO_WEB_STATE__.phase = 'starting';
-          await engine.start({
-            args: ['--editor', '--path', rootFs, '--single-window'],
-            canvas,
-          });
-          loadingEl.hidden = true;
-          canvas.focus();
-          if (!window.__ANIMATION_STUDIO_WEB_STATE__.addonReady) {
-            statusEl.textContent = 'Godot 웹 에디터 실행 중 (Morpheme Studio 탭 초기화 중…)';
-          }
-        } catch (err) {
-          showError(err);
+      window.addEventListener('message', (ev) => {
+        if (ev.origin !== window.location.origin) return;
+        const msg = ev.data;
+        if (!msg || msg.source !== 'animation-studio-godot') return;
+        const st = window.__ANIMATION_STUDIO_WEB_STATE__;
+        switch (msg.type) {
+          case 'progress':
+            setProgress(msg.title, msg.detail, msg.pct);
+            break;
+          case 'log':
+            st.logs.push(msg.line);
+            break;
+          case 'log_error':
+            st.logs.push('[ERR] ' + msg.line);
+            if (msg.isScriptError) st.errors.push(msg.line);
+            break;
+          case 'starting':
+            st.phase = 'starting';
+            break;
+          case 'started':
+            loadingEl.hidden = true;
+            if (!st.addonReady) statusEl.textContent = 'Godot 웹 에디터 실행 중 (도킹 패널 초기화 중…)';
+            break;
+          case 'addon_ready':
+            st.addonReady = true;
+            st.phase = 'ready';
+            loadingEl.hidden = true;
+            statusEl.textContent = '표준 3D 뷰포트 + 도킹 패널(계층·상태·Animation Flow) 활성';
+            break;
+          case 'fatal':
+            st.errors.push(msg.message);
+            st.phase = 'error';
+            errorEl.style.display = 'block';
+            errorEl.textContent = msg.message;
+            statusEl.textContent = '오류 발생';
+            break;
         }
-      }
-      boot();
+      });
     })();
   </script>
 </body>

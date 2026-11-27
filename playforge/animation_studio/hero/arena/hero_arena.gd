@@ -7,6 +7,7 @@ const Hero := preload("res://hero/hero.gd")
 const Store := preload("res://characters/character_store.gd")
 const ControllerScript := preload("res://hero/arena/hero_lua_controller.gd")
 const LinesScript := preload("res://hero/arena/hero_lua_lines.gd")
+const EnvNodeScript := preload("res://hero/arena/hero_environment_node.gd")
 
 const ENV_GLB_PATH := "res://hero/assets/hero_environment.glb"
 const ARENA_MOTION_RES := "res://hero/assets/hero_arena_motion.res"
@@ -33,12 +34,11 @@ var _last_hl_line: int = -2
 
 var preview_viewport: SubViewport = null
 var stage_root: Node3D = null
-var env_holder: Node3D = null
+var env_node: EnvNodeScript = null
 var hero_root: Node3D = null
 var hero_skeleton: Skeleton3D = null
 var hero_player: AnimationPlayer = null
 var camera: Camera3D = null
-var debug_lines_mesh: MeshInstance3D = null
 
 var env_stats: Dictionary = {"meshes": 0, "verts": 0, "tris": 0}
 var hero_stats: Dictionary = {"bones": 0, "meshes": 0, "clips": 0}
@@ -144,8 +144,8 @@ func _build_ui() -> void:
 	_lines_btn.pressed.connect(func():
 		show_docking_lines = _lines_btn.button_pressed
 		controller.variables["ShowDockingLines"] = show_docking_lines
-		if debug_lines_mesh != null:
-			debug_lines_mesh.visible = show_docking_lines
+		if env_node != null:
+			env_node.show_docking_lines = show_docking_lines
 	)
 	top.add_child(_lines_btn)
 
@@ -288,18 +288,10 @@ func _build_3d_world() -> void:
 	sun.rotation_degrees = Vector3(-46.0, 34.0, 0.0)
 	stage_root.add_child(sun)
 
-	env_holder = Node3D.new()
-	env_holder.name = "EnvironmentMap"
-	stage_root.add_child(env_holder)
-
-	debug_lines_mesh = MeshInstance3D.new()
-	debug_lines_mesh.name = "DockingLines3D"
-	var lmat := StandardMaterial3D.new()
-	lmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	lmat.vertex_color_use_as_albedo = true
-	lmat.no_depth_test = false
-	debug_lines_mesh.material_override = lmat
-	stage_root.add_child(debug_lines_mesh)
+	env_node = EnvNodeScript.new()
+	env_node.name = "HeroEnvironment"
+	env_node.show_docking_lines = show_docking_lines
+	stage_root.add_child(env_node)
 
 	camera = Camera3D.new()
 	camera.fov = 52.0
@@ -310,64 +302,8 @@ func _build_3d_world() -> void:
 
 
 func _load_environment_glb() -> void:
-	if not FileAccess.file_exists(ENV_GLB_PATH):
-		return
-	var bytes := FileAccess.get_file_as_bytes(ENV_GLB_PATH)
-	var doc := GLTFDocument.new()
-	var st := GLTFState.new()
-	st.handle_binary_image = GLTFState.HANDLE_BINARY_EMBED_AS_UNCOMPRESSED
-	if doc.append_from_buffer(bytes, "", st) != OK:
-		return
-	var scene := doc.generate_scene(st)
-	if scene == null:
-		return
-
-	var mesh_nodes: Array[Node] = scene.find_children("*", "MeshInstance3D", true, false)
-	mesh_nodes.append_array(scene.find_children("*", "ImporterMeshInstance3D", true, false))
-
-	var body := StaticBody3D.new()
-	body.name = "EnvironmentCollision"
-	env_holder.add_child(body)
-
-	var all_faces := PackedVector3Array()
-	for src in mesh_nodes:
-		var src_mesh: Mesh = null
-		if src is MeshInstance3D:
-			src_mesh = src.mesh
-		elif src.is_class("ImporterMeshInstance3D"):
-			var imp = src.get("mesh")
-			if imp != null and imp.has_method("get_mesh"):
-				src_mesh = imp.call("get_mesh")
-		if src_mesh == null:
-			continue
-		var vis := MeshInstance3D.new()
-		vis.name = src.name
-		vis.mesh = src_mesh
-		vis.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-		# Preserve baked CompleteMap AO shadows without clipping bright floor to pure white
-		for si in src_mesh.get_surface_count():
-			var mat := src_mesh.surface_get_material(si)
-			if mat is BaseMaterial3D:
-				var mcopy := mat.duplicate() as BaseMaterial3D
-				mcopy.albedo_color = Color(0.84, 0.87, 0.91)
-				mcopy.roughness = 0.94
-				vis.set_surface_override_material(si, mcopy)
-		env_holder.add_child(vis)
-
-		var faces := src_mesh.get_faces()
-		all_faces.append_array(faces)
-		env_stats["meshes"] = int(env_stats["meshes"]) + 1
-		for s in src_mesh.get_surface_count():
-			env_stats["verts"] = int(env_stats["verts"]) + src_mesh.surface_get_array_len(s)
-		env_stats["tris"] = int(env_stats["tris"]) + faces.size() / 3
-
-	if not all_faces.is_empty():
-		var shape := ConcavePolygonShape3D.new()
-		shape.set_faces(all_faces)
-		var col := CollisionShape3D.new()
-		col.shape = shape
-		body.add_child(col)
-	scene.free()
+	if env_node != null:
+		env_stats = env_node.env_stats.duplicate()
 
 
 func _load_hero_arena_rig() -> void:
@@ -491,12 +427,14 @@ func _raycast_world(from_p: Vector3, to_p: Vector3) -> Dictionary:
 	}
 
 
-func _find_first_line(line_type: int, min_y: float = -10.0, max_y: float = 20.0, min_len: float = 1.5) -> Dictionary:
+func _find_first_line(line_type: int, min_y: float = -10.0, max_y: float = 20.0, min_len: float = 1.5, flat_only: bool = false) -> Dictionary:
 	for line in controller.line_world.lines:
 		if int(line["line_type"]) != line_type:
 			continue
 		var a: Vector3 = line["a"]
 		var b: Vector3 = line["b"]
+		if flat_only and absf(a.y - b.y) > 0.05:
+			continue
 		if a.y >= min_y and a.y <= max_y and a.distance_to(b) >= min_len:
 			return line
 	return {}
@@ -507,29 +445,35 @@ func start_scenario(scenario_id: String) -> void:
 	controller.gamepad.set_raw_input(0.0, 0.0, 0.0, 0.0, 0.0)
 	match scenario_id:
 		"locomotion":
-			# Central open courtyard near cover walls on ground y=0
 			controller.teleport_hero(Vector3(-11.0, 0.0, 12.0), -0.6)
 			controller.raise_event("WeaponToggle", _raycast_world)
 		"cover":
-			var cov := _find_first_line(LinesScript.LINE_TYPE_LOW_WALL, -0.5, 0.5, 2.0)
+			# Cover wall solid is on +n; open air is on -n! Spawn on open-air -n side facing +n into wall.
+			var cov := _find_first_line(LinesScript.LINE_TYPE_LOW_WALL, -0.5, 0.5, 2.0, true)
 			if not cov.is_empty():
 				var mid := ((cov["a"] as Vector3) + (cov["b"] as Vector3)) * 0.5
 				var n: Vector3 = cov["edge_normal"]
-				var spawn := mid + n * 1.35
-				var yaw := atan2(-n.x, -n.z)
+				var spawn := mid - n * 1.35
+				var yaw := atan2(n.x, n.z)
 				controller.teleport_hero(spawn, yaw)
 				controller.raise_event("Action", _raycast_world)
+				# Place camera on the open-air -n side looking at Hero's front/side against the red wall!
+				controller.cam.reset_behind(controller.hero_pos, -controller.get_hero_forward())
 		"vault":
-			var rail := _find_first_line(LinesScript.LINE_TYPE_RAILING, 0.7, 1.5, 3.0)
+			# Pick a flat ground-level orange railing (e.g. y=1.06m on flat y=0 courtyard!)
+			var rail := _find_first_line(LinesScript.LINE_TYPE_RAILING, 0.85, 1.35, 3.0, true)
 			if not rail.is_empty():
 				var mid := ((rail["a"] as Vector3) + (rail["b"] as Vector3)) * 0.5
 				var n: Vector3 = rail["edge_normal"]
-				var spawn := Vector3(mid.x + n.x * 1.9, 0.0, mid.z + n.z * 1.9)
+				var spawn := Vector3(mid.x + n.x * 1.85, 0.0, mid.z + n.z * 1.85)
 				var yaw := atan2(-n.x, -n.z)
 				controller.teleport_hero(spawn, yaw)
 				controller.raise_event("JumpButton", _raycast_world)
 		"climb":
-			var ledge := _find_first_line(LinesScript.LINE_TYPE_LEDGE, 1.8, 2.3, 2.5)
+			# Pick a y=3.0m blue ledge so Hero's full hanging body (2.1m below lip) hangs cleanly in mid-air above ground!
+			var ledge := _find_first_line(LinesScript.LINE_TYPE_LEDGE, 2.8, 3.2, 2.0, true)
+			if ledge.is_empty():
+				ledge = _find_first_line(LinesScript.LINE_TYPE_LEDGE, 1.8, 2.3, 2.5, true)
 			if not ledge.is_empty():
 				var mid := ((ledge["a"] as Vector3) + (ledge["b"] as Vector3)) * 0.5
 				var n: Vector3 = ledge["edge_normal"]
@@ -538,8 +482,7 @@ func start_scenario(scenario_id: String) -> void:
 				controller.teleport_hero(spawn, yaw)
 				controller.raise_event("JumpButton", _raycast_world)
 		"leap":
-			# High platform edge at y=5.0m facing opposite platform at y=6.0m/5.0m across gap
-			var target_ledge := _find_first_line(LinesScript.LINE_TYPE_LEDGE, 4.8, 5.2, 3.0)
+			var target_ledge := _find_first_line(LinesScript.LINE_TYPE_LEDGE, 4.8, 5.2, 3.0, true)
 			if not target_ledge.is_empty():
 				var mid := ((target_ledge["a"] as Vector3) + (target_ledge["b"] as Vector3)) * 0.5
 				var n: Vector3 = target_ledge["edge_normal"]
@@ -651,8 +594,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			show_docking_lines = not show_docking_lines
 			if is_instance_valid(_lines_btn):
 				_lines_btn.set_pressed_no_signal(show_docking_lines)
-			if debug_lines_mesh != null:
-				debug_lines_mesh.visible = show_docking_lines
+			if env_node != null:
+				env_node.show_docking_lines = show_docking_lines
 
 
 func _on_vp_input(event: InputEvent) -> void:
@@ -690,13 +633,11 @@ func _sync_actor_and_camera(dt: float) -> void:
 
 
 func _refresh_debug_lines() -> void:
-	if debug_lines_mesh == null:
+	if env_node == null:
 		return
 	var hl: int = int(controller.line_world.docking_target.get("index", -1))
-	if hl != _last_hl_line:
-		_last_hl_line = hl
-		debug_lines_mesh.mesh = controller.line_world.build_debug_lines_mesh(hl)
-	debug_lines_mesh.visible = show_docking_lines
+	env_node.show_docking_lines = show_docking_lines
+	env_node.refresh_docking_lines(hl)
 
 
 func _refresh_hud() -> void:
