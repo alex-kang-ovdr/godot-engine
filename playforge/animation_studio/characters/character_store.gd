@@ -7,6 +7,8 @@ const Hero := preload("res://hero/hero.gd")
 
 static var _catalog_cache: Array[Dictionary] = []
 static var _motion_cache: Dictionary = {}
+static var _skin_template_cache: Dictionary = {}
+static var _base_anim_cache: Dictionary = {}
 
 
 static func load_catalog(force_reload: bool = false) -> Array[Dictionary]:
@@ -57,12 +59,28 @@ static func populate_skeleton(skeleton: Skeleton3D, motion_dict: Dictionary) -> 
 	skeleton.reset_bone_poses()
 
 
-static func build_animation_from_clip(motion_dict: Dictionary, clip_key: String, rig_name: String = "Skeleton3D") -> Animation:
+const ONESHOT_CLIP_KEYS := [
+	"protect", "slash", "slam", "taunt", "roar", "kick", "dive",
+	"vault", "jump", "jumpturn", "runjump", "idle_to_walk", "turn",
+]
+
+
+static func resolve_default_loop_mode(clip_key: String, clip: Dictionary) -> int:
+	if clip.has("loop"):
+		return Animation.LOOP_LINEAR if bool(clip["loop"]) else Animation.LOOP_NONE
+	# Havok SDK defaults (hkaDefaultAnimationControl maxCycles=0 / hkbClipGenerator MODE_LOOPING):
+	# cyclic clips default to LOOP_LINEAR; explicit one-shot actions default to LOOP_NONE.
+	if clip_key.to_lower() in ONESHOT_CLIP_KEYS:
+		return Animation.LOOP_NONE
+	return Animation.LOOP_LINEAR
+
+
+static func build_animation_from_clip(motion_dict: Dictionary, clip_key: String, rig_name: String = "Skeleton3D", override_loop_mode: int = -1) -> Animation:
 	var clip: Dictionary = motion_dict.clips[clip_key]
 	var bones: Array = motion_dict.skeleton.bones
 	var anim := Animation.new()
 	anim.length = float(clip.duration)
-	anim.loop_mode = Animation.LOOP_LINEAR if bool(clip.get("loop", false)) else Animation.LOOP_NONE
+	anim.loop_mode = override_loop_mode if override_loop_mode >= 0 else resolve_default_loop_mode(clip_key, clip)
 	for track_def in clip.tracks:
 		var bidx := int(track_def.bone)
 		if bidx < 0 or bidx >= bones.size():
@@ -86,44 +104,46 @@ static func build_animation_from_clip(motion_dict: Dictionary, clip_key: String,
 	return anim
 
 
-static func attach_skin_to_skeleton(char_id: String, rig: Skeleton3D) -> Dictionary:
-	var summary := {
-		"loaded": false,
-		"meshes": 0,
-		"surfaces": 0,
-		"vertices": 0,
-		"textured_surfaces": 0,
-		"aabb": AABB(Vector3(-0.5, 0.0, -0.5), Vector3(1.0, 1.8, 1.0)),
-	}
-	if rig == null:
-		return summary
+static func clear_caches() -> void:
+	_skin_template_cache.clear()
+	_base_anim_cache.clear()
+	_motion_cache.clear()
+
+
+static func _load_skin_templates(char_id: String) -> Array:
+	if _skin_template_cache.has(char_id):
+		return _skin_template_cache[char_id] as Array
+	var templates: Array = []
 	var entry := get_entry(char_id)
 	if entry.is_empty():
-		return summary
+		_skin_template_cache[char_id] = templates
+		return templates
 	var glb_path := str(entry.get("glb_path", ""))
 	if glb_path.is_empty() or not FileAccess.file_exists(glb_path):
-		return summary
+		_skin_template_cache[char_id] = templates
+		return templates
 	var bytes := FileAccess.get_file_as_bytes(glb_path)
 	if bytes.is_empty():
-		return summary
+		_skin_template_cache[char_id] = templates
+		return templates
 
 	var doc := GLTFDocument.new()
 	var st := GLTFState.new()
 	st.use_named_skin_binds = true
 	st.handle_binary_image = GLTFState.HANDLE_BINARY_EMBED_AS_UNCOMPRESSED
 	if doc.append_from_buffer(bytes, "", st) != OK:
-		return summary
+		_skin_template_cache[char_id] = templates
+		return templates
 	var scene := doc.generate_scene(st)
 	if scene == null:
-		return summary
+		_skin_template_cache[char_id] = templates
+		return templates
 
 	var mesh_nodes: Array[Node] = scene.find_children("*", "MeshInstance3D", true, false)
 	mesh_nodes.append_array(scene.find_children("*", "ImporterMeshInstance3D", true, false))
 	var fallback_skels := scene.find_children("*", "Skeleton3D", true, false)
 	var fallback_rig: Skeleton3D = fallback_skels[0] as Skeleton3D if not fallback_skels.is_empty() else null
 
-	var combined_aabb := AABB()
-	var has_aabb := false
 	for src in mesh_nodes:
 		var src_mesh: Mesh = null
 		var src_skin: Skin = null
@@ -143,51 +163,121 @@ static func attach_skin_to_skeleton(char_id: String, rig: Skeleton3D) -> Diction
 		var src_rig := src.get_node_or_null(src_skel_path) as Skeleton3D
 		if src_rig == null:
 			src_rig = fallback_rig
-		var skin := src_skin.duplicate() as Skin
-		var valid := true
-		for i in skin.get_bind_count():
-			var bname := skin.get_bind_name(i)
+		var bind_names := PackedStringArray()
+		var bind_poses: Array[Transform3D] = []
+		var bcount := src_skin.get_bind_count()
+		bind_names.resize(bcount)
+		bind_poses.resize(bcount)
+		for i in bcount:
+			var bname: String = str(src_skin.get_bind_name(i))
 			if bname.is_empty() and src_rig != null:
-				var sb := skin.get_bind_bone(i)
+				var sb := src_skin.get_bind_bone(i)
 				if sb >= 0 and sb < src_rig.get_bone_count():
-					bname = src_rig.get_bone_name(sb)
+					bname = str(src_rig.get_bone_name(sb))
+			bind_names[i] = bname
+			bind_poses[i] = src_skin.get_bind_pose(i)
+		var sc := src_mesh.get_surface_count()
+		var vc := 0
+		var tc := 0
+		for j in sc:
+			vc += src_mesh.surface_get_array_len(j)
+			var mat := src_mesh.surface_get_material(j) as BaseMaterial3D
+			if mat and mat.albedo_texture:
+				tc += 1
+		templates.append({
+			"name": src.name,
+			"mesh": src_mesh,
+			"bind_names": bind_names,
+			"bind_poses": bind_poses,
+			"aabb": src_mesh.get_aabb(),
+			"surfaces": sc,
+			"vertices": vc,
+			"textured_surfaces": tc,
+		})
+
+	scene.free()
+	_skin_template_cache[char_id] = templates
+	return templates
+
+
+static func attach_skin_to_skeleton(char_id: String, rig: Skeleton3D) -> Dictionary:
+	var summary := {
+		"loaded": false,
+		"meshes": 0,
+		"surfaces": 0,
+		"vertices": 0,
+		"textured_surfaces": 0,
+		"aabb": AABB(Vector3(-0.5, 0.0, -0.5), Vector3(1.0, 1.8, 1.0)),
+	}
+	if rig == null:
+		return summary
+	var templates := _load_skin_templates(char_id)
+	if templates.is_empty():
+		return summary
+
+	var combined_aabb := AABB()
+	var has_aabb := false
+	for tpl_raw in templates:
+		var tpl: Dictionary = tpl_raw as Dictionary
+		var src_mesh: Mesh = tpl["mesh"] as Mesh
+		var bind_names: PackedStringArray = tpl["bind_names"] as PackedStringArray
+		var bind_poses: Array = tpl["bind_poses"] as Array
+		var skin := Skin.new()
+		var valid := true
+		for i in bind_names.size():
+			var bname := bind_names[i]
 			var bidx := rig.find_bone(bname)
 			if bidx < 0:
 				valid = false
 				break
-			skin.set_bind_name(i, bname)
+			skin.add_named_bind(bname, bind_poses[i] as Transform3D)
 			skin.set_bind_bone(i, bidx)
 		if not valid:
 			continue
 		var vis := MeshInstance3D.new()
-		vis.name = src.name
+		vis.name = str(tpl["name"])
 		vis.mesh = src_mesh
 		vis.skin = skin
 		vis.skeleton = ^".."
 		vis.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		rig.add_child(vis)
 
-		var maabb := src_mesh.get_aabb()
+		var maabb: AABB = tpl["aabb"] as AABB
 		if maabb.size.length() > 0.0001:
 			combined_aabb = maabb if not has_aabb else combined_aabb.merge(maabb)
 			has_aabb = true
 
 		summary["meshes"] = int(summary["meshes"]) + 1
-		summary["surfaces"] = int(summary["surfaces"]) + src_mesh.get_surface_count()
-		for j in src_mesh.get_surface_count():
-			summary["vertices"] = int(summary["vertices"]) + src_mesh.surface_get_array_len(j)
-			var mat := vis.get_active_material(j) as BaseMaterial3D
-			if mat and mat.albedo_texture:
-				summary["textured_surfaces"] = int(summary["textured_surfaces"]) + 1
+		summary["surfaces"] = int(summary["surfaces"]) + int(tpl["surfaces"])
+		summary["vertices"] = int(summary["vertices"]) + int(tpl["vertices"])
+		summary["textured_surfaces"] = int(summary["textured_surfaces"]) + int(tpl["textured_surfaces"])
 
-	scene.free()
 	if has_aabb:
 		summary["aabb"] = combined_aabb
 	summary["loaded"] = int(summary["meshes"]) > 0
 	return summary
 
 
-static func build_rig(char_id: String, name_prefix: String = "CharRig") -> Dictionary:
+static func get_cached_animation(char_id: String, clip_key: String, loop_override: int = -1) -> Animation:
+	var cache_key := "%s::%s" % [char_id, clip_key]
+	var base_anim: Animation = _base_anim_cache.get(cache_key, null) as Animation
+	if base_anim == null:
+		var motion_dict := load_motion_dict(char_id)
+		if motion_dict.is_empty():
+			return null
+		var clips_dict: Dictionary = motion_dict.get("clips", {}) as Dictionary
+		if not clips_dict.has(clip_key):
+			return null
+		base_anim = build_animation_from_clip(motion_dict, clip_key, "Skeleton3D")
+		_base_anim_cache[cache_key] = base_anim
+	if loop_override >= 0 and base_anim.loop_mode != loop_override:
+		var dup := base_anim.duplicate(true) as Animation
+		dup.loop_mode = loop_override
+		return dup
+	return base_anim
+
+
+static func build_rig(char_id: String, name_prefix: String = "CharRig", loop_override: int = -1) -> Dictionary:
 	var motion_dict := load_motion_dict(char_id)
 	if motion_dict.is_empty():
 		return {}
@@ -203,8 +293,10 @@ static func build_rig(char_id: String, name_prefix: String = "CharRig") -> Dicti
 	var library := AnimationLibrary.new()
 	var clips_dict: Dictionary = motion_dict.get("clips", {})
 	for clip_key in clips_dict.keys():
-		var anim := build_animation_from_clip(motion_dict, str(clip_key), "Skeleton3D")
-		library.add_animation(str(clip_key), anim)
+		var ckey := str(clip_key)
+		var anim := get_cached_animation(char_id, ckey, loop_override)
+		if anim != null:
+			library.add_animation(ckey, anim)
 
 	var player := AnimationPlayer.new()
 	player.name = "AnimationPlayer"

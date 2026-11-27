@@ -85,8 +85,8 @@ if "%SKIP_NATIVE%"=="0" (
 
 if "%SKIP_TESTS%"=="0" (
     echo.
-    echo [3/4] 로컬 포크 엔진 기반 Animation Studio 핵심 8종 회귀 테스트 실행...
-    python "%REPO_ROOT%\playforge\tests\run.py" --godot "%FORK_CONSOLE%" --only animation_motion_v3,animation_editor_docks,animation_hero_arena,animation_hero_ai_pathfinding,animation_character_roster,animation_soldier_compare,animation_quadruped_locomotor,animation_hero_studio
+    echo [3/4] 로컬 포크 엔진 기반 Animation Studio 핵심 9종 회귀 테스트 실행...
+    python "%REPO_ROOT%\playforge\tests\run.py" --godot "%FORK_CONSOLE%" --only animation_motion_v3,animation_editor_docks,animation_hero_arena,animation_hero_ai_pathfinding,animation_character_roster,animation_havok_port_parity,animation_soldier_compare,animation_quadruped_locomotor,animation_hero_studio
     if errorlevel 1 (
         echo [ERROR] 회귀 테스트 실패! 결과를 확인하세요: %REPO_ROOT%\playforge\tests\results\latest.json
         exit /b 1

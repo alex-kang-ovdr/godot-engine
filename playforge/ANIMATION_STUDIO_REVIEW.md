@@ -217,3 +217,21 @@ Havok AI SDK(`SpatialAnalysisDemo`, `AbstractTraversalDemo`, `UserEdgesDemo`, `P
   - `[확장 수정]` `flow_bottom_panel.gd` · `flow_graph_canvas.gd` + `[확장 추가]` `event_timeline_canvas.gd` · `agent_replay_panel.gd`: 하단 `Animation Flow` 3종 서브탭(**`플로우 그래프`** 5상태 노드·`AI 예정` 점선 배지·화살표·전이 시간 / **`이벤트 타임라인`** 3트랙 Behaviour Event 보드·속성 편집기·Frame Trace / **`Agent 리플레이 / 분기`** 4단계 실행·읽기 전용 Replay·중간 단계 미리보기 및 새 분기 교체·Undo/Redo·JSON 저장/복원).
   - `[확장 수정]` `web_editor/index.html`: v3 다크 헤더·배지·로컬 포크 런처 버튼 반영.
 - **검증**: 신규 스위트 `animation_motion_v3`([motion_journal_v3_verify.gd](animation_studio/tests/motion_journal_v3_verify.gd)) **7/7 PASS** 포함 핵심 8종 회귀 **68/68 PASS (0 FAIL)**, 로컬 포크 Godot 4.7.2 에디터 기동(`ANIMATION_STUDIO_EDITOR_READY mode=standard_docks_v3`, 오류 0건), 라이브 Chrome **Godot 4.7.2 웹 에디터** 5개 뷰(Hero + AI 기본 도킹, 이벤트 타임라인, Agent 리플레이 4단계, Quadruped 4족 접지 그리드, Soldier 16-bit KPI) 실렌더링 스크린샷 육안 검수 통과(네트워크 오류 0건, 콘솔 오류 0건).
+
+## Havok 414개 데모 원본 에셋 전면 내재화 · Godot 표준 좌표계/카메라/루프 통일 · 2026-11-27
+
+Havok 2015.1.0-r1 SDK의 `Animation`(62소스·276항목) + `Behavior`(59소스·138항목) **414개 전 데모 포팅**에서 합성 16본 로봇(`demo/character/character.tscn`)과 막대 리그를 완전히 제거하고, **내재화된 30종 원본 Havok 에셋**과 **Godot 표준 좌표계(`+Y` 상향, `-Z` 전방, `+X` 우측, SI 미터, `9.81 m/s²`) · 표준 `Camera3D` (`fov = 45.0°`, `KEEP_HEIGHT`, `near = 0.1 m`, `far >= 100.0 m`) · Havok 동일 루프 기본값(`LOOP_LINEAR`/`LOOP_PINGPONG`/`LOOP_NONE`)** 기준으로 일치시켰다.
+
+- **엔진 영향 범위**: **`[엔진 수정]` 없음 (0건)**, **`[엔진 추가]` 없음 (0건)**.
+- **누락 원본 에셋 추가 내재화 (`[확장 추가]`)**:
+  - `havok_girl_sdk` (`characters/assets/havok_girl_sdk.glb` 348.3 KB · `havok_girl_sdk_motion.res` 813.2 KB): 클래식 Animation SDK 50본 HavokGirl 리그 + 텍스처 메시 2개(3,965정점) + `extractedMotion` 포함 12클립(`idle`/`walk`/`run`/`wave`/`jumpland`/`walk_turn_l/r`/`run_turn_l/r`/`head_move`/`scale`/`protect`).
+  - `crabby` (`characters/assets/crabby.glb` 284.8 KB · `crabby_motion.res` 1.1 KB): 18본 6족 SpiderCrab 원본 리그 + 텍스처 메시(2,408정점).
+  - 총 내재화 로스터 **28종 → 30종** 확대 (`characters/catalog.json` `[확장 수정]`).
+- **Godot 표준 패리티 레이어 & 캐시·루프 기본값 통일 (`[확장 추가]` / `[확장 수정]`)**:
+  - `[확장 추가]` `catalog/havok_demo_standards.gd` (`HavokDemoStandards`): 전 30종 `CHARACTER_ALIGNMENT`(yaw·지면 Y 오프셋·높이), `hk_zup_to_godot()` / `hk_camera_to_godot()` / `apply_camera()`(`45.0° KEEP_HEIGHT` 전면 `-Z` 구도), 121소스→30종 에셋·클립·루프·카메라 매핑(`resolve_demo_spec()`), `-Z` 정렬 스폰(`spawn_aligned_character()`), `-Z` 루트 모션 변환(`sample_root_motion_delta()`), 모델 공간 시맨틱 리타게팅 + 발 접지 보정(`apply_semantic_retarget()`), 상체 트랙 필터·좌우 X-평면 클립 미러링.
+  - `[확장 수정]` `characters/character_store.gd` (`CharacterRosterStore`): Havok `hkaDefaultAnimationControl`/`hkbClipGenerator` 기본값에 맞춰 순환 클립 기본 `Animation.LOOP_LINEAR`·원샷 클립 `LOOP_NONE` 적용, 스킨 템플릿·기본 클립 정적 캐시(`_skin_template_cache`/`_base_anim_cache`/`clear_caches()`) 추가해 414개 실에셋 갤러리 순회를 16초대로 단축.
+  - `[확장 수정]` `catalog/gallery.gd`, `clip_cases.gd`, `rig_cases.gd`, `runtime_cases.gd`, `timing_cases.gd`, `behavior_cases.gd`: 전 6종 카탈로그 스크립트에서 `demo/character/character.tscn` 참조 0건 달성, 전면 조명(`-Z`)·45° FOV 카메라·원본 에셋(`havok_girl_sdk`, `crabby`, `siege_fiend` 4지 IK, `hero`, `soldier`, `zombie`, `firefighter` 4종 실제 GLB 스킨 스왑, `flying_imp`+`hivequeen`, `shulgoth`+`male_nocape`, `orc_captain` 군중 등) 전면 적용.
+- **검증**:
+  - 신규 패리티 스위트 `animation_havok_port_parity`([havok_port_parity_verify.gd](animation_studio/tests/havok_port_parity_verify.gd) `[확장 추가]`) **7/7 PASS** (`havok_girl_sdk` 50본 오차 `0.29 mm / 1.85°`, 30종 SI/지면 `Y=0` 정렬, `-Z` 루트 모션 전진, 루프 기본값 3종, 45° `KEEP_HEIGHT` 전면 카메라, 12종 대표 원본 스켈레톤 검증).
+  - `animation_character_roster` **5/5 PASS (30종)**, `animation_gallery` **422/422 PASS (414개 전 항목 · 엔진 오류 0건)** 및 로컬 포크 핵심 9종 회귀 전수 통과.
+  - RTX 4070 실 GPU 6종 스크린샷(`NormalBlending` HavokGirl, `Crabby` 18b IK, `BasicPoseRetargeting` Shulgoth+Male, `Quadruped` SiegeFiend 4/4 접지, `DockingBlend` Hero, `ClipGeneratorModes` Soldier) 육안 검수 완료.

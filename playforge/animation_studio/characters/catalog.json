@@ -642,6 +642,66 @@
       "glb_path": "res://characters/assets/gingerbread.glb",
       "motion_path": "res://characters/assets/gingerbread_motion.res",
       "glb_kb": 179.3
+    },
+    {
+      "id": "havok_girl_sdk",
+      "name": "Havok Girl · Animation SDK (50본 · 12클립)",
+      "category": "showcase",
+      "bones": 50,
+      "meshes": 2,
+      "textured_meshes": 2,
+      "textures": 2,
+      "vertices": 3965,
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "wave",
+        "jumpland",
+        "walk_turn_l",
+        "walk_turn_r",
+        "run_turn_l",
+        "run_turn_r",
+        "head_move",
+        "scale",
+        "protect"
+      ],
+      "durations": {
+        "idle": 5.0,
+        "walk": 1.333,
+        "run": 0.867,
+        "wave": 1.333,
+        "jumpland": 1.5,
+        "walk_turn_l": 1.333,
+        "walk_turn_r": 1.333,
+        "run_turn_l": 0.867,
+        "run_turn_r": 0.867,
+        "head_move": 5.0,
+        "scale": 5.0,
+        "protect": 3.333
+      },
+      "glb_path": "res://characters/assets/havok_girl_sdk.glb",
+      "motion_path": "res://characters/assets/havok_girl_sdk_motion.res",
+      "glb_kb": 348.3
+    },
+    {
+      "id": "crabby",
+      "name": "Crabby · 6족 거미 IK",
+      "category": "creature",
+      "bones": 18,
+      "meshes": 1,
+      "textured_meshes": 1,
+      "textures": 3,
+      "vertices": 2408,
+      "clips": [
+        "idle"
+      ],
+      "durations": {
+        "idle": 1.0
+      },
+      "glb_path": "res://characters/assets/crabby.glb",
+      "motion_path": "res://characters/assets/crabby_motion.res",
+      "glb_kb": 284.8
     }
   ]
 }

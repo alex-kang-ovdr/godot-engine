@@ -28,7 +28,7 @@ func _initialize() -> void:
 func _run() -> void:
 	_emit({"status": "START", "engine": Engine.get_version_info().get("hash", "")})
 	var catalog := Store.load_catalog(true)
-	_check("unified catalog lists all 28 internalized characters", catalog.size() == 28, JSON.stringify({"count": catalog.size()}))
+	_check("unified catalog lists all 30 internalized characters", catalog.size() == 30, JSON.stringify({"count": catalog.size()}))
 
 	var loaded_count := 0
 	var total_bones := 0
@@ -91,8 +91,8 @@ func _run() -> void:
 			var saving_pct := (1.0 - float(res_bytes) / maxf(1.0, float(uncomp_bytes))) * 100.0
 			min_saving_pct = minf(min_saving_pct, saving_pct)
 
-			# Sample start, middle, and end
-			for frac in [0.0, 0.43, 1.0]:
+			# Sample start, middle, and near-end (inside [0, length) to match LOOP_LINEAR wrap semantics)
+			for frac in [0.0, 0.43, 0.98]:
 				var t := clampf(anim.length * frac, 0.0, anim.length)
 				skel.reset_bone_poses()
 				player.assigned_animation = cname
@@ -136,17 +136,17 @@ func _run() -> void:
 	})
 
 	_check(
-		"all 28 characters load native .res + .glb cleanly with zero SDK dependency",
-		loaded_count == 28 and failures.is_empty(),
+		"all 30 characters load native .res + .glb cleanly with zero SDK dependency",
+		loaded_count == 30 and failures.is_empty(),
 		JSON.stringify({"loaded": loaded_count, "failures": failures})
 	)
 	_check(
-		"all 28 characters x all clips match AnimationPlayer vs 16-bit C++ within 5mm / 2.5deg",
+		"all 30 characters x all clips match AnimationPlayer vs 16-bit C++ within 5mm / 2.5deg",
 		worst_pos_mm <= 5.0 and worst_rot_deg <= 2.5,
 		JSON.stringify({"worst_pos_mm": worst_pos_mm, "worst_rot_deg": worst_rot_deg, "worst_case": worst_char})
 	)
 	_check(
-		"all 28 characters achieve >= 65% QuantizedClip memory reduction",
+		"all 30 characters achieve >= 65% QuantizedClip memory reduction",
 		min_saving_pct >= 65.0,
 		JSON.stringify({"min_saving_pct": min_saving_pct})
 	)
@@ -169,6 +169,8 @@ func _run() -> void:
 	var parade_count: int = showcase.parade_rigs.size()
 	showcase.queue_free()
 	holder.queue_free()
+	await process_frame
+	Store.clear_caches()
 
 	_check(
 		"CharacterShowcase switches seamlessly across categories and launches multi-character parade",

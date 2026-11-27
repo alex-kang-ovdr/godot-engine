@@ -2,10 +2,13 @@ extends Control
 
 const CATALOG := "res://catalog/catalog.json"
 const BASE := "res://catalog/"
+const Standards := preload("res://catalog/havok_demo_standards.gd")
 
 var entries: Array = []
 var visible_indices: Array[int] = []
 var stage := Node3D.new()
+var stage_camera: Camera3D
+var active_spec: Dictionary = {}
 var listing := ItemList.new()
 var search := LineEdit.new()
 var back := Button.new()
@@ -98,16 +101,21 @@ func _build_controls() -> void:
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	view.add_child(viewport)
 	viewport.add_child(stage)
-	var camera := Camera3D.new()
-	stage.add_child(camera)
-	camera.position = Vector3(3.5, 2.2, 5.0)
-	camera.look_at(Vector3.UP)
-	camera.fov = 39
-	camera.current = true
+	stage_camera = Camera3D.new()
+	stage_camera.name = "StageCamera"
+	stage_camera.keep_aspect = Camera3D.KEEP_HEIGHT
+	stage_camera.fov = Standards.DEFAULT_FOV_DEG
+	stage_camera.near = Standards.DEFAULT_NEAR_M
+	stage_camera.far = Standards.DEFAULT_FAR_M
+	stage.add_child(stage_camera)
+	stage_camera.position = Vector3(2.2, 2.0, -3.2)
+	stage_camera.look_at(Vector3(0.0, 0.95, 0.0), Vector3.UP)
+	stage_camera.current = true
 	var light := DirectionalLight3D.new()
-	light.rotation = Vector3(-1, -0.6, 0)
+	light.position = Vector3(3.0, 5.0, -4.0)
 	light.shadow_enabled = true
 	stage.add_child(light)
+	light.look_at(Vector3.ZERO, Vector3.UP)
 	var world := WorldEnvironment.new()
 	world.environment = Environment.new()
 	world.environment.background_mode = Environment.BG_COLOR
@@ -206,9 +214,11 @@ func select_entry(index: int) -> void:
 		elif "/compression/" in lower or "/blending/" in lower or "/playback/" in lower or "/layeringandpartitions/" in lower:
 			filename = "clip_cases.gd"
 	var script := load(BASE + filename) as Script
+	active_spec = Standards.resolve_demo_spec(path, str(entry.name))
+	Standards.apply_camera(stage_camera, active_spec)
 	heading.text = _title(entry)
 	source_path.text = "%s · %s" % [entry.get("case", ""), path.get_base_dir()]
-	scope_text.text = "원본 사례의 핵심 동작을 재현합니다. SDK 고유 코덱·벤치마크 설정은 같은 계열의 Godot 실험을 공유합니다."
+	scope_text.text = Standards.describe_spec(active_spec)
 	if entry.get("registration") == "source_only_unregistered":
 		scope_text.text += "  ·  SDK 미등록 소스"
 	elif str(entry.get("registration", "")).begins_with("conditional"):

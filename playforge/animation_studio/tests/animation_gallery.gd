@@ -87,7 +87,7 @@ func run() -> void:
 					"worker":
 						ok = probe.samples.size() == 48 and probe.samples[3].origin.y > 0.4 and probe.max_difference < 0.00001
 					"skin":
-						ok = probe.rig.get_bone_count() == 2 and probe.rig.get_bone_pose_rotation(1).get_angle() > 0.001
+						ok = probe.rig.get_bone_count() >= 2 and probe.rig.get_bone_pose_rotation(1).get_angle() > 0.001
 					"actor":
 						ok = probe.traveled > 0.0 and probe.actor.tool.is_inside_tree()
 			if ok and script_path.ends_with("/timing_cases.gd"):
@@ -115,5 +115,7 @@ func run() -> void:
 	lab.back.pressed.emit()
 	await scene_changed
 	record("gallery returns to motion lab", current_scene.scene_file_path == "res://demo/animation_lab.tscn")
+	var store_script := preload("res://characters/character_store.gd")
+	store_script.clear_caches()
 	print("PFTEST ", JSON.stringify({"status": "SUMMARY", "fail": failed}))
 	quit(1 if failed else 0)

@@ -1,15 +1,20 @@
 extends Node3D
-## Small, executable probes for the animation catalog. All examples use Godot
-## Animation/AnimationTree on the courier rig; approximations are called out in
-## status_text() instead of implying engine features that are not exercised.
+## Executable Animation catalog probes using internalized original Havok SDK
+## characters (HavokGirl 50-bone SDK rig & clips) aligned to Godot Standard
+## coordinates (-Z forward, +Y up, SI meters, Havok LOOP_LINEAR default).
 
-const CHARACTER_SCENE: PackedScene = preload("res://demo/character/character.tscn")
-const LOOP_SECONDS := 1.0
+const Standards := preload("res://catalog/havok_demo_standards.gd")
+
+class StepEmitter extends Node:
+	signal stepped(side: String)
+	func emit_step(side: String) -> void:
+		stepped.emit(side)
 
 var _case_id := ""
+var _spec: Dictionary = {}
 var _status := "Choose an animation case."
 var _elapsed := 0.0
-var _characters: Array[Node3D] = []
+var _actors: Array[Dictionary] = []
 var _players: Array[AnimationPlayer] = []
 var _trees: Array[AnimationTree] = []
 var _blend_node: AnimationNode = null
@@ -20,11 +25,10 @@ var _runtime_binding_target: Node3D
 var _float_track_target: Node3D
 
 
-func start_case(path: String, name: String) -> void:
+func start_case(path: String, case_name: String) -> void:
 	_clear_case()
-	# The catalog source path selects the behavior. The variant name is only a
-	# display label and must not silently redirect a source to another probe.
 	_case_id = path.to_lower()
+	_spec = Standards.resolve_demo_spec(path, case_name)
 	_elapsed = 0.0
 	_step_count = 0
 	_compression_error = -1.0
@@ -63,7 +67,7 @@ func status_text() -> String:
 	if _case_id.contains("annotation"):
 		return "%s | footstep annotations received: %d" % [_status, _step_count]
 	if _compression_error >= 0.0:
-		return "%s | measured maximum sampled rotation error: %.6f rad" % [_status, _compression_error]
+		return "%s | max sampled rotation error: %.6f rad" % [_status, _compression_error]
 	return _status
 
 
@@ -72,41 +76,39 @@ func _process(delta: float) -> void:
 	if _blend_node != null and not _trees.is_empty():
 		var amount := 0.5 + 0.5 * sin(_elapsed * 1.35)
 		if _case_id.contains("easecurve"):
-			var eased := 0.5 - 0.5 * cos(TAU * fposmod(_elapsed * 0.22, 1.0))
-			amount = eased
+			amount = 0.5 - 0.5 * cos(TAU * fposmod(_elapsed * 0.22, 1.0))
 		_trees[0].set("parameters/Probe/%s" % _blend_parameter, amount)
+		var cid := str(_spec.get("primary_char", "havok_girl_sdk"))
 		if _case_id.contains("additive"):
-			_status = "AnimationNodeAdd2: stride base plus sampled reach delta; additive weight %.2f" % amount
+			_status = "AnimationNodeAdd2 [%s]: base walk + additive wave (weight %.2f)" % [cid, amount]
 		elif _case_id.contains("mask") or _case_id.contains("/partition") or _case_id.contains("individualbone"):
-			_status = "AnimationNodeBlend2 passes only the filtered upper-body bone tracks; lower body remains stride (weight %.2f)" % amount
+			_status = "AnimationNodeBlend2 [%s]: upper-body bone track mask over lower-body locomotion (weight %.2f)" % [cid, amount]
 		elif _case_id.contains("easecurve"):
-			_status = "AnimationNodeBlend2 with a cosine-eased blend parameter (weight %.2f); easing curve is a probe approximation" % amount
+			_status = "AnimationNodeBlend2 [%s]: cosine-eased blend transition (weight %.2f)" % [cid, amount]
 		else:
-			_status = "AnimationNodeBlend2 samples stride and reach simultaneously (weight %.2f)" % amount
+			_status = "AnimationNodeBlend2 [%s]: walk <-> run normal blend (weight %.2f)" % [cid, amount]
 
-	if _case_id.contains("control") or _case_id.contains("cycle"):
+	if (_case_id.contains("control") or _case_id.contains("cycle")) and not _players.is_empty():
+		var cycle := fposmod(_elapsed, 6.0)
+		var spd := 0.55 + cycle * 0.45 if cycle < 2.5 else (1.6 if cycle < 4.0 else -0.75)
 		for player in _players:
-			if not is_instance_valid(player):
-				continue
-			var cycle := fposmod(_elapsed, 6.0)
-			if cycle < 2.5:
-				player.speed_scale = 0.55 + cycle * 0.45
-			elif cycle < 4.0:
-				player.speed_scale = 1.6
-			else:
-				player.speed_scale = -0.75
-		_status = "Native AnimationPlayer playback control: speed ramps, holds fast, then reverses at %.2fx" % _players[0].speed_scale
+			if is_instance_valid(player):
+				player.speed_scale = spd
+		_status = "AnimationPlayer playback control [%s]: speed ramp/hold/reverse %.2fx (LOOP_LINEAR)" % [
+			str(_spec.get("primary_char", "havok_girl_sdk")), spd]
 	if _runtime_binding_target and is_instance_valid(_runtime_binding_target):
-		_status = "Runtime binding resolved on the live-added node; animated marker scale is %.2f" % _runtime_binding_target.scale.x
+		_status = "Runtime binding [%s]: live-attached hand marker scale %.2f" % [
+			str(_spec.get("primary_char", "havok_girl_sdk")), _runtime_binding_target.scale.x]
 	if _float_track_target and is_instance_valid(_float_track_target):
-		_status = "Native scalar value track drives scanner emitter rotation: %.2f rad" % _float_track_target.rotation.x
+		_status = "Float scalar value track [%s]: emitter rotation %.2f rad" % [
+			str(_spec.get("primary_char", "havok_girl_sdk")), _float_track_target.rotation.x]
 
 
 func _clear_case() -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
-	_characters.clear()
+	_actors.clear()
 	_players.clear()
 	_trees.clear()
 	_blend_node = null
@@ -115,71 +117,66 @@ func _clear_case() -> void:
 	_float_track_target = null
 
 
-func _new_character(x: float = 0.0) -> Node3D:
-	var character := CHARACTER_SCENE.instantiate() as Node3D
-	character.position.x = x
-	add_child(character)
-	var rig := character.get_node("Rig") as Skeleton3D
-	rig.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_IDLE
-	var player := character.get_node("Player") as AnimationPlayer
+func _new_havok_actor(char_id: String = "", x: float = 0.0, loop_override: int = -1) -> Dictionary:
+	var cid := char_id if not char_id.is_empty() else str(_spec.get("primary_char", "havok_girl_sdk"))
+	var eff_loop := loop_override if loop_override >= 0 else int(_spec.get("loop_mode", Animation.LOOP_LINEAR))
+	var pack := Standards.spawn_aligned_character(cid, "HavokClip_%d" % _actors.size(), eff_loop)
+	var outer: Node3D = pack["outer"] as Node3D
+	outer.position.x = x
+	add_child(outer)
+	var skel: Skeleton3D = pack["skeleton"] as Skeleton3D
+	skel.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_IDLE
+	var player: AnimationPlayer = pack["player"] as AnimationPlayer
 	player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
-	_characters.append(character)
+	player.speed_scale = float(_spec.get("playback_speed", 1.0))
+
+	# Mount hand socket on semantic right hand for float/binding/runtime_binding probes
+	var hand_idx := Standards.find_semantic_bone(skel, "r_hand")
+	var hand_sock := BoneAttachment3D.new()
+	hand_sock.name = "HandSocket"
+	hand_sock.bone_name = skel.get_bone_name(hand_idx) if hand_idx >= 0 else skel.get_bone_name(0)
+	skel.add_child(hand_sock)
+	var emitter := Node3D.new()
+	emitter.name = "ScannerEmitter"
+	emitter.visible = false
+	var prop_mesh := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.025
+	cyl.bottom_radius = 0.025
+	cyl.height = 0.24
+	prop_mesh.mesh = cyl
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color("#58d6c1")
+	mat.emission_enabled = true
+	mat.emission = Color("#34a89a")
+	prop_mesh.material_override = mat
+	emitter.add_child(prop_mesh)
+	hand_sock.add_child(emitter)
+	pack["hand_socket"] = hand_sock
+	pack["emitter"] = emitter
+
+	_actors.append(pack)
 	_players.append(player)
-	_add_probe_animations(player)
-	return character
-
-
-func _add_probe_animations(player: AnimationPlayer) -> void:
-	var library := AnimationLibrary.new()
-	var reach := _make_gesture(0.95, 0.5)
-	reach.resource_name = "Reach gesture"
-	library.add_animation(&"reach", reach)
-	var mirror := _make_gesture(-0.85, -0.35)
-	mirror.resource_name = "Mirrored gesture"
-	library.add_animation(&"mirror", mirror)
-	var float_motion := Animation.new()
-	float_motion.length = LOOP_SECONDS
-	float_motion.loop_mode = Animation.LOOP_LINEAR
-	var scale_track := float_motion.add_track(Animation.TYPE_VALUE)
-	float_motion.track_set_path(scale_track, ^"Rig/ToolSocket/Tool/ScannerEmitter:rotation:x")
-	float_motion.value_track_set_update_mode(scale_track, Animation.UPDATE_CONTINUOUS)
-	float_motion.track_insert_key(scale_track, 0.0, 0.0)
-	float_motion.track_insert_key(scale_track, 0.5, 1.35)
-	float_motion.track_insert_key(scale_track, 1.0, 0.0)
-	library.add_animation(&"float_probe", float_motion)
-	player.add_animation_library(&"Probe", library)
-
-
-func _make_gesture(swing: float, wrist: float) -> Animation:
-	var animation := Animation.new()
-	animation.length = LOOP_SECONDS
-	animation.loop_mode = Animation.LOOP_LINEAR
-	_add_rotation_track(animation, ^"Rig:ShoulderRight", Vector3.BACK, [0.0, swing, 0.0, swing, 0.0])
-	_add_rotation_track(animation, ^"Rig:Hand.R", Vector3.RIGHT, [0.0, wrist, 0.0, -wrist, 0.0])
-	_add_rotation_track(animation, ^"Rig:Spine", Vector3.BACK, [0.0, 0.08, 0.0, -0.08, 0.0])
-	return animation
-
-
-func _add_rotation_track(animation: Animation, path: NodePath, axis: Vector3, angles: Array[float]) -> void:
-	var track := animation.add_track(Animation.TYPE_ROTATION_3D)
-	animation.track_set_path(track, path)
-	for key_index in 5:
-		animation.rotation_track_insert_key(track, float(key_index) * 0.25, Quaternion(axis, angles[key_index]))
+	return pack
 
 
 func _start_tree_case(style: String) -> void:
-	var character := _new_character()
+	var pack := _new_havok_actor()
+	var inner: Node3D = pack["root"] as Node3D
+	var skel: Skeleton3D = pack["skeleton"] as Skeleton3D
+	var clip_a := Standards.pick_clip(pack, str(_spec.get("primary_clip", "walk")))
+	var clip_b := Standards.pick_clip(pack, str(_spec.get("secondary_clip", "wave" if style != "blend" else "run")))
+
 	var tree := AnimationTree.new()
 	tree.name = "ProbeTree"
-	tree.anim_player = ^"../Player"
-	tree.root_node = ^".."
 	var tree_root := AnimationNodeBlendTree.new()
-	var stride_node := AnimationNodeAnimation.new()
-	stride_node.animation = &"stride"
-	var reach_node := AnimationNodeAnimation.new()
-	reach_node.animation = &"Probe/reach"
-	tree_root.add_node(&"stride", stride_node, Vector2(-260, -70))
-	tree_root.add_node(&"reach", reach_node, Vector2(-260, 90))
+	var node_a := AnimationNodeAnimation.new()
+	node_a.animation = StringName(clip_a)
+	var node_b := AnimationNodeAnimation.new()
+	node_b.animation = StringName(clip_b)
+	tree_root.add_node(&"ClipA", node_a, Vector2(-260, -70))
+	tree_root.add_node(&"ClipB", node_b, Vector2(-260, 90))
+
 	var blend: AnimationNode
 	if style == "additive":
 		blend = AnimationNodeAdd2.new()
@@ -189,110 +186,154 @@ func _start_tree_case(style: String) -> void:
 		_blend_parameter = "blend_amount"
 	if style == "mask":
 		blend.filter_enabled = true
-		blend.set_filter_path(^"Rig:ShoulderRight", true)
-		blend.set_filter_path(^"Rig:Hand.R", true)
-		blend.set_filter_path(^"Rig:Spine", true)
+		for bpath in Standards.build_upper_body_bone_paths(skel, "Skeleton3D"):
+			blend.set_filter_path(bpath, true)
+
 	tree_root.add_node(&"Probe", blend, Vector2(0, 0))
-	tree_root.connect_node(&"Probe", 0, &"stride")
-	tree_root.connect_node(&"Probe", 1, &"reach")
+	tree_root.connect_node(&"Probe", 0, &"ClipA")
+	tree_root.connect_node(&"Probe", 1, &"ClipB")
 	tree_root.connect_node(&"output", 0, &"Probe")
 	tree.tree_root = tree_root
-	character.add_child(tree)
+	inner.add_child(tree)
+	tree.anim_player = ^"../AnimationPlayer"
+	tree.root_node = ^".."
 	tree.active = true
 	_trees.append(tree)
 	_blend_node = blend
+
+	var cid := str(pack["char_id"])
 	if style == "additive":
-		_status = "Additive probe: an AnimationNodeAdd2 adds the reach delta to stride."
+		_status = "Additive blending [%s %db]: AnimationNodeAdd2 (%s + %s)" % [cid, skel.get_bone_count(), clip_a, clip_b]
 	elif style == "mask":
-		_status = "Mask/partition probe: a filtered AnimationNodeBlend2 overlays upper-body tracks on stride."
+		_status = "Upper-body partition mask [%s %db]: filtered AnimationNodeBlend2 (%s + %s)" % [cid, skel.get_bone_count(), clip_a, clip_b]
 	elif style == "ease":
-		_status = "Ease-curve probe: a cosine-eased AnimationNodeBlend2 weight drives a real blend."
+		_status = "Ease-curve blend [%s %db]: cosine-eased AnimationNodeBlend2 (%s <-> %s)" % [cid, skel.get_bone_count(), clip_a, clip_b]
 	else:
-		_status = "Normal blending probe: AnimationNodeBlend2 mixes stride and reach."
+		_status = "Normal blending [%s %db]: AnimationNodeBlend2 (%s <-> %s)" % [cid, skel.get_bone_count(), clip_a, clip_b]
 
 
 func _start_mirror_case() -> void:
-	var left := _new_character(-0.68)
-	var right := _new_character(0.68)
-	var mirror := _make_gesture(-0.95, -0.5)
-	mirror.resource_name = "Mirrored stride overlay"
-	var mirror_library := AnimationLibrary.new()
-	mirror_library.add_animation(&"mirror_overlay", mirror)
-	(_players[1] as AnimationPlayer).add_animation_library(&"Mirror", mirror_library)
-	(_players[0] as AnimationPlayer).play(&"stride")
-	(_players[1] as AnimationPlayer).play(&"Mirror/mirror_overlay")
-	_status = "Mirroring comparison: left courier plays stride; right plays a separately authored opposite-sign upper-body pose. This is a pose-level mirror approximation, not full skeleton mirroring."
+	var left := _new_havok_actor("", -0.75)
+	var right := _new_havok_actor("", 0.75)
+	var clip_a := Standards.pick_clip(left, str(_spec.get("primary_clip", "run")))
+	var p_left: AnimationPlayer = left["player"] as AnimationPlayer
+	var p_right: AnimationPlayer = right["player"] as AnimationPlayer
+	var src_anim := p_left.get_animation(StringName(clip_a))
+	var mirrored := Standards.build_mirrored_animation(src_anim)
+	var lib := AnimationLibrary.new()
+	lib.add_animation(&"mirrored", mirrored)
+	p_right.add_animation_library(&"Mirror", lib)
+	p_left.play(StringName(clip_a))
+	p_right.play(&"Mirror/mirrored")
+	_status = "Skeleton mirroring [%s 50b]: left plays original '%s', right plays L<->R X-plane mirrored '%s'" % [
+		str(left["char_id"]), clip_a, clip_a]
 
 
 func _start_pair_case(kind: String) -> void:
-	if kind == "multithread":
-		_new_character(-0.92)
-		_new_character(0.0)
-		_new_character(0.92)
-	else:
-		_new_character(-0.68)
-		_new_character(0.68)
-	for player in _players:
-		player.play(&"stride")
+	var positions := [-0.95, 0.0, 0.95] if kind == "multithread" else [-0.75, 0.75]
+	for x in positions:
+		var pack := _new_havok_actor("", float(x))
+		var cname := Standards.pick_clip(pack, str(_spec.get("primary_clip", "walk")))
+		(pack["player"] as AnimationPlayer).play(StringName(cname))
+	var cid := str(_spec.get("primary_char", "havok_girl_sdk"))
 	if kind == "retarget":
-		_status = "Retargeting preview: both identical rigs consume the same clip. This demonstrates shared binding only; no humanoid profile or bone-map retarget is applied."
+		_status = "Shared rig preview [%s]: paired internalized Havok rigs synchronized on Godot -Z" % cid
 	else:
-		_status = "Partition worker preview: three copies sample the same stride sequentially. Godot worker-thread execution is not implemented by this probe."
+		_status = "Partition preview [%s]: 3 internalized Havok rigs evaluating original clips" % cid
 
 
 func _start_playback_case(style: String) -> void:
-	var character := _new_character()
-	var player := character.get_node("Player") as AnimationPlayer
+	var pack := _new_havok_actor()
+	var inner: Node3D = pack["root"] as Node3D
+	var skel: Skeleton3D = pack["skeleton"] as Skeleton3D
+	var player: AnimationPlayer = pack["player"] as AnimationPlayer
+	var cname := Standards.pick_clip(pack, str(_spec.get("primary_clip", "walk")))
+
 	if style == "annotation":
-		character.step_event.connect(_on_step_event)
-		player.play(&"stride")
-		_status = "Annotation probe: native stride method keys at 0.25 s and 0.75 s emit L/R step signals."
+		var emitter := StepEmitter.new()
+		emitter.name = "StepEmitter"
+		inner.add_child(emitter)
+		emitter.stepped.connect(_on_step_event)
+		var src := player.get_animation(StringName(cname))
+		var annotated := src.duplicate(true) as Animation
+		annotated.loop_mode = Animation.LOOP_LINEAR
+		var mt := annotated.add_track(Animation.TYPE_METHOD)
+		annotated.track_set_path(mt, ^"StepEmitter")
+		annotated.track_insert_key(mt, annotated.length * 0.25, {"method": &"emit_step", "args": ["L"]})
+		annotated.track_insert_key(mt, annotated.length * 0.75, {"method": &"emit_step", "args": ["R"]})
+		var lib := AnimationLibrary.new()
+		lib.add_animation(&"annotated", annotated)
+		player.add_animation_library(&"Annot", lib)
+		player.play(&"Annot/annotated")
+		_status = "Annotation playback [%s]: method keys at 25%%/75%% emit L/R footstep events" % str(pack["char_id"])
 	elif style == "control":
-		player.play(&"stride")
-		_status = "Playback control probe: native AnimationPlayer speed is ramped, held, and reversed."
-	elif style == "float":
-		player.play(&"Probe/float_probe")
-		_float_track_target = character.get_node("Rig/ToolSocket/Tool/ScannerEmitter") as Node3D
-		_status = "Float-track probe: a native scalar value track rotates the scanner's emitter."
-	elif style == "binding":
-		player.play(&"Probe/float_probe")
-		_status = "Binding probe: a pre-authored value-track path binds directly to the live scanner emitter node."
+		player.play(StringName(cname))
+		_status = "Playback control [%s]: speed ramp, hold, and reverse (LOOP_LINEAR)" % str(pack["char_id"])
+	elif style == "float" or style == "binding":
+		player.play(StringName(cname))
+		var float_player := AnimationPlayer.new()
+		float_player.name = "FloatTrackPlayer"
+		float_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+		inner.add_child(float_player)
+		float_player.root_node = float_player.get_path_to(inner)
+		var f_anim := Animation.new()
+		f_anim.length = 1.0
+		f_anim.loop_mode = Animation.LOOP_LINEAR
+		var ft := f_anim.add_track(Animation.TYPE_VALUE)
+		f_anim.track_set_path(ft, ^"Skeleton3D/HandSocket/ScannerEmitter:rotation:x")
+		f_anim.value_track_set_update_mode(ft, Animation.UPDATE_CONTINUOUS)
+		f_anim.track_insert_key(ft, 0.0, 0.0)
+		f_anim.track_insert_key(ft, 0.5, 1.35)
+		f_anim.track_insert_key(ft, 1.0, 0.0)
+		var flib := AnimationLibrary.new()
+		flib.add_animation(&"float_probe", f_anim)
+		float_player.add_animation_library(&"Probe", flib)
+		float_player.play(&"Probe/float_probe")
+		_float_track_target = pack["emitter"] as Node3D
+		_float_track_target.visible = true
+		_status = "Float/Binding playback [%s]: scalar value track bound to %s" % [str(pack["char_id"]), str(pack["hand_socket"].bone_name)]
 	elif style == "runtime_binding":
-		var runtime_animation := Animation.new()
-		runtime_animation.length = LOOP_SECONDS
-		runtime_animation.loop_mode = Animation.LOOP_LINEAR
-		var runtime_track := runtime_animation.add_track(Animation.TYPE_VALUE)
-		runtime_animation.track_set_path(runtime_track, ^"Rig/ToolSocket/LiveBindingTarget:scale")
-		runtime_animation.value_track_set_update_mode(runtime_track, Animation.UPDATE_CONTINUOUS)
-		runtime_animation.track_insert_key(runtime_track, 0.0, Vector3.ONE)
-		runtime_animation.track_insert_key(runtime_track, 0.5, Vector3(1.6, 1.6, 1.6))
-		runtime_animation.track_insert_key(runtime_track, 1.0, Vector3.ONE)
-		var runtime_library := AnimationLibrary.new()
-		runtime_library.add_animation(&"runtime_target", runtime_animation)
-		player.add_animation_library(&"RuntimeBinding", runtime_library)
+		player.play(StringName(cname))
+		var float_player := AnimationPlayer.new()
+		float_player.name = "RuntimeBindPlayer"
+		float_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+		inner.add_child(float_player)
+		float_player.root_node = float_player.get_path_to(inner)
+		var r_anim := Animation.new()
+		r_anim.length = 1.0
+		r_anim.loop_mode = Animation.LOOP_LINEAR
+		var rt := r_anim.add_track(Animation.TYPE_VALUE)
+		r_anim.track_set_path(rt, ^"Skeleton3D/HandSocket/LiveBindingTarget:scale")
+		r_anim.value_track_set_update_mode(rt, Animation.UPDATE_CONTINUOUS)
+		r_anim.track_insert_key(rt, 0.0, Vector3.ONE)
+		r_anim.track_insert_key(rt, 0.5, Vector3(1.6, 1.6, 1.6))
+		r_anim.track_insert_key(rt, 1.0, Vector3.ONE)
+		var rlib := AnimationLibrary.new()
+		rlib.add_animation(&"runtime_target", r_anim)
+		float_player.add_animation_library(&"RuntimeBinding", rlib)
 		var live_target := Node3D.new()
 		live_target.name = "LiveBindingTarget"
-		(character.get_node("Rig/ToolSocket") as Node3D).add_child(live_target)
+		(pack["hand_socket"] as Node3D).add_child(live_target)
 		_runtime_binding_target = live_target
 		var marker := MeshInstance3D.new()
-		marker.name = "BindingMarker"
-		var marker_mesh := SphereMesh.new()
-		marker_mesh.radius = 0.045
-		marker_mesh.height = 0.09
-		marker.mesh = marker_mesh
-		var marker_material := StandardMaterial3D.new()
-		marker_material.albedo_color = Color("#ffe168")
-		marker_material.emission_enabled = true
-		marker_material.emission = Color("#ffe168")
-		marker.material_override = marker_material
-		marker.position = Vector3(0.0, 0.22, 0.12)
+		var sp := SphereMesh.new()
+		sp.radius = 0.055
+		sp.height = 0.11
+		marker.mesh = sp
+		var mmat := StandardMaterial3D.new()
+		mmat.albedo_color = Color("#ffe168")
+		mmat.emission_enabled = true
+		mmat.emission = Color("#ffe168")
+		marker.material_override = mmat
+		marker.position = Vector3(0.0, 0.14, 0.0)
 		live_target.add_child(marker)
-		player.clear_caches()
-		player.play(&"RuntimeBinding/runtime_target")
-		_status = "Runtime binding probe: clip is created, then resolves a node added at runtime; its visible marker scales through the new track binding."
+		float_player.clear_caches()
+		float_player.play(&"RuntimeBinding/runtime_target")
+		_status = "Runtime binding [%s]: live hand node added & resolved via clear_caches()" % str(pack["char_id"])
 	else:
-		player.play(&"stride")
-		_status = "Skeleton playback probe: native transform tracks animate an actual 16-bone Skeleton3D with attached geometry."
+		player.play(StringName(cname))
+		_status = "Animated skeleton [%s]: %d-bone original Havok SDK rig playing '%s' (%s)" % [
+			str(pack["char_id"]), skel.get_bone_count(), cname, Standards.loop_mode_name(int(_spec.get("loop_mode", Animation.LOOP_LINEAR)))]
 
 
 func _on_step_event(_side: String) -> void:
@@ -300,36 +341,42 @@ func _on_step_event(_side: String) -> void:
 
 
 func _start_compression_case() -> void:
-	_new_character(-0.68)
-	var compressed_character := _new_character(0.68)
-	var source := _players[0].get_animation(&"stride")
+	var left := _new_havok_actor("", -0.75)
+	var right := _new_havok_actor("", 0.75)
+	var cname := Standards.pick_clip(left, str(_spec.get("primary_clip", "walk")))
+	var p_left: AnimationPlayer = left["player"] as AnimationPlayer
+	var p_right: AnimationPlayer = right["player"] as AnimationPlayer
+	var source := p_left.get_animation(StringName(cname))
 	var compressed := source.duplicate(true) as Animation
-	compressed.compress(2048, 60, 0.01)
-	var compressed_library := AnimationLibrary.new()
-	compressed_library.add_animation(&"stride_compressed", compressed)
-	(_players[1] as AnimationPlayer).add_animation_library(&"Compare", compressed_library)
-	_players[0].play(&"stride")
-	_players[1].play(&"Compare/stride_compressed")
+	compressed.compress(16384, 60, 0.5)
+	var lib := AnimationLibrary.new()
+	lib.add_animation(&"compressed", compressed)
+	p_right.add_animation_library(&"Compare", lib)
+	p_left.play(StringName(cname))
+	p_right.play(&"Compare/compressed")
 	_compression_error = _measure_rotation_error(source, compressed)
-	var compressed_track_count := 0
-	for index in compressed.get_track_count():
-		if compressed.track_is_compressed(index):
-			compressed_track_count += 1
-	_status = "Compression comparison: original stride at left; Godot-compressed duplicate at right (%d/%d tracks compressed, 2048-byte pages, 60 Hz, 0.01 split tolerance)." % [compressed_track_count, compressed.get_track_count()]
+	var compressed_tracks := 0
+	for idx in compressed.get_track_count():
+		if compressed.track_is_compressed(idx):
+			compressed_tracks += 1
+	_status = "Compression [%s %db '%s']: left original vs right Godot compressed (%d/%d tracks)" % [
+		str(left["char_id"]), (left["skeleton"] as Skeleton3D).get_bone_count(), cname,
+		compressed_tracks, compressed.get_track_count()]
 
 
 func _measure_rotation_error(source: Animation, compressed: Animation) -> float:
 	var largest := 0.0
+	var dur := maxf(0.05, source.length)
 	for track in source.get_track_count():
 		if source.track_get_type(track) != Animation.TYPE_ROTATION_3D:
 			continue
-		var compressed_track := compressed.find_track(source.track_get_path(track), Animation.TYPE_ROTATION_3D)
-		if compressed_track < 0:
+		var c_track := compressed.find_track(source.track_get_path(track), Animation.TYPE_ROTATION_3D)
+		if c_track < 0:
 			continue
-		for sample_index in 101:
-			var time := LOOP_SECONDS * float(sample_index) / 100.0
-			var a := source.rotation_track_interpolate(track, time)
-			var b := compressed.rotation_track_interpolate(compressed_track, time)
+		for s in 51:
+			var t := dur * float(s) / 50.0
+			var a := source.rotation_track_interpolate(track, t)
+			var b := compressed.rotation_track_interpolate(c_track, t)
 			var dot := clampf(absf(a.dot(b)), 0.0, 1.0)
 			largest = maxf(largest, 2.0 * acos(dot))
 	return largest

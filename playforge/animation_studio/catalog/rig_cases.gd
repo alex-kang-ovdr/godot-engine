@@ -1,11 +1,10 @@
 extends Node3D
-## Small, self-contained rig demonstrations for the Animation Studio catalog.
-## These are Godot built-in/runtime examples, not imports of Havok SDK assets.
+## Rig demonstrations for the Animation Studio catalog using internalized
+## original Havok 2015.1.0-r1 SDK assets (HavokGirl 50b, Crabby 18b, Zombie 89b,
+## Firefighter 38b, Shulgoth/Male/Singer/Gingerbread/BigBad/Boy/FemaleDress)
+## aligned to Godot Standard coordinates (-Z forward, +Y up, SI meters).
 
-const CASE_RETARGET := "Retargeting"
-const CASE_MAPPING := "SkeletalMapping"
-const CASE_IK := "InverseKinematics"
-const CASE_RAGDOLL := "Ragdoll"
+const Standards := preload("res://catalog/havok_demo_standards.gd")
 
 class PoseProbe extends SkeletonModifier3D:
 	var watched_bone: StringName
@@ -22,42 +21,55 @@ class PoseProbe extends SkeletonModifier3D:
 			samples += 1
 
 var _case_name := ""
+var _spec: Dictionary = {}
 var _status := "Choose a rig case."
 var _time := 0.0
-var _driver: Skeleton3D
-var _mapped_target: Skeleton3D
-var _retarget_target: Skeleton3D
+var _src_pack: Dictionary = {}
+var _dst_pack: Dictionary = {}
+var _retarget_pairs: Array[Array] = []
+var _proxy_driver: Skeleton3D
+var _proxy_target: Skeleton3D
 var _ik_target: Node3D
 var _ik_pole: Node3D
+var _ik_target_b: Node3D
+var _ik_pole_b: Node3D
 var _physics_simulator: PhysicalBoneSimulator3D
 var _ik_modifier: TwoBoneIK3D
 var _look_at_modifier: LookAtModifier3D
 var _ik_skeleton: Skeleton3D
+var _ragdoll_root: Node3D
 var _controller_clock := 0.0
 var _controller_simulating := true
 var _pose_probe: PoseProbe
 
 
-func start_case(path: String, name: String) -> void:
+func start_case(path: String, case_name: String) -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
-	_case_name = name
+	_case_name = case_name
 	set_meta("case_path", path)
+	_spec = Standards.resolve_demo_spec(path, case_name)
 	_time = 0.0
-	_driver = null
-	_mapped_target = null
-	_retarget_target = null
+	_src_pack = {}
+	_dst_pack = {}
+	_retarget_pairs.clear()
+	_proxy_driver = null
+	_proxy_target = null
 	_ik_target = null
 	_ik_pole = null
+	_ik_target_b = null
+	_ik_pole_b = null
 	_physics_simulator = null
 	_ik_modifier = null
 	_look_at_modifier = null
 	_ik_skeleton = null
+	_ragdoll_root = null
 	_pose_probe = null
 	_controller_clock = 0.0
 	_controller_simulating = true
-	var key := name.to_lower().replace(" ", "")
+
+	var key := case_name.to_lower().replace(" ", "")
 	var route := path.to_lower().replace("\\", "/")
 	if "/ragdoll/" in route or "ragdoll" in key:
 		_build_ragdoll()
@@ -65,14 +77,14 @@ func start_case(path: String, name: String) -> void:
 		_build_look_at()
 	elif "/inversekinematics/footik/" in route or "footik" in key:
 		_build_foot_ik()
-	elif "/inversekinematics/" in route or "inverse" in key or key == "ik" or "reaching" in key:
-		_build_ik()
+	elif "/inversekinematics/" in route or "inverse" in key or key == "ik" or "reaching" in key or "crabby" in route:
+		_build_ik(route)
 	elif "/skeletalmapping/" in route or "skeletal" in key or "mapping" in key:
 		_build_mapping()
 	elif "/retargeting/" in route or "retarget" in key:
 		_build_retarget()
 	else:
-		_status = "Unsupported rig case '%s' (%s)." % [name, path]
+		_status = "Unsupported rig case '%s' (%s)." % [case_name, path]
 		push_error(_status)
 
 
@@ -82,38 +94,45 @@ func status_text() -> String:
 
 func _process(delta: float) -> void:
 	_time += delta
-	if is_instance_valid(_driver):
-		var angle := sin(_time * 1.7) * 0.62
-		var upper := _driver.find_bone("LeftUpperArm")
-		if upper < 0:
-			upper = _driver.find_bone("DriverUpper")
+	if not _src_pack.is_empty() and not _dst_pack.is_empty() and not _retarget_pairs.is_empty():
+		var s_skel: Skeleton3D = _src_pack["skeleton"] as Skeleton3D
+		var d_skel: Skeleton3D = _dst_pack["skeleton"] as Skeleton3D
+		if is_instance_valid(s_skel) and is_instance_valid(d_skel):
+			var blend_w := 0.5 + 0.5 * sin(_time * 1.6) if ("blend" in _case_path()) else 1.0
+			Standards.apply_semantic_retarget(s_skel, d_skel, _retarget_pairs, blend_w, float(_src_pack.get("align_yaw", PI)), float(_dst_pack.get("align_yaw", PI)))
+			d_skel.force_update_all_bone_transforms()
+
+	if is_instance_valid(_proxy_driver):
+		var upper := _proxy_driver.find_bone("LeftUpperArm")
 		if upper >= 0:
-			_driver.set_bone_pose_rotation(upper, Quaternion(Vector3.FORWARD, angle))
-			_driver.force_update_all_bone_transforms()
-	if is_instance_valid(_mapped_target):
-		# Reduced example: explicit name-pair mapping performed in script.
-		# This intentionally does not claim to cover a production retarget profile.
-		for pair in [["DriverUpper", "MappedUpper"], ["DriverForearm", "MappedForearm"], ["DriverHand", "MappedHand"]]:
-			var from := _driver.find_bone(pair[0])
-			var to := _mapped_target.find_bone(pair[1])
-			if from >= 0 and to >= 0:
-				_mapped_target.set_bone_pose_rotation(to, _driver.get_bone_pose_rotation(from))
-		_mapped_target.force_update_all_bone_transforms()
+			_proxy_driver.set_bone_pose_rotation(upper, Quaternion(Vector3.FORWARD, sin(_time * 1.7) * 0.62))
+			_proxy_driver.force_update_all_bone_transforms()
+			_proxy_driver.advance(0.0)
+
 	if is_instance_valid(_ik_target):
-		if _ik_modifier != null and _ik_modifier.name == "FootTwoBoneIK3D":
-			_ik_target.position = Vector3(0.32 + sin(_time * 1.2) * 0.28, 0.12 + absf(cos(_time * 1.6)) * 0.28, 0.30)
+		if str(_spec.get("primary_char", "")) == "crabby":
+			_ik_target.position = Vector3(1.15 + sin(_time * 1.5) * 0.25, 0.25 + absf(cos(_time * 1.8)) * 0.35, -0.95)
+			if is_instance_valid(_ik_target_b):
+				_ik_target_b.position = Vector3(-1.15 + cos(_time * 1.5) * 0.25, 0.25 + absf(sin(_time * 1.8)) * 0.35, -0.95)
+		elif _ik_modifier != null and _ik_modifier.name == "FootTwoBoneIK3D":
+			_ik_target.position = Vector3(-0.18, 0.16 + absf(cos(_time * 1.6)) * 0.20, -0.22 + sin(_time * 1.4) * 0.25)
+		elif _look_at_modifier != null:
+			_ik_target.position = Vector3(sin(_time * 1.4) * 0.95, 1.42 + cos(_time * 1.1) * 0.22, -1.45)
 		else:
-			_ik_target.position = Vector3(-0.62 + sin(_time * 1.2) * 0.18, 1.40 + cos(_time * 0.8) * 0.10, 0.18)
-	if is_instance_valid(_driver) and _driver.modifier_callback_mode_process == Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL:
-		_driver.advance(0.0)
-	if is_instance_valid(_mapped_target) and _mapped_target.modifier_callback_mode_process == Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL:
-		_mapped_target.advance(0.0)
-	if is_instance_valid(_ik_skeleton) and _ik_skeleton.modifier_callback_mode_process == Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL:
-		_ik_skeleton.advance(0.0)
+			_ik_target.position = Vector3(-0.42 + sin(_time * 1.3) * 0.20, 1.18 + cos(_time * 0.9) * 0.16, -0.58)
+
 	if _ik_modifier != null:
-		_status = "TwoBoneIK3D live reach · end-to-goal %.2f m" % _ik_error()
+		_status = "TwoBoneIK3D [%s %db] · end-to-goal %.2f m" % [
+			str(_spec.get("primary_char", "")),
+			_ik_skeleton.get_bone_count() if is_instance_valid(_ik_skeleton) else 0,
+			_ik_error(),
+		]
 	elif _look_at_modifier != null:
-		_status = "LookAtModifier3D live head aim · target %s" % str(_look_at_modifier.is_target_within_limitation())
+		_status = "LookAtModifier3D [%s %db] · head tracking within limit: %s" % [
+			str(_spec.get("primary_char", "")),
+			_ik_skeleton.get_bone_count() if is_instance_valid(_ik_skeleton) else 0,
+			str(_look_at_modifier.is_target_within_limitation()),
+		]
 	elif _physics_simulator != null:
 		var bodies := 0
 		var active_bodies := 0
@@ -122,6 +141,7 @@ func _process(delta: float) -> void:
 				bodies += 1
 				if child.is_simulating_physics():
 					active_bodies += 1
+		var cid := str(_spec.get("primary_char", ""))
 		if _has_case_token("controller"):
 			_controller_clock += delta
 			if _controller_clock >= 1.25:
@@ -131,124 +151,246 @@ func _process(delta: float) -> void:
 					_physics_simulator.physical_bones_start_simulation()
 				else:
 					_physics_simulator.physical_bones_stop_simulation()
-			_status = "Reduced active/free physics handoff · bodies %d/%d · %s" % [active_bodies, bodies, "simulating" if _controller_simulating else "pose-held"]
+			_status = "Ragdoll controller [%s] · active/pose handoff %d/%d · %s" % [
+				cid, active_bodies, bodies, "simulating" if _controller_simulating else "animated"]
 		elif _has_case_token("constraints"):
-			_status = "Reduced constraint probe · %s joints · %d/%d bodies active" % ["cone" if _has_case_token("soft") else "pin", active_bodies, bodies]
-		elif _has_case_token("penetration"):
-			_status = "Contact probe · enlarged collision capsules against the gallery floor · %d/%d bodies" % [active_bodies, bodies]
-		elif _has_case_token("scaling"):
-			_status = "Scaled physical chain · factor %.2f · %d/%d bodies" % [get_node("Physics chain").scale.x, active_bodies, bodies]
+			_status = "Ragdoll constraints [%s] · %s joints · %d/%d bodies (g=9.81 m/s²)" % [
+				cid, "cone" if _has_case_token("soft") else "pin", active_bodies, bodies]
+		elif _has_case_token("scaling") and is_instance_valid(_ragdoll_root):
+			_status = "Scaled ragdoll [%s] · scale %.2fx · %d/%d bodies" % [cid, _ragdoll_root.scale.x, active_bodies, bodies]
 		elif _has_case_token("powered"):
-			_status = "Reduced powered-follow proxy · gravity suppressed and damping raised · %d/%d bodies" % [active_bodies, bodies]
+			_status = "Powered ragdoll proxy [%s] · gravity suppressed · %d/%d bodies" % [cid, active_bodies, bodies]
 		else:
-			_status = "Reduced PhysicalBoneSimulator3D chain · active bodies %d/%d" % [active_bodies, bodies]
-	elif _case_name.to_lower().contains("skeletal") or _case_name.to_lower().contains("mapping") or "/skeletalmapping/" in _case_path():
-		var mapped_angle := 0.0
-		if is_instance_valid(_mapped_target):
-			var mapped_upper := _mapped_target.find_bone("MappedUpper")
-			if mapped_upper >= 0:
-				mapped_angle = rad_to_deg(_mapped_target.get_bone_pose_rotation(mapped_upper).get_angle())
-		_status = "Reduced explicit local bone map · target angle %.0f° · no full Havok mapping coverage" % mapped_angle
-	else:
-		var mapped_angle := 0.0
-		if is_instance_valid(_retarget_target):
-			mapped_angle = rad_to_deg(_retarget_target.get_bone_pose_rotation(_retarget_target.find_bone("LeftUpperArm")).get_angle())
-		_status = "RetargetModifier3D humanoid map · target arm angle %.0f°" % mapped_angle
+			_status = "PhysicalBoneSimulator3D [%s] · active bodies %d/%d (SI g=9.81 m/s²)" % [cid, active_bodies, bodies]
+	elif not _src_pack.is_empty() and not _dst_pack.is_empty():
+		var s_cid := str(_src_pack["char_id"])
+		var d_cid := str(_dst_pack["char_id"])
+		var s_skel: Skeleton3D = _src_pack["skeleton"] as Skeleton3D
+		var d_skel: Skeleton3D = _dst_pack["skeleton"] as Skeleton3D
+		if "/skeletalmapping/" in _case_path():
+			_status = "Skeletal mapping [%s %db -> %s %db] · %d semantic bones mapped on Godot -Z" % [
+				s_cid, s_skel.get_bone_count(), d_cid, d_skel.get_bone_count(), _retarget_pairs.size()]
+		else:
+			var angle_deg := 0.0
+			if is_instance_valid(_proxy_target):
+				var b := _proxy_target.find_bone("LeftUpperArm")
+				if b >= 0:
+					angle_deg = rad_to_deg(_proxy_target.get_bone_pose_rotation(b).get_angle())
+			_status = "RetargetModifier3D [%s %db -> %s %db] · %d bones · humanoid profile %.0f°" % [
+				s_cid, s_skel.get_bone_count(), d_cid, d_skel.get_bone_count(), _retarget_pairs.size(), angle_deg]
 
 
 func _build_retarget() -> void:
-	var source_root := _rig_root("Source rig", Vector3(-0.9, 0, 0), Color("#42c6b5"))
-	_driver = _make_arm_rig(source_root, "SourceSkeleton", "humanoid", 0.62)
-	var target_root := _rig_root("Retargeted rig", Vector3(0.9, 0, 0), Color("#f2a64a"))
-	var target := _make_arm_rig(target_root, "TargetSkeleton", "humanoid", 0.48)
-	_retarget_target = target
-	target_root.remove_child(target)
-	target_root.queue_free()
+	var src_id := str(_spec.get("primary_char", "shulgoth"))
+	var dst_id := str(_spec.get("secondary_char", "male_nocape"))
+	if dst_id.is_empty():
+		dst_id = "male_nocape"
+	_src_pack = Standards.spawn_aligned_character(src_id, "RetargetSource", Animation.LOOP_LINEAR)
+	_dst_pack = Standards.spawn_aligned_character(dst_id, "RetargetTarget", Animation.LOOP_LINEAR)
+	var src_outer: Node3D = _src_pack["outer"] as Node3D
+	var dst_outer: Node3D = _dst_pack["outer"] as Node3D
+	src_outer.position = Vector3(-0.95, 0.0, 0.0)
+	dst_outer.position = Vector3(0.95, 0.0, 0.0)
+	add_child(src_outer)
+	add_child(dst_outer)
+
+	var src_player: AnimationPlayer = _src_pack["player"] as AnimationPlayer
+	src_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+	var clip_a := Standards.pick_clip(_src_pack, str(_spec.get("primary_clip", "walk")))
+	src_player.play(StringName(clip_a))
+
+	var dst_player: AnimationPlayer = _dst_pack["player"] as AnimationPlayer
+	dst_player.active = false
+	var s_skel: Skeleton3D = _src_pack["skeleton"] as Skeleton3D
+	var d_skel: Skeleton3D = _dst_pack["skeleton"] as Skeleton3D
+	_retarget_pairs = Standards.build_semantic_retarget_pairs(s_skel, d_skel)
+
+	# Native Godot C++ RetargetModifier3D humanoid bridge (non-visual logical driver)
+	_proxy_driver = _make_humanoid_bridge_skeleton("HumanoidBridgeSource")
+	add_child(_proxy_driver)
+	_proxy_target = _make_humanoid_bridge_skeleton("HumanoidBridgeTarget")
 	var retarget := RetargetModifier3D.new()
 	retarget.name = "RetargetModifier3D"
 	retarget.profile = SkeletonProfileHumanoid.new()
 	retarget.use_global_pose = false
-	_driver.add_child(retarget)
-	target.position = Vector3(1.8, 0, 0)
-	retarget.add_child(target)
-	_status = "Built-in RetargetModifier3D transfers humanoid profile bones between rigs."
+	_proxy_driver.add_child(retarget)
+	retarget.add_child(_proxy_target)
+	_status = "RetargetModifier3D [%s -> %s]: live semantic + humanoid retarget on Godot -Z" % [src_id, dst_id]
 
 
 func _build_mapping() -> void:
-	var source_root := _rig_root("Source", Vector3(-0.85, 0, 0), Color("#42c6b5"))
-	_driver = _make_arm_rig(source_root, "SourceSkeleton", "driver", 0.58)
-	var target_root := _rig_root("Mapped target", Vector3(0.85, 0, 0), Color("#b59aff"))
-	_mapped_target = _make_arm_rig(target_root, "MappedSkeleton", "mapped", 0.48)
-	_status = "Reduced example: explicit local bone-pair mapping in GDScript; not a full retarget profile."
+	var src_id := str(_spec.get("primary_char", "havok_girl_sdk"))
+	var dst_id := str(_spec.get("secondary_char", "firefighter"))
+	if dst_id.is_empty():
+		dst_id = "firefighter"
+	_src_pack = Standards.spawn_aligned_character(src_id, "MapSource", Animation.LOOP_LINEAR)
+	_dst_pack = Standards.spawn_aligned_character(dst_id, "MapTarget", Animation.LOOP_LINEAR)
+	(_src_pack["outer"] as Node3D).position = Vector3(-0.90, 0.0, 0.0)
+	(_dst_pack["outer"] as Node3D).position = Vector3(0.90, 0.0, 0.0)
+	add_child(_src_pack["outer"] as Node3D)
+	add_child(_dst_pack["outer"] as Node3D)
+	var src_player: AnimationPlayer = _src_pack["player"] as AnimationPlayer
+	src_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+	src_player.play(StringName(Standards.pick_clip(_src_pack, str(_spec.get("primary_clip", "walk")))))
+	(_dst_pack["player"] as AnimationPlayer).active = false
+	_retarget_pairs = Standards.build_semantic_retarget_pairs(_src_pack["skeleton"] as Skeleton3D, _dst_pack["skeleton"] as Skeleton3D)
+	_status = "Skeletal mapping [%s -> %s]: %d paired bones" % [src_id, dst_id, _retarget_pairs.size()]
 
 
-func _build_ik() -> void:
-	var arm_root := _rig_root("IK arm", Vector3.ZERO, Color("#52c7b8"))
-	var skeleton := _make_arm_rig(arm_root, "Skeleton", "ik", 0.72)
-	_ik_skeleton = skeleton
-	_ik_target = _marker("Reach target", Color("#ffbd52"), 0.10)
-	_ik_target.position = Vector3(0.35, 1.55, 0.42)
-	add_child(_ik_target)
-	_ik_pole = _marker("Pole", Color("#73a9ff"), 0.075)
-	_ik_pole.position = Vector3(-0.8, 1.1, 0.4)
-	add_child(_ik_pole)
-	_ik_modifier = _add_two_bone_ik(skeleton, "TwoBoneIK3D", "LeftUpperArm", "LeftLowerArm", "LeftHand", _ik_target, _ik_pole)
-	_attach_pose_probe(skeleton, "LeftHand")
-	_status = "TwoBoneIK3D solves a live arm chain toward a moving target and pole."
+func _build_ik(route: String) -> void:
+	var is_crabby := "/crabby/" in route
+	var cid := "crabby" if is_crabby else str(_spec.get("primary_char", "havok_girl_sdk"))
+	_src_pack = Standards.spawn_aligned_character(cid, "IKActor", Animation.LOOP_LINEAR)
+	add_child(_src_pack["outer"] as Node3D)
+	var skel: Skeleton3D = _src_pack["skeleton"] as Skeleton3D
+	skel.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_IDLE
+	_ik_skeleton = skel
+	var player: AnimationPlayer = _src_pack["player"] as AnimationPlayer
+	player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+	player.play(StringName(Standards.pick_clip(_src_pack, str(_spec.get("primary_clip", "idle")))))
+
+	if is_crabby:
+		_ik_target = _marker("CrabbyRightTarget", Color("#ffbd52"), 0.14)
+		_ik_target.position = Vector3(1.15, 0.30, -0.95)
+		add_child(_ik_target)
+		_ik_pole = _marker("CrabbyRightPole", Color("#73a9ff"), 0.09)
+		_ik_pole.position = Vector3(1.4, 2.2, -0.7)
+		add_child(_ik_pole)
+		_ik_modifier = _add_two_bone_ik(skel, "TwoBoneIK3D", "frontRight1", "frontRight2", "frontRight3", _ik_target, _ik_pole)
+		_ik_target_b = _marker("CrabbyLeftTarget", Color("#ffbd52"), 0.14)
+		_ik_target_b.position = Vector3(-1.15, 0.30, -0.95)
+		add_child(_ik_target_b)
+		_ik_pole_b = _marker("CrabbyLeftPole", Color("#73a9ff"), 0.09)
+		_ik_pole_b.position = Vector3(-1.4, 2.2, -0.7)
+		add_child(_ik_pole_b)
+		_add_two_bone_ik(skel, "TwoBoneIK3D_Left", "frontLeft1", "frontLeft2", "frontLeft3", _ik_target_b, _ik_pole_b)
+		_attach_pose_probe(skel, &"frontRight3")
+		_status = "Crabby IK [crabby 18b]: dual TwoBoneIK3D chains on original 6-legged SpiderCrab"
+	else:
+		var root_b := Standards.find_semantic_bone(skel, "l_upper_arm")
+		var mid_b := Standards.find_semantic_bone(skel, "l_lower_arm")
+		var end_b := Standards.find_semantic_bone(skel, "l_hand")
+		_ik_target = _marker("ReachTarget", Color("#ffbd52"), 0.08)
+		_ik_target.position = Vector3(-0.42, 1.18, -0.58)
+		add_child(_ik_target)
+		_ik_pole = _marker("ReachPole", Color("#73a9ff"), 0.06)
+		_ik_pole.position = Vector3(-0.95, 1.0, 0.35)
+		add_child(_ik_pole)
+		_ik_modifier = _add_two_bone_ik(skel, "TwoBoneIK3D", skel.get_bone_name(root_b), skel.get_bone_name(mid_b), skel.get_bone_name(end_b), _ik_target, _ik_pole)
+		_attach_pose_probe(skel, StringName(skel.get_bone_name(end_b)))
+		_status = "Reaching IK [%s %db]: TwoBoneIK3D on left arm chain toward -Z target" % [cid, skel.get_bone_count()]
 
 
 func _build_foot_ik() -> void:
-	var arm_root := _rig_root("Foot IK leg", Vector3.ZERO, Color("#70b7e8"))
-	var skeleton := Skeleton3D.new()
-	skeleton.name = "LegSkeleton"
-	skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL
-	arm_root.add_child(skeleton)
-	_ik_skeleton = skeleton
-	_add_bone(skeleton, "Hips", -1, Vector3(0, 1.4, 0))
-	_add_bone(skeleton, "LeftUpperLeg", 0, Vector3(0, -0.15, 0))
-	_add_bone(skeleton, "LeftLowerLeg", 1, Vector3(0, -0.55, 0))
-	_add_bone(skeleton, "LeftFoot", 2, Vector3(0, -0.52, 0))
-	skeleton.reset_bone_poses()
-	_add_segment_visual(skeleton, "Hips", Vector3(0.36, 0.24, 0.24), Color("#354856"), Vector3.ZERO)
-	_add_segment_visual(skeleton, "LeftUpperLeg", Vector3(0.16, 0.5, 0.14), Color("#70b7e8"), Vector3(0, -0.25, 0))
-	_add_segment_visual(skeleton, "LeftLowerLeg", Vector3(0.13, 0.48, 0.12), Color("#5696c2"), Vector3(0, -0.23, 0))
-	_add_segment_visual(skeleton, "LeftFoot", Vector3(0.32, 0.12, 0.18), Color("#e4d3ba"), Vector3(0.12, -0.01, 0))
-	_ik_target = _marker("Foot plant target", Color("#ffbd52"), 0.09)
-	_ik_target.position = Vector3(0.32, 0.18, 0.30)
+	var cid := str(_spec.get("primary_char", "havok_girl_sdk"))
+	_src_pack = Standards.spawn_aligned_character(cid, "FootIKActor", Animation.LOOP_LINEAR)
+	add_child(_src_pack["outer"] as Node3D)
+	var skel: Skeleton3D = _src_pack["skeleton"] as Skeleton3D
+	skel.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_IDLE
+	_ik_skeleton = skel
+	var player: AnimationPlayer = _src_pack["player"] as AnimationPlayer
+	player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+	player.speed_scale = float(_spec.get("playback_speed", 0.80))
+	player.play(StringName(Standards.pick_clip(_src_pack, "walk")))
+
+	# Stepped terrain block in front of feet
+	var step_box := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(1.1, 0.18, 0.85)
+	step_box.mesh = bm
+	step_box.material_override = _material(Color("#607b72"))
+	step_box.position = Vector3(0.0, 0.09, -0.22)
+	add_child(step_box)
+
+	var thigh_b := Standards.find_semantic_bone(skel, "l_thigh")
+	var calf_b := Standards.find_semantic_bone(skel, "l_calf")
+	var foot_b := Standards.find_semantic_bone(skel, "l_foot")
+	_ik_target = _marker("FootPlantTarget", Color("#ffbd52"), 0.075)
+	_ik_target.position = Vector3(-0.18, 0.20, -0.22)
 	add_child(_ik_target)
-	_ik_pole = _marker("Knee pole", Color("#73a9ff"), 0.07)
-	_ik_pole.position = Vector3(-0.5, 0.75, 0.35)
+	_ik_pole = _marker("KneePole", Color("#73a9ff"), 0.06)
+	_ik_pole.position = Vector3(-0.22, 0.58, -0.95)
 	add_child(_ik_pole)
-	_ik_modifier = _add_two_bone_ik(skeleton, "FootTwoBoneIK3D", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", _ik_target, _ik_pole)
-	_attach_pose_probe(skeleton, "LeftFoot")
-	_status = "FootIk approximation: TwoBoneIK3D plants one leg toward a moving ground target."
+	_ik_modifier = _add_two_bone_ik(skel, "FootTwoBoneIK3D", skel.get_bone_name(thigh_b), skel.get_bone_name(calf_b), skel.get_bone_name(foot_b), _ik_target, _ik_pole)
+	_attach_pose_probe(skel, StringName(skel.get_bone_name(foot_b)))
+	_status = "FootIk [%s %db @ %.2fx]: TwoBoneIK3D foot planting over terrain step" % [cid, skel.get_bone_count(), player.speed_scale]
 
 
 func _build_look_at() -> void:
-	var root := _rig_root("Look-at rig", Vector3.ZERO, Color("#78c5b8"))
-	var skeleton := Skeleton3D.new()
-	skeleton.name = "Skeleton"
-	skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL
-	root.add_child(skeleton)
-	_ik_skeleton = skeleton
-	_add_bone(skeleton, "Root", -1, Vector3(0, 0.8, 0))
-	_add_bone(skeleton, "Neck", 0, Vector3(0, 0.42, 0))
-	_add_bone(skeleton, "Head", 1, Vector3(0, 0.2, 0))
-	skeleton.reset_bone_poses()
-	_add_segment_visual(skeleton, "Root", Vector3(0.32, 0.7, 0.24), Color("#344c59"), Vector3(0, -0.18, 0))
-	_add_segment_visual(skeleton, "Neck", Vector3(0.12, 0.2, 0.12), Color("#d6b99a"), Vector3(0, 0.03, 0))
-	_add_segment_visual(skeleton, "Head", Vector3(0.27, 0.27, 0.24), Color("#78c5b8"), Vector3(0, 0.02, 0))
-	_ik_target = _marker("Look target", Color("#ffbd52"), 0.10)
-	_ik_target.position = Vector3(0.8, 1.7, 0.5)
+	var cid := str(_spec.get("primary_char", "havok_girl_sdk"))
+	_src_pack = Standards.spawn_aligned_character(cid, "LookAtActor", Animation.LOOP_LINEAR)
+	add_child(_src_pack["outer"] as Node3D)
+	var skel: Skeleton3D = _src_pack["skeleton"] as Skeleton3D
+	skel.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_IDLE
+	_ik_skeleton = skel
+	var player: AnimationPlayer = _src_pack["player"] as AnimationPlayer
+	player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+	player.play(StringName(Standards.pick_clip(_src_pack, "idle")))
+
+	_ik_target = _marker("LookTarget", Color("#ffbd52"), 0.09)
+	_ik_target.position = Vector3(0.0, 1.42, -1.45)
 	add_child(_ik_target)
+
+	var head_idx := Standards.find_semantic_bone(skel, "head")
 	_look_at_modifier = LookAtModifier3D.new()
 	_look_at_modifier.name = "LookAtModifier3D"
-	_look_at_modifier.bone_name = "Head"
-	_look_at_modifier.forward_axis = SkeletonModifier3D.BONE_AXIS_MINUS_Z
-	skeleton.add_child(_look_at_modifier)
+	_look_at_modifier.bone_name = skel.get_bone_name(head_idx)
+	_look_at_modifier.forward_axis = SkeletonModifier3D.BONE_AXIS_PLUS_Z
+	_look_at_modifier.primary_rotation_axis = Vector3.AXIS_Y
+	_look_at_modifier.use_secondary_rotation = true
+	skel.add_child(_look_at_modifier)
 	_look_at_modifier.target_node = _look_at_modifier.get_path_to(_ik_target)
-	_attach_pose_probe(skeleton, "Head")
-	_status = "LookAtModifier3D rotates the head toward a moving target."
+	_look_at_modifier.active = true
+	_attach_pose_probe(skel, StringName(skel.get_bone_name(head_idx)))
+	_status = "LookAt [%s %db]: LookAtModifier3D aims Head toward -Z moving target" % [cid, skel.get_bone_count()]
+
+
+func _build_ragdoll() -> void:
+	var cid := str(_spec.get("primary_char", "havok_girl_sdk"))
+	_src_pack = Standards.spawn_aligned_character(cid, "RagdollActor", Animation.LOOP_LINEAR)
+	_ragdoll_root = _src_pack["outer"] as Node3D
+	if _has_case_token("scaling"):
+		_ragdoll_root.scale = Vector3.ONE * (0.72 if "small" in _case_name.to_lower() else 1.18)
+	add_child(_ragdoll_root)
+	var skel: Skeleton3D = _src_pack["skeleton"] as Skeleton3D
+	skel.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_PHYSICS
+	var player: AnimationPlayer = _src_pack["player"] as AnimationPlayer
+	player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
+	player.play(StringName(Standards.pick_clip(_src_pack, str(_spec.get("primary_clip", "run")))))
+
+	_physics_simulator = PhysicalBoneSimulator3D.new()
+	_physics_simulator.name = "PhysicalBoneSimulator3D"
+	skel.add_child(_physics_simulator)
+	var spine_idx := Standards.find_semantic_bone(skel, "spine")
+	var head_idx := Standards.find_semantic_bone(skel, "head")
+	var used := {}
+	for bidx in [spine_idx, head_idx]:
+		if bidx > 0 and skel.get_bone_parent(bidx) >= 0 and not used.has(bidx):
+			used[bidx] = true
+			var bname := skel.get_bone_name(bidx)
+			var sz := Vector3(0.30, 0.36, 0.22) if bidx == spine_idx else Vector3(0.20, 0.22, 0.20)
+			_add_physical_bone(bname, sz)
+	_physics_simulator.active = true
+	_physics_simulator.physical_bones_start_simulation()
+	_status = "PhysicalBoneSimulator3D [%s %db]: articulated physics simulation (SI g=9.81 m/s²)" % [cid, skel.get_bone_count()]
+
+
+func _add_physical_bone(bone: String, box_size: Vector3) -> void:
+	var physical := PhysicalBone3D.new()
+	physical.name = "PhysicalBone_%s" % bone.validate_node_name()
+	physical.bone_name = bone
+	physical.joint_type = PhysicalBone3D.JOINT_TYPE_CONE if _has_case_token("soft") else PhysicalBone3D.JOINT_TYPE_PIN
+	physical.mass = 1.2
+	physical.can_sleep = false
+	physical.gravity_scale = 0.0 if _has_case_token("powered") else 1.0
+	physical.linear_damp = 2.5 if _has_case_token("powered") else 0.15
+	var shape := CollisionShape3D.new()
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = minf(box_size.x, box_size.z) * (0.88 if _has_case_token("penetration") else 0.5)
+	capsule.height = maxf(box_size.y, capsule.radius * 2.1)
+	shape.shape = capsule
+	physical.add_child(shape)
+	_physics_simulator.add_child(physical)
 
 
 func _add_two_bone_ik(skeleton: Skeleton3D, node_name: String, root_bone: String, middle_bone: String, end_bone: String, target: Node3D, pole: Node3D) -> TwoBoneIK3D:
@@ -285,117 +427,28 @@ func _ik_error() -> float:
 	return (skeleton.global_transform * end_pose_origin).distance_to(_ik_target.global_position)
 
 
+func _make_humanoid_bridge_skeleton(node_name: String) -> Skeleton3D:
+	var skel := Skeleton3D.new()
+	skel.name = node_name
+	skel.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL
+	skel.add_bone("Hips")
+	skel.set_bone_rest(0, Transform3D(Basis.IDENTITY, Vector3(0.0, 1.0, 0.0)))
+	skel.add_bone("LeftUpperArm")
+	skel.set_bone_parent(1, 0)
+	skel.set_bone_rest(1, Transform3D(Basis.IDENTITY, Vector3(-0.2, 0.35, 0.0)))
+	skel.add_bone("LeftLowerArm")
+	skel.set_bone_parent(2, 1)
+	skel.set_bone_rest(2, Transform3D(Basis.IDENTITY, Vector3(-0.3, 0.0, 0.0)))
+	skel.reset_bone_poses()
+	return skel
+
+
 func _case_path() -> String:
 	return str(get_meta("case_path", "")).to_lower()
 
 
 func _has_case_token(token: String) -> bool:
 	return token in _case_path() or token in _case_name.to_lower()
-
-
-func _build_ragdoll() -> void:
-	var ragdoll_root := _rig_root("Physics chain", Vector3.ZERO, Color("#e3a352"))
-	if _has_case_token("scaling"):
-		ragdoll_root.scale = Vector3.ONE * (0.72 if "small" in _case_name.to_lower() else 1.18)
-	var skeleton := Skeleton3D.new()
-	skeleton.name = "Skeleton"
-	skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_PHYSICS
-	ragdoll_root.add_child(skeleton)
-	_add_bone(skeleton, "Root", -1, Vector3(0, 1.55, 0))
-	_add_bone(skeleton, "Chest", 0, Vector3(0, 0.32, 0))
-	_add_bone(skeleton, "Head", 1, Vector3(0, 0.34, 0))
-	skeleton.reset_bone_poses()
-	_add_segment_visual(skeleton, "Root", Vector3(0.24, 0.52, 0.18), Color("#e3a352"), Vector3(0, -0.12, 0))
-	_add_segment_visual(skeleton, "Chest", Vector3(0.38, 0.48, 0.24), Color("#f1c16c"), Vector3(0, 0.08, 0))
-	_add_segment_visual(skeleton, "Head", Vector3(0.25, 0.25, 0.23), Color("#75c9bd"), Vector3(0, 0.02, 0))
-	_physics_simulator = PhysicalBoneSimulator3D.new()
-	_physics_simulator.name = "PhysicalBoneSimulator3D"
-	skeleton.add_child(_physics_simulator)
-	_add_physical_bone("Chest", Vector3(0.34, 0.44, 0.22))
-	_add_physical_bone("Head", Vector3(0.22, 0.22, 0.20))
-	_physics_simulator.active = true
-	_physics_simulator.physical_bones_start_simulation()
-	_status = "PhysicalBoneSimulator3D drives a short articulated physics chain; reduced ragdoll demo."
-
-
-func _add_physical_bone(bone: String, box_size: Vector3) -> void:
-	var physical := PhysicalBone3D.new()
-	physical.name = "PhysicalBone_%s" % bone
-	physical.bone_name = bone
-	physical.joint_type = PhysicalBone3D.JOINT_TYPE_CONE if _has_case_token("soft") else PhysicalBone3D.JOINT_TYPE_PIN
-	physical.mass = 1.2
-	physical.can_sleep = false
-	physical.gravity_scale = 0.0 if _has_case_token("powered") else 1.0
-	physical.linear_damp = 2.5 if _has_case_token("powered") else 0.15
-	var shape := CollisionShape3D.new()
-	var capsule := CapsuleShape3D.new()
-	capsule.radius = minf(box_size.x, box_size.z) * (0.88 if _has_case_token("penetration") else 0.5)
-	capsule.height = box_size.y
-	shape.shape = capsule
-	physical.add_child(shape)
-	_physics_simulator.add_child(physical)
-
-
-func _make_arm_rig(parent: Node3D, rig_name: String, naming: String, length: float) -> Skeleton3D:
-	var skeleton := Skeleton3D.new()
-	skeleton.name = rig_name
-	skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL
-	parent.add_child(skeleton)
-	if naming == "humanoid" or naming == "ik":
-		_add_bone(skeleton, "Hips", -1, Vector3(0, 1.0, 0))
-		_add_bone(skeleton, "LeftUpperArm", 0, Vector3(-0.18, 0.35, 0))
-		_add_bone(skeleton, "LeftLowerArm", 1, Vector3(-length * 0.56, 0, 0))
-		_add_bone(skeleton, "LeftHand", 2, Vector3(-length * 0.44, 0, 0))
-		_add_segment_visual(skeleton, "Hips", Vector3(0.32, 0.46, 0.24), Color("#354856"), Vector3(0, -0.03, 0))
-		_add_segment_visual(skeleton, "LeftUpperArm", Vector3(length * 0.54, 0.11, 0.11), parent.get_meta("rig_color"), Vector3(-length * 0.27, 0, 0))
-		_add_segment_visual(skeleton, "LeftLowerArm", Vector3(length * 0.43, 0.085, 0.085), parent.get_meta("rig_color").lightened(0.12), Vector3(-length * 0.22, 0, 0))
-		_add_segment_visual(skeleton, "LeftHand", Vector3(0.15, 0.12, 0.13), Color("#e4d3ba"), Vector3(-0.045, 0, 0))
-	else:
-		_add_bone(skeleton, "DriverRoot" if naming == "driver" else "MappedRoot", -1, Vector3(0, 1.0, 0))
-		var suffix := "Driver" if naming == "driver" else "Mapped"
-		_add_bone(skeleton, suffix + "Upper", 0, Vector3(-0.18, 0.35, 0))
-		_add_bone(skeleton, suffix + "Forearm", 1, Vector3(-length * 0.56, 0, 0))
-		_add_bone(skeleton, suffix + "Hand", 2, Vector3(-length * 0.44, 0, 0))
-		_add_segment_visual(skeleton, suffix + "Upper", Vector3(length * 0.54, 0.11, 0.11), parent.get_meta("rig_color"), Vector3(-length * 0.27, 0, 0))
-		_add_segment_visual(skeleton, suffix + "Forearm", Vector3(length * 0.43, 0.085, 0.085), parent.get_meta("rig_color").lightened(0.12), Vector3(-length * 0.22, 0, 0))
-		_add_segment_visual(skeleton, suffix + "Hand", Vector3(0.15, 0.12, 0.13), Color("#e4d3ba"), Vector3(-0.045, 0, 0))
-	skeleton.reset_bone_poses()
-	if naming == "driver":
-		_driver = skeleton
-	return skeleton
-
-
-func _add_bone(skeleton: Skeleton3D, bone_name: String, parent: int, rest_origin: Vector3) -> int:
-	var index := skeleton.get_bone_count()
-	skeleton.add_bone(bone_name)
-	skeleton.set_bone_parent(index, parent)
-	skeleton.set_bone_rest(index, Transform3D(Basis.IDENTITY, rest_origin))
-	return index
-
-
-func _add_segment_visual(skeleton: Skeleton3D, bone: String, size: Vector3, color: Color, local_position: Vector3) -> void:
-	var attach := BoneAttachment3D.new()
-	attach.name = "Attach_%s" % bone
-	attach.bone_name = bone
-	skeleton.add_child(attach)
-	var mesh := MeshInstance3D.new()
-	var capsule := CapsuleMesh.new()
-	capsule.radius = minf(size.y, size.z) * 0.5
-	capsule.height = maxf(size.x, size.y)
-	mesh.mesh = capsule
-	mesh.material_override = _material(color)
-	mesh.position = local_position
-	mesh.rotation.z = PI * 0.5 if size.x > size.y else 0.0
-	attach.add_child(mesh)
-
-
-func _rig_root(node_name: String, position: Vector3, color: Color) -> Node3D:
-	var root := Node3D.new()
-	root.name = node_name
-	root.position = position
-	root.set_meta("rig_color", color)
-	add_child(root)
-	return root
 
 
 func _marker(node_name: String, color: Color, radius: float) -> Node3D:
