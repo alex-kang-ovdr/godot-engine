@@ -58,6 +58,7 @@ SUITES = [
     ("animation_soldier_compare", "res://tests/soldier_demo_compare.gd", ["--fixed-fps", "60"], [], 90, "Soldier 114-Bone Native & Compare", ANIMATION_PROJECT),
     ("animation_character_roster", "res://tests/character_roster_verify.gd", ["--fixed-fps", "60"], [], 120, "All 30 Havok Characters Native Roster", ANIMATION_PROJECT),
     ("animation_havok_port_parity", "res://tests/havok_port_parity_verify.gd", ["--fixed-fps", "60"], [], 120, "414 Havok Ports Same-Asset & Godot Standard Coord/Cam/Loop Parity", ANIMATION_PROJECT),
+    ("animation_havok_behavior_1to1", "res://tests/havok_behavior_1to1_verify.gd", ["--fixed-fps", "60"], [], 120, "Real Havok C++ SDK vs Godot Port 1:1 Event Timing & Position Parity", ANIMATION_PROJECT),
     ("animation_hero_arena", "res://tests/hero_arena_lua_verify.gd", ["--fixed-fps", "60"], [], 90, "Hero Environment Map & 10 Lua Scripts Restored", ANIMATION_PROJECT),
     ("animation_hero_ai_pathfinding", "res://tests/hero_ai_pathfinding_verify.gd", ["--fixed-fps", "60"], [], 120, "AI Pathfinding + Spatial Analysis + Behavior Hero Full-Map", ANIMATION_PROJECT),
     ("animation_editor_docks", "res://tests/editor_docks_verify.gd", ["--fixed-fps", "60"], [], 90, "Standard Godot 3D Viewport & Dockable Addon Panels", ANIMATION_PROJECT),

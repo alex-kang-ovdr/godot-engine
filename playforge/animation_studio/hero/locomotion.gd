@@ -39,6 +39,25 @@ var _camera_lead := Vector3.ZERO
 var _camera_angle := 0.0
 var _last_root_pos := Vector3.ZERO
 var _root_velocity := Vector3.ZERO
+var _last_events: Array[String] = []
+var _run_enter_ticks := 0
+
+
+const CLIP_EVENT_TRIGGERS := {
+	"walk": [
+		{"time": 0.012, "events": ["FootDown"]},
+		{"time": 0.075, "events": ["FootUp"]},
+		{"time": 0.408, "events": ["FootDown"]},
+		{"time": 0.458, "events": ["FootUp"]},
+	],
+	"run": [
+		{"time": 0.012, "events": ["FootDown", "LeftDown"], "first_only": true},
+		{"time": 0.630, "events": ["FootDown", "LeftDown"], "wrap_only": true},
+		{"time": 0.075, "events": ["FootUp"]},
+		{"time": 0.408, "events": ["FootDown"]},
+		{"time": 0.458, "events": ["FootUp"]},
+	],
+}
 
 
 func setup(rig: Skeleton3D, motion: Node3D, clips: Dictionary) -> void:
@@ -63,10 +82,13 @@ func setup(rig: Skeleton3D, motion: Node3D, clips: Dictionary) -> void:
 	_camera_angle = 0.0
 	_last_root_pos = _motion.position
 	_root_velocity = Vector3.ZERO
+	_last_events.clear()
+	_run_enter_ticks = 0
 	_enter_clip("idle")
 
 
 func step(stick: Vector2, delta: float, walk_modifier := false) -> Dictionary:
+	_last_events.clear()
 	if _rig == null or _motion == null or delta <= 0.0:
 		return _result(Vector3.ZERO)
 
@@ -80,8 +102,18 @@ func step(stick: Vector2, delta: float, walk_modifier := false) -> Dictionary:
 	var magnitude := _filtered_stick.length()
 	var moving := _filtered_stick.length_squared() >= STICK_THRESHOLD_SQUARED
 	var next_state := choose_state(moving, walk_modifier)
+	var prev_state := _state
 	var entering := next_state != _state
 	if entering:
+		if prev_state == "idle" and next_state == "idle_to_walk":
+			_last_events.append("StartWalking")
+		elif prev_state == "idle_to_walk" and next_state == "walk":
+			_last_events.append("ToWalking")
+		elif next_state == "run":
+			_last_events.append("StartRunning")
+			_run_enter_ticks = 1
+		elif next_state == "idle":
+			_last_events.append("Stop")
 		_blend_duration = transition_blend(_state, next_state)
 		_outgoing_clip = _clips[_clip_name] if _blend_duration > 0.0 else {}
 		_outgoing_name = _clip_name if _blend_duration > 0.0 else ""
@@ -90,6 +122,10 @@ func step(stick: Vector2, delta: float, walk_modifier := false) -> Dictionary:
 		_state = next_state
 		_state_elapsed = 0.0
 		_enter_clip(_state)
+	elif _state == "run" and _run_enter_ticks > 0 and _run_enter_ticks < 5:
+		# Matches Havok hero_locomotion.lua re-firing StartRunning during the 4-tick Walk->Run blend
+		_last_events.append("StartRunning")
+		_run_enter_ticks += 1
 
 	_input_speed = magnitude if moving else 0.0
 	var pad_angle := atan2(_filtered_stick.x, -_filtered_stick.y)
@@ -101,8 +137,11 @@ func step(stick: Vector2, delta: float, walk_modifier := false) -> Dictionary:
 		yaw_step = wrapf(target_yaw - _motion.rotation.y, -PI, PI) * yaw_gain * delta
 
 	var clip: Dictionary = _clips[_clip_name]
+	var prev_clip_time := _clip_time
 	var sample := advance_clip(clip, _clip_time, 0.0 if entering else delta, _clip_name != "idle_to_walk")
 	_clip_time = sample.time
+	if not entering:
+		_collect_clip_events(_clip_name, prev_clip_time, _clip_time, float(clip.duration), bool(sample.get("wrapped", false)))
 	var root_delta: Transform3D = sample.delta
 	var outgoing_weight := 0.0
 	if not _outgoing_clip.is_empty():
@@ -146,6 +185,7 @@ func advance_clip(clip: Dictionary, time: float, delta: float, loop := true) -> 
 	var root_delta := Transform3D.IDENTITY
 	var duration := float(clip.duration)
 	var remaining := delta
+	var wrapped := false
 	while remaining > 0.0 and duration > 0.0:
 		var segment := minf(remaining, duration - time)
 		var old_root := _sample_root(clip, time)
@@ -156,7 +196,32 @@ func advance_clip(clip: Dictionary, time: float, delta: float, loop := true) -> 
 			if not loop:
 				break
 			time = 0.0
-	return {"time": time, "delta": root_delta}
+			wrapped = true
+	return {"time": time, "delta": root_delta, "wrapped": wrapped}
+
+
+func _collect_clip_events(cname: String, prev_t: float, cur_t: float, duration: float, wrapped: bool) -> void:
+	if not CLIP_EVENT_TRIGGERS.has(cname):
+		return
+	var triggers: Array = CLIP_EVENT_TRIGGERS[cname] as Array
+	for trig_raw in triggers:
+		var trig: Dictionary = trig_raw as Dictionary
+		var tt := float(trig["time"])
+		var first_only := bool(trig.get("first_only", false))
+		var wrap_only := bool(trig.get("wrap_only", false))
+		var fired := false
+		if wrap_only:
+			fired = wrapped
+		elif first_only:
+			fired = (not wrapped) and prev_t < tt and cur_t >= tt and _state_elapsed < 0.05
+		else:
+			if wrapped:
+				fired = (prev_t < tt and tt <= duration) or (tt <= cur_t)
+			else:
+				fired = prev_t < tt and cur_t >= tt
+		if fired:
+			for ev in trig["events"] as Array:
+				_last_events.append(str(ev))
 
 
 static func transition_blend(previous: String, next: String) -> float:
@@ -273,5 +338,6 @@ func _result(root_delta: Vector3) -> Dictionary:
 		"root_delta": root_delta,
 		"turning": _turning,
 		"speed": _input_speed,
-		"facing": _facing_angle
+		"facing": _facing_angle,
+		"events": _last_events.duplicate(),
 	}

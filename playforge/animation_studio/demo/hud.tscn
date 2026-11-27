@@ -60,6 +60,10 @@ text = "Hero 배경맵 · Lua 복원 아레나 →"
 unique_name_in_owner = true
 text = "그래프 · 관성 · Rewind →"
 
+[node name="HavokCompare" type="Button" parent="Layout/Header/Info"]
+unique_name_in_owner = true
+text = "Havok 1:1 정밀 비교 (이벤트·위치) →"
+
 [node name="Metrics" type="PanelContainer" parent="Layout"]
 anchor_left = 1.0
 anchor_right = 1.0

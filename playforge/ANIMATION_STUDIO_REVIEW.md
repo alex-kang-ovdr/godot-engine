@@ -235,3 +235,27 @@ Havok 2015.1.0-r1 SDK의 `Animation`(62소스·276항목) + `Behavior`(59소스�
   - 신규 패리티 스위트 `animation_havok_port_parity`([havok_port_parity_verify.gd](animation_studio/tests/havok_port_parity_verify.gd) `[확장 추가]`) **7/7 PASS** (`havok_girl_sdk` 50본 오차 `0.29 mm / 1.85°`, 30종 SI/지면 `Y=0` 정렬, `-Z` 루트 모션 전진, 루프 기본값 3종, 45° `KEEP_HEIGHT` 전면 카메라, 12종 대표 원본 스켈레톤 검증).
   - `animation_character_roster` **5/5 PASS (30종)**, `animation_gallery` **422/422 PASS (414개 전 항목 · 엔진 오류 0건)** 및 로컬 포크 핵심 9종 회귀 전수 통과.
   - RTX 4070 실 GPU 6종 스크린샷(`NormalBlending` HavokGirl, `Crabby` 18b IK, `BasicPoseRetargeting` Shulgoth+Male, `Quadruped` SiegeFiend 4/4 접지, `DockingBlend` Hero, `ClipGeneratorModes` Soldier) 육안 검수 완료.
+
+## 실제 Havok 2015.1.0-r1 C++ SDK vs Godot 4.7.2 포팅 1:1 정밀 비교 (이벤트 타이밍 · 3D 위치) · 2026-11-27
+
+실제 Havok 2015.1.0-r1 C++ 런타임(`hkbWorld` + `hknpWorld` + `hkbBehaviorGraph` + `hkbWorldListener::eventsRaisedCallback`)과 Godot 4.7.2 포팅을 **동일 에셋 · 동일 고정 60 Hz 틱 · 동일 입력**으로 1:1 정밀 대조하고, 내재화된 인터랙티브 비교 뷰어와 자동 회귀 스위트를 추가했다.
+
+- **엔진 영향 범위**: **`[엔진 수정]` 없음 (0건)**, **`[엔진 추가]` 없음 (0건)** — 모든 구현은 확장 영역(`playforge/animation_studio/`, `playforge/tests/run.py`)에만 반영했다.
+- **실제 Havok C++ 오라클 및 내재화 비교 자산 (`[확장 추가]`)**:
+  - `compare/havok_behavior_oracle.cpp`, `compare/build_havok_behavior_oracle.cmd`: 실제 Havok 2015.1.0-r1 C++ SDK를 링크해 `hkbWorldListener::eventsRaisedCallback` 발화 이벤트, 활성 상태머신·클립 로컬타임, 루트 3D 위치/Yaw, 6개 랜드마크 본 월드 좌표를 60 Hz JSON으로 기록.
+  - `compare/assets/hero_docking_clip.res` (`Idle_To_Cover_Standing`, 85본), `compare/assets/soldier_idle_ready_clip.res` (`idle_m4_ready`, 114본 `HipBase_M` 오프셋 정합), `compare/assets/havok_1to1_reference.json` (`663.8 KB`, `.hkt` 문자열 0건, 5개 대표 시나리오 1,445틱 기준 트레이스 내재화).
+- **1:1 정밀 비교 엔진 · 인터랙티브 뷰어 · Hero 이벤트 정합 (`[확장 추가]` / `[확장 수정]`)**:
+  - `[확장 수정]` `hero/locomotion.gd` (`HeroLocomotion`): 원본 `3rdPersonActionAdventure.hkt`와 동일한 전이·발소리 이벤트 스트림(`StartWalking`, `ToWalking`, `StartRunning`, `Stop`, `FootDown`, `FootUp`, `LeftDown`) 발화 추가.
+  - `[확장 추가]` `compare/behavior_1to1_runner.gd` (`HavokBehavior1To1Runner`): 5개 대표 시나리오(`hero_locomotion_flat`, `hero_docking_blend`, `soldier_clip_modes`, `soldier_return_to_prev`, `quadruped_siegefiend`) 60 Hz 동시 시뮬레이션 및 이벤트 타이밍(`Δtick`/`Δms`), 상태머신 일치율, 클립 로컬타임, 루트 XZ/XYZ/Yaw, 6랜드마크 본(월드·포즈) RMS/Max mm 산출. `hkbDockingModifier`의 `hkQsTransform::setInterpolate4` 증분 NLERP 워핑을 1:1 재현해 `hero_docking_blend` 회전 오차를 `0.00°`, 포즈 오차를 `0.10 mm`까지 수렴.
+  - `[확장 추가]` `compare/havok_1to1_compare.tscn` · `compare/havok_1to1_compare.gd` (`Havok1To1CompareViewer`): 실 스킨 캐릭터(Hero 85본 / Soldier 114본 / SiegeFiend 34본)와 Havok C++ 실측 랜드마크 리깅(Amber)·궤적·오차 링크를 **겹쳐 비교(Overlap)** / **나란히 비교(Side-by-Side)** 모드로 실시간 대조하며, 틱 스크러버·±1틱 스텝·클릭 시 해당 틱으로 즉시 점프하는 이벤트 타이밍 대조표를 제공 (`demo/hud.tscn`·`demo/hud.gd`·`build_and_test_local_fork.cmd` `compare` 모드 연동 `[확장 수정]`).
+- **5개 대표 시나리오 1:1 실측 결과 (총 1,445틱 @ 60 Hz, 총 48건 이벤트 전수 `Δ0틱 / 0.00 ms` 일치)**:
+
+| 시나리오 | 캐릭터 (본) | 틱 수 | 이벤트 일치 (`최대 Δ틱 / Δms`) | 상태 일치 | 클립 시간 RMS | 루트 XZ RMS (Yaw Max) | 포즈 랜드마크 RMS (Max) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **`hero_locomotion_flat`** | Hero (85본) | 255 | **27 / 27 (`Δ0틱 · 0.00ms`)** | **100.0%** | **0.03 ms** | **0.01 mm** (`0.00°`) | **0.37 mm** (`8.35 mm`) |
+| **`hero_docking_blend`** | Hero (85본) | 120 | **5 / 5 (`Δ0틱 · 0.00ms`)** | **100.0%** | **0.03 ms** | **0.00 mm** (`0.00°`) | **0.10 mm** (`1.41 mm`) |
+| **`soldier_clip_modes`** | Soldier (114본) | 480 | **5 / 5 (`Δ0틱 · 0.00ms`)** | **100.0%** | **0.03 ms** | **0.00 mm** (`0.00°`) | **0.09 mm** (`1.15 mm`) |
+| **`soldier_return_to_prev`** | Soldier (114본) | 340 | **5 / 5 (`Δ0틱 · 0.00ms`)** | **100.0%** | **0.03 ms** | **0.00 mm** (`0.00°`) | **0.57 mm** (`13.16 mm`) |
+| **`quadruped_siegefiend`** | SiegeFiend (34본) | 250 | **6 / 6 (`Δ0틱 · 0.00ms`)** | **100.0%** | **0.02 ms** | **34.98 mm** (`2.02°`) | `Pelvis 2.46 mm` *(4다리 FootIK 차이 포함 84.71 mm)* |
+
+- **검증**: 신규 회귀 스위트 `animation_havok_behavior_1to1`([havok_behavior_1to1_verify.gd](animation_studio/tests/havok_behavior_1to1_verify.gd) `[확장 추가]`) **20/20 PASS** 포함 Animation Studio 12종 전체 스위트 통과 및 RTX 4070 실 GPU 5종 스크린샷 육안 검수 완료.

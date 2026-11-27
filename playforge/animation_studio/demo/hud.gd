@@ -50,6 +50,7 @@ func bind(director: Node3D) -> void:
 	%CharacterRoster.pressed.connect(func(): get_tree().change_scene_to_file("res://characters/character_showcase.tscn"))
 	%HeroArena.pressed.connect(func(): get_tree().change_scene_to_file("res://hero/arena/hero_arena.tscn"))
 	%GraphStudio.pressed.connect(func(): get_tree().change_scene_to_file("res://demo/graph_studio.tscn"))
+	%HavokCompare.pressed.connect(func(): get_tree().change_scene_to_file("res://compare/havok_1to1_compare.tscn"))
 	%Gallery.pressed.connect(func(): get_tree().change_scene_to_file("res://catalog/gallery.tscn"))
 	for i in FOCUS_NAMES.size():
 		var button := _choice(FOCUS_NAMES[i], %Views)

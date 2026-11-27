@@ -35,6 +35,7 @@ if /I "%~1"=="world" (set "LAUNCH_MODE=world" & shift & goto parse_args)
 if /I "%~1"=="roster" (set "LAUNCH_MODE=roster" & shift & goto parse_args)
 if /I "%~1"=="quadruped" (set "LAUNCH_MODE=quadruped" & shift & goto parse_args)
 if /I "%~1"=="soldier" (set "LAUNCH_MODE=soldier" & shift & goto parse_args)
+if /I "%~1"=="compare" (set "LAUNCH_MODE=compare" & shift & goto parse_args)
 if /I "%~1"=="lab" (set "LAUNCH_MODE=lab" & shift & goto parse_args)
 shift
 goto parse_args
@@ -85,8 +86,8 @@ if "%SKIP_NATIVE%"=="0" (
 
 if "%SKIP_TESTS%"=="0" (
     echo.
-    echo [3/4] 로컬 포크 엔진 기반 Animation Studio 핵심 9종 회귀 테스트 실행...
-    python "%REPO_ROOT%\playforge\tests\run.py" --godot "%FORK_CONSOLE%" --only animation_motion_v3,animation_editor_docks,animation_hero_arena,animation_hero_ai_pathfinding,animation_character_roster,animation_havok_port_parity,animation_soldier_compare,animation_quadruped_locomotor,animation_hero_studio
+    echo [3/4] 로컬 포크 엔진 기반 Animation Studio 핵심 10종 회귀 테스트 실행...
+    python "%REPO_ROOT%\playforge\tests\run.py" --godot "%FORK_CONSOLE%" --only animation_motion_v3,animation_editor_docks,animation_hero_arena,animation_hero_ai_pathfinding,animation_character_roster,animation_havok_port_parity,animation_havok_behavior_1to1,animation_soldier_compare,animation_quadruped_locomotor,animation_hero_studio
     if errorlevel 1 (
         echo [ERROR] 회귀 테스트 실패! 결과를 확인하세요: %REPO_ROOT%\playforge\tests\results\latest.json
         exit /b 1
@@ -113,6 +114,7 @@ if /I "%LAUNCH_MODE%"=="world" set "SCENE_PATH=res://hero/arena/hero_arena_world
 if /I "%LAUNCH_MODE%"=="roster" set "SCENE_PATH=res://characters/character_showcase.tscn"
 if /I "%LAUNCH_MODE%"=="quadruped" set "SCENE_PATH=res://quadruped/quadruped_locomotor_studio.tscn"
 if /I "%LAUNCH_MODE%"=="soldier" set "SCENE_PATH=res://soldier/soldier_demo.tscn"
+if /I "%LAUNCH_MODE%"=="compare" set "SCENE_PATH=res://compare/havok_1to1_compare.tscn"
 if /I "%LAUNCH_MODE%"=="lab" set "SCENE_PATH=res://demo/animation_lab.tscn"
 
 echo [4/4] 로컬 포크 엔진 플레이어 데모 실행: %SCENE_PATH%
