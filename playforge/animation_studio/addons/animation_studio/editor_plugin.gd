@@ -10,22 +10,26 @@ const HeroStudioScene := preload("res://hero/hero_locomotion_studio.tscn")
 const QuadrupedStudioScene := preload("res://quadruped/quadruped_locomotor_studio.tscn")
 const SoldierDemoScene := preload("res://soldier/soldier_demo.tscn")
 const CharacterShowcaseScene := preload("res://characters/character_showcase.tscn")
+const HeroArenaScene := preload("res://hero/arena/hero_arena.tscn")
 const CursorOverlay := preload("res://hero/authoring_cursor_overlay.gd")
 const PLUGIN_MAIN_SCREEN_NAME := "Morpheme Studio"
 const TOOL_MENU_QUADRUPED := "4족 절차적 Locomotor 제작 과정 다시보기"
 const TOOL_MENU_HERO := "Hero 제작 과정 가상 포인터 다시보기"
 const TOOL_MENU_SOLDIER := "Soldier 114본 · M4 데모 비교 열기"
 const TOOL_MENU_ROSTER := "전체 캐릭터 로스터 데모 (28종 GLB/RES)"
+const TOOL_MENU_ARENA := "Hero 배경맵 · Lua 복원 아레나 열기"
 
 var _root_shell: VBoxContainer = null
 var _quad_panel: Control = null
 var _hero_panel: Control = null
 var _soldier_panel: Control = null
 var _roster_panel: Control = null
+var _arena_panel: Control = null
 var _btn_quad: Button = null
 var _btn_hero: Button = null
 var _btn_soldier: Button = null
 var _btn_roster: Button = null
+var _btn_arena: Button = null
 var _active_tab: String = "quadruped"
 var _editor_overlay: CursorOverlay = null
 var _docks: Dictionary = {}
@@ -87,6 +91,12 @@ func _enter_tree() -> void:
 	_btn_roster.pressed.connect(func(): _select_tab("roster"))
 	switcher.add_child(_btn_roster)
 
+	_btn_arena = Button.new()
+	_btn_arena.text = "Hero 배경맵 · Lua 복원 (Environment + 10 Lua)"
+	_btn_arena.toggle_mode = true
+	_btn_arena.pressed.connect(func(): _select_tab("arena"))
+	switcher.add_child(_btn_arena)
+
 	var content_host := Control.new()
 	content_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -97,16 +107,19 @@ func _enter_tree() -> void:
 	_hero_panel = HeroStudioScene.instantiate()
 	_soldier_panel = SoldierDemoScene.instantiate()
 	_roster_panel = CharacterShowcaseScene.instantiate()
+	_arena_panel = HeroArenaScene.instantiate()
 	content_host.add_child(_quad_panel)
 	content_host.add_child(_hero_panel)
 	content_host.add_child(_soldier_panel)
 	content_host.add_child(_roster_panel)
+	content_host.add_child(_arena_panel)
 
 	EditorInterface.get_editor_main_screen().add_child(_root_shell)
 	add_tool_menu_item(TOOL_MENU_QUADRUPED, _open_quadruped_replay)
 	add_tool_menu_item(TOOL_MENU_HERO, _open_hero_replay)
 	add_tool_menu_item(TOOL_MENU_SOLDIER, _open_soldier_compare)
 	add_tool_menu_item(TOOL_MENU_ROSTER, _open_character_roster)
+	add_tool_menu_item(TOOL_MENU_ARENA, _open_hero_arena)
 	_setup_editor_overlay()
 
 	if _quad_panel.has_method("set_authoring_mode"):
@@ -125,6 +138,7 @@ func _exit_tree() -> void:
 	remove_tool_menu_item(TOOL_MENU_HERO)
 	remove_tool_menu_item(TOOL_MENU_SOLDIER)
 	remove_tool_menu_item(TOOL_MENU_ROSTER)
+	remove_tool_menu_item(TOOL_MENU_ARENA)
 	if is_instance_valid(_editor_overlay):
 		_editor_overlay.queue_free()
 	_editor_overlay = null
@@ -136,6 +150,7 @@ func _exit_tree() -> void:
 	_hero_panel = null
 	_soldier_panel = null
 	_roster_panel = null
+	_arena_panel = null
 
 
 func _select_tab(tab: String) -> void:
@@ -144,6 +159,7 @@ func _select_tab(tab: String) -> void:
 	var is_hero := tab == "hero"
 	var is_soldier := tab == "soldier"
 	var is_roster := tab == "roster"
+	var is_arena := tab == "arena"
 	if is_instance_valid(_btn_quad):
 		_btn_quad.set_pressed_no_signal(is_quad)
 	if is_instance_valid(_btn_hero):
@@ -152,6 +168,8 @@ func _select_tab(tab: String) -> void:
 		_btn_soldier.set_pressed_no_signal(is_soldier)
 	if is_instance_valid(_btn_roster):
 		_btn_roster.set_pressed_no_signal(is_roster)
+	if is_instance_valid(_btn_arena):
+		_btn_arena.set_pressed_no_signal(is_arena)
 	if is_instance_valid(_quad_panel):
 		_quad_panel.visible = is_quad
 		_quad_panel.call("set_playing", is_quad)
@@ -164,6 +182,20 @@ func _select_tab(tab: String) -> void:
 	if is_instance_valid(_roster_panel):
 		_roster_panel.visible = is_roster
 		_roster_panel.call("set_playing", is_roster)
+	if is_instance_valid(_arena_panel):
+		_arena_panel.visible = is_arena
+		_arena_panel.call("set_playing", is_arena)
+
+
+func _open_hero_arena() -> void:
+	if not is_instance_valid(_root_shell):
+		return
+	if OS.has_feature("web"):
+		EditorInterface.set_distraction_free_mode(true)
+	EditorInterface.set_main_screen_editor(PLUGIN_MAIN_SCREEN_NAME)
+	_root_shell.visible = true
+	_select_tab("arena")
+	_arena_panel.call("set_playing", true)
 
 
 func _open_character_roster() -> void:

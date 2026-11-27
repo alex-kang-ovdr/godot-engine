@@ -150,3 +150,16 @@ Havok SDK 2015.1.0-r1 전체(`Behavior/GameAssets`, `Animation/ShowCase`, `Anima
   - 카테고리 필터(`전체 28` / `전투·액션 7` / `크리처 6` / `쇼케이스 6` / `리타게팅 9`), 3가지 보기 모드(**나란히 비교 `Float32 vs 16-bit C++`** / **단독 클로즈업** / **단체 퍼레이드**), 자동 포즈 AABB 프레이밍, 실시간 200체 C++ 벤치마크 버튼을 제공한다.
   - `Morpheme Studio` 메인 화면 4번째 탭(`전체 캐릭터 로스터 (28종 GLB/RES)`), 도구 메뉴 및 메인 런처 HUD 진입 버튼을 연동했다.
 - **검증**: `animation_character_roster` **5/5 PASS**(28종 × 83클립 전수 로드·정합 최대 `2.13 mm` / `2.03°`, 최소 메모리 절감 **`72.9%`**, 9체 단체 퍼레이드 전환), `animation_soldier_compare` 7/7, `animation_hero_same_asset` 5/5, `animation_crowd_benchmark` 5/5, `animation_quadruped_locomotor` 12/12, `animation_hero_studio` 13/13 전체 통과.
+
+## Hero 테스트 배경맵(`Environment.hkt`) · 10종 Lua 스크립트 복원 및 내재화 · 2026-11-27
+
+Havok SDK 2015.1.0-r1의 공식 Hero 3인칭 액션 어드벤처 테스트 맵(`Hero/Terrain/Environment_np.hkt` + `Layer0_001CompleteMap_original.png`), 90개 월드 도킹 라인, 31종 파쿠르·엄폐·등반·검술 클립 및 **10종 Lua 스크립트(`hero.lua`, `hero_locomotion.lua`, `hero_camera.lua`, `hero_lines.lua`, `hero_docking.lua`, `hero_vaulting.lua`, `hero_climbing.lua`, `hero_cover.lua`, `hero_leaping.lua`, `hero_gamepad.lua`)**를 `.hkt`/Lua 외부 의존성 없이 Godot 네이티브로 추출·복원·내재화했다.
+
+- **내재화 에셋** (`havok`/`.hkt`/SDK 문자열 0건):
+  - [hero_environment.glb](animation_studio/hero/assets/hero_environment.glb) (`557.1 KB`) — `bluishEnv` 4,992정점 · 1,664삼각형, 2048px 베이크드 CompleteMap(AO+파쿠르 색상 표식) 내장, 런타임 `ConcavePolygonShape3D` 트라이메시 물리 충돌 생성.
+  - [hero_arena_motion.res](animation_studio/hero/assets/hero_arena_motion.res) (`3,905.5 KB`) — 85본 Hero 파쿠르·엄폐·등반·도약·검술 **31클립** 압축 `HeroMotionData`.
+  - [hero_arena_lines.json](animation_studio/hero/assets/hero_arena_lines.json) (`13.4 KB`) — `hero_lines.lua`의 **90개** 월드 도킹 라인(Red 낮음엄폐 10 · Green 높음엄폐 10 · Blue 등반난간 40 · Yellow 고플랫폼 12 · Orange 뛰어넘기난간 18, Z-up→Y-up 변환).
+- **10종 Lua 로직 1:1 GDScript 복원**: [hero_lua_gamepad.gd](animation_studio/hero/arena/hero_lua_gamepad.gd), [hero_lua_lines.gd](animation_studio/hero/arena/hero_lua_lines.gd), [hero_lua_camera.gd](animation_studio/hero/arena/hero_lua_camera.gd), [hero_lua_controller.gd](animation_studio/hero/arena/hero_lua_controller.gd).
+  - 스틱 보간(`0.9`)·데드존(`mag²<0.1`)·유지 타이머, 3모드 카메라(3인칭 5.0m / 등반 3.5m / 오버더숄더 Strafe + 벽면 레이캐스트 오클루전), `IsRightFootForward`(좌우 종아리 본 투영), 3프레임 지면 지지 레이캐스트 + `GravityFactor=3.38`, 전방 벽 밀기 감지(`dot<-0.7`), `radialSelectAnimation(4/8)`, `115° Turn180`, `jumpActions()` 최근접 경쟁(등반/도약/난간넘기), 양방향 난간 넘기 + 착지 평면 레이캐스트, 엄폐 이동·엄폐간 구르기·배면 난간넘기, 검 발도/납도/공격을 모두 복원했다.
+- **플레이 가능 아레나 & 에디터 통합**: [hero_arena.tscn](animation_studio/hero/arena/hero_arena.tscn), [hero_arena.gd](animation_studio/hero/arena/hero_arena.gd). 6종 Lua 시나리오 즉시 시연 버튼, 자동 시연 투어, WASD/Space/E/R/F/Q 수동 조작, 90개 3D 도킹 라인 토글을 제공하며 `Morpheme Studio` 5번째 탭(`Hero 배경맵 · Lua 복원`) 및 런처 HUD에 연동했다.
+- **검증**: `animation_hero_arena` **9/9 PASS**(실제 `Environment.glb` 트라이메시 지면 레이캐스트 `y=-0.0002m`, 엄폐·난간넘기 `3.35m`·`y=2.0m` 플랫폼 등반 `final_y=1.9999m`·도약·Strafe 카메라 전환 및 전체 7개 애니메이션 스위트 ALL GREEN, GPU 4종 스크린샷 검수 완료).

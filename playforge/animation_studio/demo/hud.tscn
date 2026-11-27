@@ -52,6 +52,10 @@ text = "Soldier 114본 · M4 데모 비교 →"
 unique_name_in_owner = true
 text = "전체 캐릭터 로스터 (28종 GLB/RES) →"
 
+[node name="HeroArena" type="Button" parent="Layout/Header/Info"]
+unique_name_in_owner = true
+text = "Hero 배경맵 · Lua 복원 아레나 →"
+
 [node name="GraphStudio" type="Button" parent="Layout/Header/Info"]
 unique_name_in_owner = true
 text = "그래프 · 관성 · Rewind →"
