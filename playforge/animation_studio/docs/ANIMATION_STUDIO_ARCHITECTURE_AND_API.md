@@ -285,5 +285,5 @@ playforge/animation_studio/
 | `animation_editor_docks` | `tests/editor_docks_verify.gd` | `hero_arena_world.tscn` 4인스턴스·3종 도크 연동·동적 스폰 | **7/7 PASS** |
 | `animation_motion_v3` | `tests/motion_journal_v3_verify.gd` | 16종 SVG·테마·4단계 Agent 저널·읽기전용 검토·`b001` 분기·멱등성·JSON 체크섬·3D 오버레이·3서브탭 | **7/7 PASS** |
 | `animation_havok_port_parity` | `tests/havok_port_parity_verify.gd` | 30종 원본 내재화·414개 데모 Godot 표준 좌표계/카메라(`45° KEEP_HEIGHT`)/루프 기본값 일치 | **7/7 PASS** |
-| `animation_havok_behavior_1to1` | `tests/havok_behavior_1to1_verify.gd` | 실제 Havok C++ SDK vs Godot 1:1 5시나리오(1,445틱·48이벤트 `Δ0틱`·`0.09~0.57mm` 포즈·뷰어 UI) + 공식 Havok DX11 Hero/Soldier 47종 결정론 매니페스트 + 47종 1 vs 1 비교 리포트·컨택트 시트·결함 회귀 검증 | **27/27 PASS** |
+| `animation_havok_behavior_1to1` | `tests/havok_behavior_1to1_verify.gd` | 실제 Havok C++ SDK vs Godot 1:1 5시나리오(1,445틱·48이벤트 `Δ0틱`) + 공식 Havok DX11 Hero/Soldier 47종 결정론 매니페스트 + `HavokBehaviorGraphRuntime` 47종 승격 리포트(Tier A 27 / Tier B 16 / 이벤트 1,545/1,545 / 포즈 중앙값 8.6mm)·컨택트 시트 검증 | **27/27 PASS** |
 | *(코어·갤러리 스위트)* | `coexistence`, `graph_rewind`, `crowd_benchmark`, `active_ragdoll`, `havok_demo`, `hero_behavior`, `hero_parity`, `hero_same_asset`, `animation_gallery`, `native_parity` | 포즈 공존·Rewind·65×200 벤치마크·랙돌·414개 Havok Animation/Behavior 갤러리 | 전체 구현 완료 |

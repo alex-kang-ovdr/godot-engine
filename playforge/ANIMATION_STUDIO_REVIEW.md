@@ -302,3 +302,22 @@ Havok SDK 2015.1.0-r1의 `Demo/Demos/Behavior/` 전체 중 **Hero 및 Soldier �
   - **Tier A (정밀 1:1 일치 · 5종)**: `#18 ReferencePoseGenerator`(**`0.00 mm`**), `#14 ClipGeneratorModes`(**`0.09 mm`**, 이벤트 `5/5 Δ0틱`), `#00 DockingBlend`(**`0.10 mm`**, 이벤트 `5/5 Δ0틱`), `#29 ShowCase/Hero`(**`0.37 mm`**, 이벤트 `27/27 Δ0틱`), `#27 ReturnToPreviousState`(**`0.57 mm`**, 이벤트 `5/5 Δ0틱`).
   - **Tier B (동일 에셋·리그·모션 근접 일치 · 1종)**: `#16 PlaybackSpeedVsEnforcedDuration` (카탈로그 포즈 RMS **`86.6 mm`**, 루트 변위 `0.00m / 0.00m`).
   - **Tier C (기능 아키타입 포팅 · 41종)**: 동일 원본 에셋·리그·카메라 시점으로 해당 Behavior 메커니즘(IK·도킹·랙돌·상태머신·시퀀스·이동플랫폼 등)을 재현하나, 개별 데모 전용 `.hkt` 그래프/월드 지형/특수 클립(예: `Kneel`, `Stagger`, `GunSweep`, 랙돌 충돌 붕괴, 계단/플랫폼 지형)은 미이식 상태여서 카탈로그 포즈 RMS 중앙값 **`269.5 mm`**(Hero `284.4 mm` / Soldier `266.6 mm`), 루트 변위 중앙 오차 **`0.000 m`** (`29/47`종 `≤ 0.05m` 일치)로 객관 계측됨.
+
+## 47종 Havok Behavior 그래프·원본 클립 전수 내재화 및 Tier A/B 대규모 승격 · 2026-11-27
+
+이전 전수 비교에서 Tier C로 남아 있던 41종을 대상으로, 공식 Havok SDK 2015.1.0-r1의 **Hero(17종)·Soldier(15종) 고유 Behavior `.hkt` 클립 32종 전수**를 Godot 네이티브 바이너리 `.res`로 내재화하고, 베이크된 포즈나 랜드마크 좌표 없이 순수 선언형 Behavior 그래프 IR만으로 85본/114본 스켈레톤을 60.000 Hz 실시간 평가하는 **`HavokBehaviorGraphRuntime`**을 구현·`BehaviorCases`에 통합하여 대규모 승격을 완료했다.
+
+- **엔진 영향 범위**: **`[엔진 수정]` 없음 (0건)**, **`[엔진 추가]` 없음 (0건)** — 모든 클립 팩·그래프 IR·실시간 평가기·`BehaviorCases` 연동·회귀 테스트는 `playforge/animation_studio/` 확장 계층에만 구현.
+- **신규·수정 파일 (`[확장 추가]` / `[확장 수정]`)**:
+  - `[확장 추가]` `compare/export_behavior_clips.py`: 오프라인 `hero_oracle.exe` 기반으로 47종이 참조하는 공식 `.hkt` 클립 32종 전수를 Godot 네이티브 `HeroMotionData` 압축 리소스로 추출(`compare/assets/hero_behavior_clips.res` 17클립 1.98 MB, `compare/assets/soldier_behavior_clips.res` 15클립 5.29 MB — 런타임 `.hkt` 의존 0).
+  - `[확장 추가]` `compare/compile_47_graphs.py` · `compare/assets/havok_47_behavior_graphs.json` (`93.3 KB`): 47종 전수의 순수 선언형 Behavior 그래프 IR(상태머신·클립 노드·재생 모드/속도·smoothstep 전이 엔벨로프·본 마스크·미러링·이벤트 스케줄 — `contains_baked_poses: false`).
+  - `[확장 추가]` `compare/havok_behavior_graph_runtime.gd` (`HavokBehaviorGraphRuntime`): `hkbClipGenerator`(Single/Loop/UserControlled/PingPong/가변속도), `hkbStateMachine`+`hkbBlendingTransitionEffect`(smoothstep `3u²-2u³`, 동시 다중전이 스택), `hkbBlenderGenerator`(가중 블렌드+RefPose 임계), `hkbManualSelectorGenerator`, `hkbReferencePoseGenerator`, `hkaMirroredSkeleton` 바인드포즈 보존 좌우 미러링(`M·(G·R⁻¹)·M·R`, 스키닝 꼬임 0), 상·하체 및 양팔 무기 레이어 본 마스크, 루트 모션 델타 적분을 Godot 4.7.2 `Skeleton3D`에서 실시간 실행.
+  - `[확장 수정]` `catalog/behavior_cases.gd` (`BehaviorCases`): `attach_havok_behavior_graph(menu_path)` 추가 — 47종 공식 데모에서 실시간 `HavokBehaviorGraphRuntime`이 스켈레톤·상태·이벤트를 구동하면서 기존 보조 기즈모(플랫폼·타깃·어태치먼트·리코더·랙돌 조인트)를 병행 유지.
+  - `[확장 수정]` `compare/havok_47_1to1_compare.gd` · `compare/build_47_1to1_report.py`: `set_physics_process(false)` 결정론 스텝 격리, 비스위즐 Soldier(`z_up=false`) Yaw 보정, 47종 실시간 이벤트(`Δtick`)·상태 일치율(`%`) 계측 및 웹 갤러리 KPI 갱신.
+  - `[확장 수정]` `tests/havok_behavior_1to1_verify.gd`: 승격 회귀 게이트 강화(`tier_a_count >= 27`, `tier_a_sub2mm_count >= 18`, `tier_ab_count >= 43`, `total_events_matched == 1545`, `state_match_mean_pct >= 99.9`, `median_pose_rms <= 10.0 mm`, `soldier_median <= 5.0 mm`).
+- **승격 전후 47종 정량 비교 결과**:
+  - **Tier A (정밀 1:1 · `≤15 mm`, 상태 100%, 이벤트 `Δ0틱`)**: **`5종 → 27 / 47종 (57.4%)`** *(이 중 **`18종 ≤ 2.0 mm`**, **`22종 ≤ 5.0 mm`**)*
+  - **Tier B (실그래프 근접 · `≤80 mm`)**: **`1종 → 16 / 47종 (34.0%)`** → **Tier A+B 합계 `43 / 47종 (91.5%)`**
+  - **Tier C (물리 랙돌·다중전이 갭 · `>80 mm`)**: **`41종 → 4 / 47종 (8.5%)`** (`#12 MultipleControllers` 815.3 mm, `#20 Ragdoll Attachments` 360.3 mm, `#45/#46 SymbolLinking` 149.7 mm)
+  - **전체 6랜드마크 포즈 RMS 중앙값**: **`269.5 mm → 8.6 mm` (`31.3×` 정밀화)** · Soldier 중앙값 **`266.6 mm → 2.6 mm` (`102.5×`)** · Hero 중앙값 **`284.4 mm → 19.3 mm` (`14.7×`)**
+  - **실그래프 이벤트·상태 일치**: **`1,545 / 1,545` (`100.0%`, `max Δ0틱`)** · 활성 상태 **`100.0%`** (`15,665`틱 전수).

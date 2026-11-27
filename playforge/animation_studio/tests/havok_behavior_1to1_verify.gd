@@ -263,7 +263,13 @@ func _verify_47_demos_1to1_comparison_report() -> void:
 		and int(totals.get("landmarks_full_match_count", 0)) == 47
 		and int(totals.get("non_blank_pairs", 0)) == 47
 		and int(totals.get("total_ticks_compared", 0)) == 15665
-		and int(totals.get("tier_a_count", 0)) >= 5
+		and int(totals.get("tier_a_count", 0)) >= 27
+		and int(totals.get("tier_a_sub2mm_count", 0)) >= 18
+		and int(totals.get("tier_ab_count", 0)) >= 43
+		and int(totals.get("total_events_matched", 0)) == 1545
+		and float(totals.get("state_match_mean_pct", 0.0)) >= 99.9
+		and float(totals.get("catalog_pose_rms_median_mm", 999.0)) <= 10.0
+		and float(totals.get("soldier_pose_rms_median_mm", 999.0)) <= 5.0
 		and float(ref_pose.get("catalog_pose_rms_mm", 999.0)) <= 0.5
 		and String(sim_trans.get("godot_char", "")) == "soldier"
 		and int(sim_trans.get("godot_bones", 0)) == 114
@@ -271,17 +277,17 @@ func _verify_47_demos_1to1_comparison_report() -> void:
 		and float(cc_jump.get("godot_max_disp_m", 999.0)) <= 15.0
 	)
 	_check("compare_47_1to1_totals_and_fixes", totals_ok,
-		"asset=%d/47 lm=%d/47 non_blank=%d/47 tierA=%d tierB=%d ref_pose=%.1fmm sim_trans=%s(%db) cc_disp=%.2fm/%.2fm" % [
+		"asset=%d/47 tierA=%d(<=2mm:%d) tierB=%d tierAB=%d/47 ev=%d/1545 st=%.1f%% med=%.1fmm(sol=%.1fmm) ref=%.1fmm" % [
 			int(totals.get("asset_rig_match_count", 0)),
-			int(totals.get("landmarks_full_match_count", 0)),
-			int(totals.get("non_blank_pairs", 0)),
 			int(totals.get("tier_a_count", 0)),
+			int(totals.get("tier_a_sub2mm_count", 0)),
 			int(totals.get("tier_b_count", 0)),
+			int(totals.get("tier_ab_count", 0)),
+			int(totals.get("total_events_matched", 0)),
+			float(totals.get("state_match_mean_pct", 0.0)),
+			float(totals.get("catalog_pose_rms_median_mm", 999.0)),
+			float(totals.get("soldier_pose_rms_median_mm", 999.0)),
 			float(ref_pose.get("catalog_pose_rms_mm", 999.0)),
-			String(sim_trans.get("godot_char", "")),
-			int(sim_trans.get("godot_bones", 0)),
-			float(cc_proxy.get("godot_max_disp_m", 999.0)),
-			float(cc_jump.get("godot_max_disp_m", 999.0)),
 		])
 
 	var h_img := Image.load_from_file(ProjectSettings.globalize_path(COMPARE_47_HERO_SHEET))

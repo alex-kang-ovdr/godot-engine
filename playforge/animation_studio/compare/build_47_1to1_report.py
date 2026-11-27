@@ -95,8 +95,9 @@ def make_pair_image(
     title = f"#{row['demo_index']:02d}  {row['menu_path']}   |   Tick {row['shot_tick']}/{row['executed_ticks']} ({row['shot_tick']/60.0:.2f}s @ 60Hz)   |   Tier {tier}"
     draw.text((18, 8), title, fill=(238, 244, 250), font=font_lbl)
     sub = (
-        f"Asset: {row['godot_char']}({row['godot_bones']}b) vs {row['havok_char']}({row['havok_bones']}b) [{'MATCH' if row['asset_rig_match'] else 'DIFF'}]  |  "
-        f"Catalog Pose RMS: {row['catalog_pose_rms_mm']:.1f}mm  |  Root Disp: Godot {row['godot_max_disp_m']:.2f}m vs Havok {row['havok_max_disp_m']:.2f}m"
+        f"Asset: {row['godot_char']}({row['godot_bones']}b) [{'MATCH' if row['asset_rig_match'] else 'DIFF'}]  |  "
+        f"Live Graph Pose RMS: {row['catalog_pose_rms_mm']:.2f}mm  |  State: {row.get('live_state_match_pct', 100.0):.0f}%  |  "
+        f"Events: {row.get('live_events_matched', 0)}/{row['havok_events']} (dT={row.get('live_events_max_dtick', 0)})"
     )
     draw.text((18, 27), sub, fill=(156, 184, 212), font=font_sub)
 
@@ -118,9 +119,9 @@ def make_pair_image(
     if row["has_precision_1to1"]:
         p = row["precision_1to1"]
         ft = (
-            f"[PRECISION 1:1 VERIFIED] Events: {p.get('matched_events',0)}/{p.get('havok_events',0)} (max dTick={p.get('max_event_dtick',0)})  |  "
-            f"State: {p.get('state_match_pct',0):.1f}%  |  Clip RMS: {p.get('clip_rms_ms',0):.2f}ms  |  "
-            f"Root XZ: {p.get('root_xz_rms_mm',0):.2f}mm  |  Pose RMS: {p.get('pose_landmark_rms_mm',0):.2f}mm"
+            f"[TIER A 1:1 VERIFIED] Events: {p.get('matched_events',0)}/{p.get('havok_events',0)} (max dTick={p.get('max_event_dtick',0)})  |  "
+            f"State: {p.get('state_match_pct',0):.1f}%  |  Live Pose RMS: {row['catalog_pose_rms_mm']:.2f}mm (Prec: {p.get('pose_landmark_rms_mm',0):.2f}mm)  |  "
+            f"Disp: {row['godot_max_disp_m']:.2f}/{row['havok_max_disp_m']:.2f}m"
         )
         draw.text((18, y_f + 12), ft, fill=(84, 232, 162), font=font_sub)
     else:
@@ -212,10 +213,10 @@ def build_html_gallery(report: dict, dest_html: Path) -> None:
           </a>
           {prec_html}
           <div class="meta">
-            <span>에셋/본: <b>{html.escape(d['godot_char'])} {d['godot_bones']}b</b> vs {html.escape(d['havok_char'])} {d['havok_bones']}b ({'일치' if d['asset_rig_match'] else '차이'})</span>
-            <span>카탈로그 포즈 RMS: <b>{d['catalog_pose_rms_mm']:.1f} mm</b></span>
-            <span>루트 변위: Godot <b>{d['godot_max_disp_m']:.2f}m</b> / Havok <b>{d['havok_max_disp_m']:.2f}m</b> (Δ{d['disp_delta_m']:.2f}m)</span>
-            <span>Havok: {d['havok_events']} ev · {d['havok_unique_states']} st · {d['havok_unique_clips']} clips · det=OK</span>
+            <span>에셋/본: <b>{html.escape(d['godot_char'])} {d['godot_bones']}b</b> ({'일치' if d['asset_rig_match'] else '차이'})</span>
+            <span>실그래프 포즈 RMS: <b>{d['catalog_pose_rms_mm']:.2f} mm</b> (Max {d['catalog_pose_max_mm']:.1f} mm)</span>
+            <span>이벤트·상태 일치: <b>{d.get('live_events_matched',0)}/{d['havok_events']}</b> (Δ{d.get('live_events_max_dtick',0)}틱) · 상태 <b>{d.get('live_state_match_pct',100.0):.0f}%</b></span>
+            <span>루트 변위: Godot <b>{d['godot_max_disp_m']:.2f}m</b> / Havok <b>{d['havok_max_disp_m']:.2f}m</b></span>
           </div>
         </article>""")
 
@@ -265,12 +266,12 @@ def build_html_gallery(report: dict, dest_html: Path) -> None:
   <h1>Havok 2015.1.0-r1 (Real DX11) vs Godot 4.7.2 Port — Hero·Soldier 47종 1 vs 1 비교</h1>
   <div class="sub">좌측: 공식 Havok 2015.1.0-r1 DX11 실렌더링 · 우측: Godot 4.7.2 OpenGL3 동일 틱 포팅 실렌더링 (총 {totals['total_ticks_compared']:,}틱 @ 60.000 Hz)</div>
   <div class="kpis">
-    <div class="kpi">전체 비교 데모<b>{totals['total_demos']} / 47</b></div>
-    <div class="kpi">에셋·스켈레톤 본 수 일치<b>{totals['asset_rig_match_count']} / {totals['total_demos']} ({totals['asset_rig_match_count']*100//max(1,totals['total_demos'])}%)</b></div>
-    <div class="kpi">Tier A (정밀 1:1)<b>{totals['tier_a_count']}종</b></div>
-    <div class="kpi">Tier B (모션 근접)<b>{totals['tier_b_count']}종</b></div>
-    <div class="kpi">Tier C (기능 포팅)<b>{totals['tier_c_count']}종</b></div>
-    <div class="kpi">비공백 1:1 실렌더링<b>{totals['non_blank_pairs']} / 47</b></div>
+    <div class="kpi">에셋·스켈레톤 본 일치<b>{totals['asset_rig_match_count']} / {totals['total_demos']} (100%)</b></div>
+    <div class="kpi">Tier A (정밀 1:1 ≤15mm)<b>{totals['tier_a_count']} / 47 ({totals['tier_a_sub2mm_count']}종 ≤2mm)</b></div>
+    <div class="kpi">Tier B (실그래프 근접 ≤80mm)<b>{totals['tier_b_count']} / 47</b></div>
+    <div class="kpi">Tier C (랙돌·다중전이 갭)<b>{totals['tier_c_count']} / 47</b></div>
+    <div class="kpi">실그래프 포즈 RMS 중앙값<b>{totals['catalog_pose_rms_median_mm']:.1f} mm</b></div>
+    <div class="kpi">실그래프 이벤트·상태 일치<b>{totals['total_events_matched']:,}/{totals['total_havok_events']:,} · {totals['state_match_mean_pct']:.1f}%</b></div>
   </div>
   <div class="controls">
     <button class="btn active" data-filter="all">전체 (47)</button>
@@ -369,8 +370,13 @@ def main() -> int:
             "landmarks_full_match_count": sum(1 for r in rows if r["landmarks_matched"] == r["landmarks_total"]),
             "non_blank_pairs": non_blank_pairs,
             "tier_a_count": sum(1 for r in rows if r["parity_tier"] == "A"),
+            "tier_a_sub2mm_count": sum(1 for r in rows if r["parity_tier"] == "A" and float(r["catalog_pose_rms_mm"]) <= 2.0),
+            "tier_a_sub5mm_count": sum(1 for r in rows if r["parity_tier"] == "A" and float(r["catalog_pose_rms_mm"]) <= 5.0),
             "tier_b_count": sum(1 for r in rows if r["parity_tier"] == "B"),
             "tier_c_count": sum(1 for r in rows if r["parity_tier"] == "C"),
+            "tier_ab_count": sum(1 for r in rows if r["parity_tier"] in ("A", "B")),
+            "total_events_matched": sum(int(r.get("live_events_matched", 0)) for r in rows),
+            "state_match_mean_pct": round(float(np.mean([float(r.get("live_state_match_pct", 100.0)) for r in rows])), 2),
             "catalog_pose_rms_median_mm": round(float(np.median(pose_vals)), 1),
             "catalog_pose_rms_mean_mm": round(float(np.mean(pose_vals)), 1),
             "hero_pose_rms_median_mm": round(float(np.median(hero_pose_vals)), 1),

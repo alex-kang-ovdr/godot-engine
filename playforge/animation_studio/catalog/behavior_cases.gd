@@ -15,6 +15,7 @@ const PoseGraph := preload("res://addons/animation_studio/pose_graph.gd")
 const RewindRecorder := preload("res://addons/animation_studio/rewind_recorder.gd")
 const ActiveRagdollJoint := preload("res://addons/animation_studio/active_ragdoll_joint.gd")
 const CrowdEvaluator := preload("res://addons/animation_studio/crowd_evaluator.gd")
+const HavokGraphRuntime := preload("res://compare/havok_behavior_graph_runtime.gd")
 
 const FIREFIGHTER_SKIN_ROSTER := ["firefighter", "desert_dan", "jungle_joe", "snow_sam"]
 
@@ -34,6 +35,11 @@ var actor_player: AnimationPlayer
 var hero_instance: Node3D
 var graph: PoseGraph
 var graph_b: PoseGraph
+var havok_graph_rt: HavokGraphRuntime
+var havok_graph_menu_path := ""
+var havok_graph_last_step: Dictionary = {}
+var havok_graph_events_fired := 0
+var _actor_inner: Node3D
 var recorder: RewindRecorder
 var upper_mask: PackedFloat32Array = PackedFloat32Array()
 var idle_anim: Animation
@@ -189,6 +195,7 @@ func _spawn_havok_graph_actor(char_id: String, pos := Vector3.ZERO, loop_overrid
 	var eff_loop := loop_override if loop_override >= 0 else int(_spec.get("loop_mode", Animation.LOOP_LINEAR))
 	var pack := Standards.spawn_aligned_character(cid, "BehActor_" + cid, eff_loop)
 	var outer: Node3D = pack["outer"] as Node3D
+	_actor_inner = pack["root"] as Node3D
 	outer.position = pos
 	add_child(outer)
 	var skel: Skeleton3D = pack["skeleton"] as Skeleton3D
@@ -694,9 +701,88 @@ func _setup_state_machine() -> void:
 	sync_phase_err = 0.0
 
 
+func attach_havok_behavior_graph(menu_path: String) -> bool:
+	if not HavokGraphRuntime.has_graph(menu_path):
+		return false
+	var rt := HavokGraphRuntime.new()
+	if not rt.setup(menu_path):
+		return false
+	havok_graph_rt = rt
+	havok_graph_menu_path = menu_path
+	havok_graph_last_step = {}
+	havok_graph_events_fired = 0
+	# Disable synthetic demo modifiers/trees so the exact Havok Behavior Graph drives Skeleton3D cleanly
+	if blend_tree_node != null and is_instance_valid(blend_tree_node):
+		blend_tree_node.active = false
+	if actor_player != null and is_instance_valid(actor_player):
+		actor_player.active = false
+	if look_at_mod != null and is_instance_valid(look_at_mod):
+		look_at_mod.active = false
+	if ik_mod != null and is_instance_valid(ik_mod):
+		ik_mod.active = false
+	if hero_instance != null and is_instance_valid(hero_instance):
+		hero_instance.set("running", false)
+	# Ensure Soldier inner yaw is standard PI/2 (HavokGraphRuntime handles ReferencePoseGenerator +90° natively)
+	if _actor_inner != null and is_instance_valid(_actor_inner):
+		var cid := str(_spec.get("primary_char", "soldier"))
+		_actor_inner.rotation.y = float(Standards.get_alignment(cid).get("yaw", PI))
+	return true
+
+
 func _physics_process(delta: float) -> void:
 	elapsed += delta
 	ticks += 1
+	if havok_graph_rt != null:
+		var target_skel: Skeleton3D = actor_skel
+		var rm_node: Node3D = actor
+		if family == "hero_showcase" and hero_instance != null and is_instance_valid(hero_instance):
+			target_skel = hero_instance.get("rig") as Skeleton3D
+			rm_node = null
+		elif family == "moving_platform":
+			platform_angle += delta * 0.7
+			platform.position = Vector3(sin(elapsed * 1.2) * 0.8, 0.0, cos(elapsed * 1.2) * 0.4)
+			platform.rotation.y = platform_angle
+			rm_node = null
+		elif family == "driver_ik" and controller != null:
+			rm_node = controller
+		elif family == "docking" and target_marker != null:
+			rm_node = actor
+		var prev_st := last_state
+		var info := havok_graph_rt.step(delta, target_skel, rm_node)
+		havok_graph_last_step = info
+		var new_st := str(info.get("state", ""))
+		if new_st != prev_st and not new_st.is_empty():
+			if not prev_st.is_empty():
+				state_transitions += 1
+			last_state = new_st
+		havok_graph_events_fired += (info.get("events", []) as Array).size()
+		# Keep auxiliary demo subsystems (recorder, ragdoll preview joints, attachments, LookAt marker) alive
+		if family == "save_state" and recorder != null and target_skel != null:
+			recorder.queue_metadata({"state": new_st, "tick": ticks})
+			if recorder.get_total_recorded() < ticks:
+				recorder._on_skeleton_updated()
+			if ticks == 60 and recorder.get_frame_count() >= 1:
+				var saved: Dictionary = recorder.get_frame(0)
+				var expected: PoseBuffer = saved["pose"] as PoseBuffer
+				recorder.apply_frame(0, target_skel, actor)
+				var restored := PoseBuffer.capture_from_skeleton(target_skel)
+				restore_err_rad = restored.max_diff(expected).max_rot_rad
+		elif family == "ragdoll_driver":
+			for idx in ragdoll_joints.size():
+				var j := ragdoll_joints[idx]
+				j.target_angle_rad = deg_to_rad((38.0 if idx == 0 else -32.0) * sin(elapsed * 2.0 + 0.6))
+				var tau := j.step_control()
+				if idx == 0:
+					ragdoll_torque = tau
+					ragdoll_angle_deg = rad_to_deg(j.get_joint_angle_z())
+		elif family == "modifier":
+			if look_target != null:
+				look_target.position = Vector3(sin(elapsed * 1.8) * 1.05, 1.48 + sin(elapsed * 2.0) * 0.22, -1.6)
+				aim_yaw_deg = rad_to_deg(atan2(look_target.position.x, -look_target.position.z))
+			if attached_obj != null and attach_hand_bone >= 0 and target_skel != null:
+				var expected_p := target_skel.to_global(target_skel.get_bone_global_pose(attach_hand_bone).origin)
+				attach_err_mm = attached_obj.global_position.distance_to(expected_p) * 1000.0
+		return
 	match family:
 		"hero_showcase":
 			pass
