@@ -19,6 +19,23 @@ const PROJECT_DIR = path.resolve(WEB_DIR, '..');
 const WORKTREES_ROOT = path.resolve(PROJECT_DIR, '..', '..', '..');
 const MAIN_REPO_ROOT = path.resolve(WORKTREES_ROOT, '..', 'GoDotProjects');
 const DEFAULT_SCENE = 'res://hero/arena/hero_arena_world.tscn';
+const NATIVE_DLL_PATH = path.join(PROJECT_DIR, 'addons', 'animation_studio', 'bin', 'animation_studio_pose_sampler.windows.template_debug.x86_64.dll');
+const BUILD_CMD_PATH = path.join(PROJECT_DIR, 'build_and_test_local_fork.cmd');
+
+const DEMO_SCENES = {
+  arena: 'res://hero/arena/hero_arena.tscn',
+  world: 'res://hero/arena/hero_arena_world.tscn',
+  roster: 'res://characters/character_showcase.tscn',
+  quadruped: 'res://quadruped/quadruped_locomotor_studio.tscn',
+  soldier: 'res://soldier/soldier_demo.tscn',
+  lab: 'res://demo/animation_lab.tscn',
+};
+
+function getNativeDllStatus() {
+  if (!fs.existsSync(NATIVE_DLL_PATH)) return { available: false, path: NATIVE_DLL_PATH };
+  const st = fs.statSync(NATIVE_DLL_PATH);
+  return { available: true, path: NATIVE_DLL_PATH, size: st.size, mtime: st.mtime.toISOString() };
+}
 
 function resolveLocalForkEditor() {
   const candidates = [
@@ -149,6 +166,10 @@ const server = http.createServer((req, res) => {
     sendFile(res, path.join(WEB_DIR, 'editor_frame.html'));
     return;
   }
+  if (p === '/local-fork' || p === '/local-fork.html') {
+    sendFile(res, path.join(WEB_DIR, 'local_fork.html'));
+    return;
+  }
   if (p === '/api/health') {
     const localEditor = resolveLocalForkEditor();
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -157,7 +178,70 @@ const server = http.createServer((req, res) => {
       project: 'animation_studio',
       vendorDir: path.basename(vendorDir),
       localForkEditor: localEditor ? { available: true, isFork: localEditor.isFork, path: localEditor.path } : { available: false },
+      nativeDll: getNativeDllStatus(),
     }));
+    return;
+  }
+  if (p === '/launch-local-demo' || p === '/api/launch-local-demo') {
+    const wantsJson = p === '/api/launch-local-demo' || url.searchParams.get('dry_run') === '1' || String(req.headers.accept || '').includes('application/json');
+    if (!isLoopbackDirectRequest(req)) {
+      res.writeHead(403, { 'Content-Type': wantsJson ? 'application/json; charset=utf-8' : 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(wantsJson ? JSON.stringify({ ok: false, error: 'loopback_only' }) : '<!doctype html><html lang="ko"><meta charset="utf-8"><body style="background:#12151b;color:#e8f0f8;font:14px system-ui;padding:24px"><h2>로컬 PC 전용 링크</h2><p><a href="/" style="color:#62e6d8">웹 에디터로 돌아가기</a></p></body></html>');
+      return;
+    }
+    const localEditor = resolveLocalForkEditor();
+    if (!localEditor) {
+      res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ ok: false, error: 'editor_not_found' }));
+      return;
+    }
+    const rawScene = url.searchParams.get('scene') || 'arena';
+    const safeScene = DEMO_SCENES[rawScene] || (/^res:\/\/[A-Za-z0-9_./-]+\.tscn$/.test(rawScene) ? rawScene : DEMO_SCENES.arena);
+    const launchArgs = ['--path', PROJECT_DIR, safeScene];
+    const dryRun = url.searchParams.get('dry_run') === '1';
+    let pid = null;
+    if (!dryRun) {
+      const child = spawn(localEditor.path, launchArgs, {
+        cwd: PROJECT_DIR,
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: false,
+      });
+      pid = child.pid || null;
+      child.unref();
+    }
+    res.writeHead(200, { 'Content-Type': wantsJson ? 'application/json; charset=utf-8' : 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    if (wantsJson) {
+      res.end(JSON.stringify({ ok: true, dryRun, pid, isFork: localEditor.isFork, editorPath: localEditor.path, args: launchArgs }));
+    } else {
+      res.end(`<!doctype html><html lang="ko"><meta charset="utf-8"><title>로컬 포크 플레이어 데모 실행</title><body style="background:#12151b;color:#e8f0f8;font:14px system-ui,'Malgun Gothic',sans-serif;padding:28px;line-height:1.6"><h2 style="color:#72ebe0;margin-top:0">로컬 포크 엔진 데모를 실행했습니다</h2><p><strong>실행 파일:</strong> ${localEditor.path}</p><p><strong>열린 씬:</strong> ${safeScene}</p><p><strong>PID:</strong> ${pid ?? 'spawned'}</p><p style="margin-top:20px"><a href="/local-fork" style="color:#f39c2b;margin-right:16px">로컬 포크 런처로 돌아가기</a><a href="/" style="color:#62e6d8">웹 에디터로 돌아가기</a></p></body></html>`);
+    }
+    return;
+  }
+  if (p === '/api/build-and-test-local') {
+    if (!isLoopbackDirectRequest(req)) {
+      res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ ok: false, error: 'loopback_only', message: '로컬 빌드/테스트는 127.0.0.1에서만 허용됩니다.' }));
+      return;
+    }
+    if (!fs.existsSync(BUILD_CMD_PATH)) {
+      res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ ok: false, error: 'cmd_not_found' }));
+      return;
+    }
+    const skipNative = url.searchParams.get('skip_native') === '1';
+    const cmdArgs = ['/c', BUILD_CMD_PATH, '--test-only'];
+    if (skipNative) cmdArgs.push('--skip-native');
+    const t0 = Date.now();
+    let output = '';
+    const child = spawn('cmd.exe', cmdArgs, { cwd: PROJECT_DIR, windowsHide: true });
+    child.stdout.on('data', (chunk) => { output += chunk.toString('utf8'); });
+    child.stderr.on('data', (chunk) => { output += chunk.toString('utf8'); });
+    child.on('close', (code) => {
+      const elapsedSec = ((Date.now() - t0) / 1000).toFixed(1);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ ok: code === 0, exitCode: code, elapsedSec, output: output.slice(-16000) }));
+    });
     return;
   }
   if (p === '/launch-local-editor' || p === '/api/launch-local-editor') {

@@ -34,6 +34,7 @@
     <span id="subtitle">Animation Studio · 표준 3D 뷰포트 + 도킹 패널 애드온</span>
     <span id="pill">3D Viewport · Dockable Addon</span>
     <span id="status" aria-live="polite">초기화 중…</span>
+    <a id="local-fork-hub-btn" class="top-btn" href="/local-fork" target="_blank" rel="noopener" title="로컬 포크 엔진 빌드·테스트·플레이 데모 런처 열기">로컬 포크 런처</a>
     <a id="local-fork-btn" class="top-btn" href="/launch-local-editor" target="_blank" rel="noopener" title="로컬 PC의 Forge-Refactoring-engine 포크 Godot 에디터로 hero_arena_world.tscn 바로 열기">로컬 포크 에디터 열기</a>
     <button id="reload-btn" class="top-btn" type="button" onclick="location.reload()">새로고침</button>
   </div>
@@ -55,8 +56,10 @@
       const errorEl = document.getElementById('error-box');
       const isLocalHost = ['127.0.0.1', 'localhost', '::1'].includes(window.location.hostname);
       const localForkBtn = document.getElementById('local-fork-btn');
-      if (localForkBtn && !isLocalHost) {
-        localForkBtn.style.display = 'none';
+      const localForkHubBtn = document.getElementById('local-fork-hub-btn');
+      if (!isLocalHost) {
+        if (localForkBtn) localForkBtn.style.display = 'none';
+        if (localForkHubBtn) localForkHubBtn.style.display = 'none';
       }
 
       window.__ANIMATION_STUDIO_WEB_STATE__ = {

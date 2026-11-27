@@ -7,6 +7,7 @@ thirdparty/* linguist-vendored
 * text=auto eol=lf
 # Except for Windows-only / Visual Studio files
 *.bat eol=crlf
+*.cmd eol=crlf
 *.sln eol=crlf
 *.csproj eol=crlf
 misc/msvs/* eol=crlf

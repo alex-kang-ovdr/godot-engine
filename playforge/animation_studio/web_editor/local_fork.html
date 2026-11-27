@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PlayForge 로컬 포크 엔진 빌드 · 테스트 런처</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;background:#11151c;color:#e6eef8;font:14px/1.55 system-ui,-apple-system,"Malgun Gothic",sans-serif}
+    header{padding:16px 24px;background:#171d27;border-bottom:1px solid #2b3547;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    header h1{margin:0;font-size:18px;color:#f6b44d}
+    .badge{padding:3px 10px;border-radius:999px;font-size:12px;background:#1c2d2d;border:1px solid #2cc7b8;color:#72ebe0}
+    .top-link{margin-left:auto;color:#72ebe0;text-decoration:none;border:1px solid #35505a;padding:5px 12px;border-radius:6px;background:#162228}
+    .top-link:hover{background:#1f323b}
+    main{max-width:1060px;margin:0 auto;padding:24px;display:grid;gap:18px}
+    .card{background:#171d27;border:1px solid #2a3446;border-radius:10px;padding:18px}
+    .card h2{margin:0 0 10px;font-size:16px;color:#edf4fc}
+    .meta{font-size:12px;color:#9bb0c9;margin:4px 0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:12px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;border-radius:7px;border:1px solid #3a465c;background:#222a38;color:#eef5ff;text-decoration:none;cursor:pointer;font-size:13px;font-weight:600}
+    .btn:hover{background:#2d3749}
+    .btn.primary{border-color:#d88a22;background:#322413;color:#ffd594}
+    .btn.primary:hover{background:#433018}
+    .btn.teal{border-color:#2cc7b8;background:#172b2b;color:#7df3e7}
+    .btn.teal:hover{background:#1f3b3b}
+    .btn:disabled{opacity:.55;cursor:wait}
+    pre{margin:12px 0 0;padding:12px;border-radius:7px;background:#0c1016;border:1px solid #253042;color:#cfe0f5;font:12px/1.5 ui-monospace,Consolas,monospace;max-height:360px;overflow:auto;white-space:pre-wrap}
+    .warn{padding:12px 14px;border-radius:8px;background:#2c1d18;border:1px solid #c96f4a;color:#ffd6c2;font-size:13px}
+    code{background:#10151e;padding:2px 5px;border-radius:4px;color:#9ad7ff}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>◆ PlayForge 로컬 포크 엔진 빌드 · 테스트 런처</h1>
+    <span class="badge" id="engine-badge">엔진 확인 중…</span>
+    <a class="top-link" href="/">Godot 웹 에디터로 이동</a>
+  </header>
+  <main>
+    <div id="remote-warn" class="warn" style="display:none">
+      현재 외부 주소로 접속 중입니다. 로컬 포크 엔진 실행 및 빌드는 보안상 호스트 PC의 <strong>http://127.0.0.1:4792/local-fork</strong> 에서만 허용됩니다.
+    </div>
+
+    <section class="card">
+      <h2>1. 로컬 포크 엔진 정보</h2>
+      <div class="meta" id="engine-path">엔진 경로: 조회 중…</div>
+      <div class="meta" id="dll-status">네이티브 C++ GDExtension DLL: 조회 중…</div>
+      <div class="meta" id="cmd-paths">배치 파일: <code>build_and_test_local_fork.cmd</code> · <code>open_local_fork_editor.cmd</code> · <code>run_local_fork_demo.cmd</code></div>
+    </section>
+
+    <section class="card">
+      <h2>2. 로컬 포크 Godot 에디터 &amp; 플레이 데모 즉시 실행</h2>
+      <div class="grid">
+        <a class="btn primary" href="/launch-local-editor" target="_blank" rel="noopener">로컬 포크 에디터 열기 (표준 3D 뷰포트 + 도킹 패널)</a>
+        <a class="btn teal" href="/launch-local-demo?scene=arena" target="_blank" rel="noopener">플레이: Hero 배경맵 · 10 Lua 파쿠르 아레나</a>
+        <a class="btn" href="/launch-local-demo?scene=world" target="_blank" rel="noopener">플레이: 4캐릭터 3D 광장 씬 (hero_arena_world)</a>
+        <a class="btn" href="/launch-local-demo?scene=roster" target="_blank" rel="noopener">플레이: 전체 28종 캐릭터 로스터 비교</a>
+        <a class="btn" href="/launch-local-demo?scene=quadruped" target="_blank" rel="noopener">플레이: 4족 절차적 Locomotor 스튜디오</a>
+        <a class="btn" href="/launch-local-demo?scene=soldier" target="_blank" rel="noopener">플레이: Soldier 114본 · M4 비교 데모</a>
+        <a class="btn" href="/launch-local-demo?scene=lab" target="_blank" rel="noopener">플레이: Animation Studio 메인 랩</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3. C++ GDExtension 재빌드 &amp; 로컬 포크 6종 회귀 테스트</h2>
+      <p class="meta">로컬 PC에서 <code>build_and_test_local_fork.cmd --test-only</code>를 실행해 C++ GDExtension DLL을 빌드하고 6개 스위트(53개 검사)를 로컬 포크 엔진으로 검증합니다.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn primary" id="btn-build-test" type="button">C++ GDExtension 빌드 + 6종 회귀 테스트 실행</button>
+        <button class="btn" id="btn-test-only" type="button">기존 빌드로 6종 회귀 테스트만 실행</button>
+      </div>
+      <pre id="build-log">버튼을 눌러 로컬 포크 엔진 빌드 및 테스트를 시작하세요.</pre>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+      const isLocal = ['127.0.0.1', 'localhost', '::1'].includes(window.location.hostname);
+      if (!isLocal) document.getElementById('remote-warn').style.display = 'block';
+
+      async function loadHealth() {
+        try {
+          const r = await fetch('/api/health', { cache: 'no-store' });
+          const d = await r.json();
+          const fe = d.localForkEditor || {};
+          document.getElementById('engine-badge').textContent = fe.available
+            ? (fe.isFork ? 'Forge-Refactoring-engine (로컬 포크)' : 'Godot 4.7.2')
+            : '로컬 엔진 미발견';
+          document.getElementById('engine-path').textContent = '엔진 경로: ' + (fe.path || '없음');
+          const dll = d.nativeDll || {};
+          document.getElementById('dll-status').textContent = dll.available
+            ? `네이티브 C++ GDExtension DLL: 빌드됨 (${(dll.size / 1024).toFixed(1)} KB · ${dll.mtime})`
+            : '네이티브 C++ GDExtension DLL: 미빌드 (아래 버튼으로 빌드 가능)';
+        } catch (err) {
+          document.getElementById('engine-badge').textContent = '조회 오류';
+        }
+      }
+
+      async function runBuildTest(skipNative) {
+        const b1 = document.getElementById('btn-build-test');
+        const b2 = document.getElementById('btn-test-only');
+        const logEl = document.getElementById('build-log');
+        b1.disabled = b2.disabled = true;
+        logEl.textContent = skipNative
+          ? '로컬 포크 엔진 6종 회귀 테스트 실행 중… (약 25초 소요)'
+          : 'C++ GDExtension 빌드 및 로컬 포크 엔진 6종 회귀 테스트 실행 중… (약 35초 소요)';
+        try {
+          const r = await fetch('/api/build-and-test-local' + (skipNative ? '?skip_native=1' : ''), { method: 'POST' });
+          const d = await r.json();
+          logEl.textContent = `[exitCode=${d.exitCode}, ok=${d.ok}, elapsed=${d.elapsedSec}s]\n\n` + (d.output || d.message || '');
+          await loadHealth();
+        } catch (err) {
+          logEl.textContent = '요청 실패: ' + String(err);
+        } finally {
+          b1.disabled = b2.disabled = false;
+        }
+      }
+
+      document.getElementById('btn-build-test').addEventListener('click', () => runBuildTest(false));
+      document.getElementById('btn-test-only').addEventListener('click', () => runBuildTest(true));
+      loadHealth();
+    })();
+  </script>
+</body>
+</html>
