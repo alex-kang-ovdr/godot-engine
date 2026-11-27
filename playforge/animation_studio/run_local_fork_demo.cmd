@@ -21,22 +21,24 @@ if "%MODE%"=="" (
     echo  엔진: %FORK_EDITOR%
     echo ============================================================================
     echo   1. 로컬 포크 Godot 에디터 ^(표준 3D 뷰포트 + 계층·상태·Animation Flow 도킹^)
-    echo   2. Hero 배경맵 · 10종 Lua 파쿠르 아레나 플레이 ^(hero_arena.tscn^)
-    echo   3. 4캐릭터 3D 광장 씬 플레이 ^(hero_arena_world.tscn^)
-    echo   4. 전체 28종 캐릭터 로스터 데모 ^(character_showcase.tscn^)
-    echo   5. 4족 절차적 Locomotor 스튜디오 ^(quadruped_locomotor_studio.tscn^)
-    echo   6. Soldier 114본 · M4 비교 데모 ^(soldier_demo.tscn^)
-    echo   7. Animation Studio 메인 런처 ^(animation_lab.tscn^)
+    echo   2. AI Pathfinding · Spatial Analysis Hero 전체 맵 데모 ^(hero_ai_demo.tscn^)
+    echo   3. Hero 배경맵 · 10종 Lua 파쿠르 아레나 플레이 ^(hero_arena.tscn^)
+    echo   4. 4캐릭터 3D 광장 씬 플레이 ^(hero_arena_world.tscn^)
+    echo   5. 전체 28종 캐릭터 로스터 데모 ^(character_showcase.tscn^)
+    echo   6. 4족 절차적 Locomotor 스튜디오 ^(quadruped_locomotor_studio.tscn^)
+    echo   7. Soldier 114본 · M4 비교 데모 ^(soldier_demo.tscn^)
+    echo   8. Animation Studio 메인 런처 ^(animation_lab.tscn^)
     echo ============================================================================
-    set /p "PICK=번호를 선택하세요 [1-7, 기본=1]: "
-    if "%PICK%"=="" set "PICK=1"
+    set /p "PICK=번호를 선택하세요 [1-8, 기본=2]: "
+    if "%PICK%"=="" set "PICK=2"
     if "%PICK%"=="1" set "MODE=editor"
-    if "%PICK%"=="2" set "MODE=arena"
-    if "%PICK%"=="3" set "MODE=world"
-    if "%PICK%"=="4" set "MODE=roster"
-    if "%PICK%"=="5" set "MODE=quadruped"
-    if "%PICK%"=="6" set "MODE=soldier"
-    if "%PICK%"=="7" set "MODE=lab"
+    if "%PICK%"=="2" set "MODE=ai_hero"
+    if "%PICK%"=="3" set "MODE=arena"
+    if "%PICK%"=="4" set "MODE=world"
+    if "%PICK%"=="5" set "MODE=roster"
+    if "%PICK%"=="6" set "MODE=quadruped"
+    if "%PICK%"=="7" set "MODE=soldier"
+    if "%PICK%"=="8" set "MODE=lab"
 )
 
 if /I "%MODE%"=="editor" (
@@ -44,7 +46,8 @@ if /I "%MODE%"=="editor" (
     exit /b 0
 )
 
-set "SCENE=res://hero/arena/hero_arena.tscn"
+set "SCENE=res://hero/ai/hero_ai_demo.tscn"
+if /I "%MODE%"=="arena" set "SCENE=res://hero/arena/hero_arena.tscn"
 if /I "%MODE%"=="world" set "SCENE=res://hero/arena/hero_arena_world.tscn"
 if /I "%MODE%"=="roster" set "SCENE=res://characters/character_showcase.tscn"
 if /I "%MODE%"=="quadruped" set "SCENE=res://quadruped/quadruped_locomotor_studio.tscn"

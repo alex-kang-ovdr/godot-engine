@@ -10,6 +10,9 @@ const Store := preload("res://characters/character_store.gd")
 const CrowdEval := preload("res://addons/animation_studio/crowd_evaluator.gd")
 const ControllerScript := preload("res://hero/arena/hero_lua_controller.gd")
 const LinesScript := preload("res://hero/arena/hero_lua_lines.gd")
+const SpatialScript := preload("res://hero/ai/hero_spatial_analysis.gd")
+const PathfinderScript := preload("res://hero/ai/hero_ai_pathfinder.gd")
+const AiDriverScript := preload("res://hero/ai/hero_ai_behavior_driver.gd")
 const QuadRigScript := preload("res://quadruped/quadruped_rig.gd")
 const QuadLocomotorScript := preload("res://quadruped/quadruped_locomotor.gd")
 
@@ -32,6 +35,7 @@ const HERO_SKIN_GLB := "res://hero/assets/hero_skin.glb"
 
 @export var playing: bool = true
 @export var auto_demo: bool = true
+@export var ai_driven: bool = false
 @export var use_quantized_16bit: bool = false
 @export_range(0.1, 2.0, 0.05) var playback_speed: float = 1.0
 
@@ -49,6 +53,12 @@ var _hero_tour_step: int = -1
 var _hero_last_clip: String = ""
 var _hero_last_driven_pos: Vector3 = Vector3.ZERO
 var _hero_has_driven: bool = false
+var ai_spatial: SpatialScript = null
+var ai_pathfinder: PathfinderScript = null
+var ai_driver: AiDriverScript = null
+var _ai_overlay_root: Node3D = null
+var _ai_annot_mi: MeshInstance3D = null
+var _ai_path_mi: MeshInstance3D = null
 
 # Role: quadruped
 var quad_actor_root: Node3D = null
@@ -87,6 +97,14 @@ func rebuild_instance() -> void:
 	motion_dict.clear()
 	quantized_clips.clear()
 	hero_ctrl = null
+	ai_spatial = null
+	ai_pathfinder = null
+	ai_driver = null
+	if is_instance_valid(_ai_overlay_root):
+		_ai_overlay_root.queue_free()
+	_ai_overlay_root = null
+	_ai_annot_mi = null
+	_ai_path_mi = null
 	quad_actor_root = null
 	quad_bone_ids.clear()
 	quad_locomotor = null
@@ -318,31 +336,38 @@ func _step_hero_arena(dt: float) -> void:
 		hero_ctrl.teleport_hero(global_position, rotation.y)
 		_hero_last_driven_pos = hero_ctrl.hero_pos
 
-	if auto_demo:
-		_hero_tour_clock += dt
-		var phase := int(floor(fmod(_hero_tour_clock, 24.0) / 4.0))
-		if phase != _hero_tour_step:
-			_hero_tour_step = phase
-			match phase:
-				0: trigger_hero_scenario("locomotion")
-				1: raise_hero_event("Attack")
-				2: trigger_hero_scenario("cover")
-				3: trigger_hero_scenario("vault")
-				4: trigger_hero_scenario("climb")
-				5: trigger_hero_scenario("leap")
-		if phase == 0 and str(hero_ctrl.state["active_state"]) in ["Idle", "Run"]:
-			hero_ctrl.gamepad.set_raw_input(0.0, 0.85, 0.0, 0.0, 0.0)
-		elif phase == 2 and str(hero_ctrl.state["active_state"]) == "Cover":
-			hero_ctrl.gamepad.set_raw_input(0.85, 0.0, 0.0, 0.0, 0.0)
-		elif phase == 4 and str(hero_ctrl.state["active_state"]) == "Hanging":
-			if fmod(_hero_tour_clock, 4.0) > 2.2:
-				hero_ctrl.gamepad.set_raw_input(0.0, 0.95, 0.0, 0.0, 0.0)
-			else:
+	if ai_driven:
+		_ensure_ai_stack()
+		ai_driver.step(dt, skeleton, _raycast_world)
+		if ai_driver.path_dirty:
+			ai_driver.path_dirty = false
+			_refresh_ai_overlays()
+	else:
+		if auto_demo:
+			_hero_tour_clock += dt
+			var phase := int(floor(fmod(_hero_tour_clock, 24.0) / 4.0))
+			if phase != _hero_tour_step:
+				_hero_tour_step = phase
+				match phase:
+					0: trigger_hero_scenario("locomotion")
+					1: raise_hero_event("Attack")
+					2: trigger_hero_scenario("cover")
+					3: trigger_hero_scenario("vault")
+					4: trigger_hero_scenario("climb")
+					5: trigger_hero_scenario("leap")
+			if phase == 0 and str(hero_ctrl.state["active_state"]) in ["Idle", "Run"]:
+				hero_ctrl.gamepad.set_raw_input(0.0, 0.85, 0.0, 0.0, 0.0)
+			elif phase == 2 and str(hero_ctrl.state["active_state"]) == "Cover":
 				hero_ctrl.gamepad.set_raw_input(0.85, 0.0, 0.0, 0.0, 0.0)
-		else:
-			hero_ctrl.gamepad.set_raw_input(0.0, 0.0, 0.0, 0.0, 0.0)
+			elif phase == 4 and str(hero_ctrl.state["active_state"]) == "Hanging":
+				if fmod(_hero_tour_clock, 4.0) > 2.2:
+					hero_ctrl.gamepad.set_raw_input(0.0, 0.95, 0.0, 0.0, 0.0)
+				else:
+					hero_ctrl.gamepad.set_raw_input(0.85, 0.0, 0.0, 0.0, 0.0)
+			else:
+				hero_ctrl.gamepad.set_raw_input(0.0, 0.0, 0.0, 0.0, 0.0)
+		hero_ctrl.step(dt, skeleton, _raycast_world)
 
-	hero_ctrl.step(dt, skeleton, _raycast_world)
 	global_position = hero_ctrl.hero_pos
 	rotation = Vector3(0.0, hero_ctrl.hero_yaw, 0.0)
 	_hero_last_driven_pos = global_position
@@ -491,6 +516,8 @@ func _find_first_line(line_type: int, min_y: float, max_y: float, min_len: float
 func trigger_hero_scenario(scenario_id: String) -> void:
 	if role != "hero_arena" or hero_ctrl == null:
 		return
+	ai_driven = false
+	_set_ai_overlays_visible(false)
 	hero_ctrl.gamepad.set_raw_input(0.0, 0.0, 0.0, 0.0, 0.0)
 	match scenario_id:
 		"locomotion":
@@ -552,7 +579,99 @@ func set_use_quantized_16bit(v: bool) -> void:
 func raise_hero_event(event_name: String) -> bool:
 	if role != "hero_arena" or hero_ctrl == null:
 		return false
+	ai_driven = false
+	_set_ai_overlays_visible(false)
 	return hero_ctrl.raise_event(event_name, _raycast_world)
+
+
+func _ensure_ai_stack() -> void:
+	if ai_driver != null:
+		return
+	ai_spatial = SpatialScript.new()
+	ai_spatial.analyze(hero_ctrl.line_world.lines)
+	ai_pathfinder = PathfinderScript.new()
+	ai_pathfinder.setup(ai_spatial)
+	ai_driver = AiDriverScript.new()
+	ai_driver.setup(ai_spatial, ai_pathfinder, hero_ctrl)
+	ai_driver.start_mission("grand_tour", false)
+	_build_ai_overlays()
+	_refresh_ai_overlays()
+
+
+func _build_ai_overlays() -> void:
+	var host := get_parent() if get_parent() is Node3D else runtime_root
+	if host == null:
+		return
+	if is_instance_valid(_ai_overlay_root):
+		_ai_overlay_root.queue_free()
+	_ai_overlay_root = Node3D.new()
+	_ai_overlay_root.name = "_AiSpatialOverlays"
+	host.add_child(_ai_overlay_root)
+
+	var line_mat := StandardMaterial3D.new()
+	line_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	line_mat.vertex_color_use_as_albedo = true
+	_ai_annot_mi = MeshInstance3D.new()
+	_ai_annot_mi.material_override = line_mat
+	_ai_overlay_root.add_child(_ai_annot_mi)
+
+	var pmat := StandardMaterial3D.new()
+	pmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	pmat.vertex_color_use_as_albedo = true
+	pmat.no_depth_test = true
+	_ai_path_mi = MeshInstance3D.new()
+	_ai_path_mi.material_override = pmat
+	_ai_overlay_root.add_child(_ai_path_mi)
+
+
+func _refresh_ai_overlays() -> void:
+	if ai_spatial == null or ai_pathfinder == null or ai_driver == null:
+		return
+	if is_instance_valid(_ai_annot_mi):
+		_ai_annot_mi.mesh = ai_spatial.build_annotations_mesh(ai_pathfinder.allowed_flags)
+	if is_instance_valid(_ai_path_mi):
+		_ai_path_mi.mesh = ai_pathfinder.build_path_mesh(ai_driver.active_path)
+	_set_ai_overlays_visible(ai_driven)
+
+
+func _set_ai_overlays_visible(v: bool) -> void:
+	if is_instance_valid(_ai_overlay_root):
+		_ai_overlay_root.visible = v
+
+
+func set_ai_driven(enabled: bool) -> void:
+	if role != "hero_arena" or hero_ctrl == null:
+		return
+	ai_driven = enabled
+	if enabled:
+		auto_demo = false
+		_ensure_ai_stack()
+		_refresh_ai_overlays()
+	else:
+		_set_ai_overlays_visible(false)
+
+
+func start_ai_mission(mission_id: String) -> void:
+	if role != "hero_arena" or hero_ctrl == null:
+		return
+	ai_driven = true
+	auto_demo = false
+	_ensure_ai_stack()
+	ai_driver.start_mission(mission_id, true)
+	global_position = hero_ctrl.hero_pos
+	rotation = Vector3(0.0, hero_ctrl.hero_yaw, 0.0)
+	_hero_last_driven_pos = global_position
+	_hero_has_driven = true
+	_refresh_ai_overlays()
+
+
+func set_ai_cost_mode(mode: String) -> void:
+	if role != "hero_arena" or hero_ctrl == null:
+		return
+	_ensure_ai_stack()
+	ai_pathfinder.cost_mode = mode
+	ai_driver.replan_now()
+	_refresh_ai_overlays()
 
 
 func run_crowd_benchmark_200() -> Dictionary:
@@ -607,6 +726,10 @@ func get_state_snapshot() -> Dictionary:
 		base["hero_state"] = hero_ctrl.state.duplicate()
 		base["dock_target"] = hero_ctrl.line_world.docking_target.duplicate()
 		base["cam_mode"] = hero_ctrl.cam.mode
+		base["ai_driven"] = ai_driven
+		if ai_driver != null:
+			base["ai_telemetry"] = ai_driver.get_telemetry()
+			base["ai_stats"] = ai_spatial.stats.duplicate() if ai_spatial != null else {}
 	elif role == "quadruped" and quad_locomotor != null:
 		base["active_state"] = str(_quad_last_snap.get("gait", "idle"))
 		base["quad_speed"] = quad_speed

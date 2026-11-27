@@ -28,7 +28,8 @@ if /I "%~1"=="--skip-tests" (set "SKIP_TESTS=1" & shift & goto parse_args)
 if /I "%~1"=="--test-only" (set "LAUNCH_MODE=test-only" & shift & goto parse_args)
 if /I "%~1"=="test-only" (set "LAUNCH_MODE=test-only" & shift & goto parse_args)
 if /I "%~1"=="editor" (set "LAUNCH_MODE=editor" & shift & goto parse_args)
-if /I "%~1"=="play" (set "LAUNCH_MODE=arena" & shift & goto parse_args)
+if /I "%~1"=="ai_hero" (set "LAUNCH_MODE=ai_hero" & shift & goto parse_args)
+if /I "%~1"=="play" (set "LAUNCH_MODE=ai_hero" & shift & goto parse_args)
 if /I "%~1"=="arena" (set "LAUNCH_MODE=arena" & shift & goto parse_args)
 if /I "%~1"=="world" (set "LAUNCH_MODE=world" & shift & goto parse_args)
 if /I "%~1"=="roster" (set "LAUNCH_MODE=roster" & shift & goto parse_args)
@@ -84,8 +85,8 @@ if "%SKIP_NATIVE%"=="0" (
 
 if "%SKIP_TESTS%"=="0" (
     echo.
-    echo [3/4] 로컬 포크 엔진 기반 Animation Studio 핵심 6종 회귀 테스트 실행...
-    python "%REPO_ROOT%\playforge\tests\run.py" --godot "%FORK_CONSOLE%" --only animation_editor_docks,animation_hero_arena,animation_character_roster,animation_soldier_compare,animation_quadruped_locomotor,animation_hero_studio
+    echo [3/4] 로컬 포크 엔진 기반 Animation Studio 핵심 7종 회귀 테스트 실행...
+    python "%REPO_ROOT%\playforge\tests\run.py" --godot "%FORK_CONSOLE%" --only animation_editor_docks,animation_hero_arena,animation_hero_ai_pathfinding,animation_character_roster,animation_soldier_compare,animation_quadruped_locomotor,animation_hero_studio
     if errorlevel 1 (
         echo [ERROR] 회귀 테스트 실패! 결과를 확인하세요: %REPO_ROOT%\playforge\tests\results\latest.json
         exit /b 1
@@ -106,7 +107,8 @@ if /I "%LAUNCH_MODE%"=="editor" (
     exit /b 0
 )
 
-set "SCENE_PATH=res://hero/arena/hero_arena.tscn"
+set "SCENE_PATH=res://hero/ai/hero_ai_demo.tscn"
+if /I "%LAUNCH_MODE%"=="arena" set "SCENE_PATH=res://hero/arena/hero_arena.tscn"
 if /I "%LAUNCH_MODE%"=="world" set "SCENE_PATH=res://hero/arena/hero_arena_world.tscn"
 if /I "%LAUNCH_MODE%"=="roster" set "SCENE_PATH=res://characters/character_showcase.tscn"
 if /I "%LAUNCH_MODE%"=="quadruped" set "SCENE_PATH=res://quadruped/quadruped_locomotor_studio.tscn"

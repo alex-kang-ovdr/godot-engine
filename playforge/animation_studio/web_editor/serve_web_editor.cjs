@@ -23,6 +23,7 @@ const NATIVE_DLL_PATH = path.join(PROJECT_DIR, 'addons', 'animation_studio', 'bi
 const BUILD_CMD_PATH = path.join(PROJECT_DIR, 'build_and_test_local_fork.cmd');
 
 const DEMO_SCENES = {
+  ai_hero: 'res://hero/ai/hero_ai_demo.tscn',
   arena: 'res://hero/arena/hero_arena.tscn',
   world: 'res://hero/arena/hero_arena_world.tscn',
   roster: 'res://characters/character_showcase.tscn',
@@ -107,7 +108,7 @@ const MIME = {
 
 const SKIP_DIRS = new Set(['.godot', 'generated', 'native', 'web_editor', 'bin', '__pycache__', 'tests']);
 const SKIP_FILES = new Set(['animation_studio.gdextension', '.gitignore', '.gdignore']);
-const SKIP_EXTS = new Set(['.cpp', '.h', '.cmd', '.py', '.md', '.dll', '.lib', '.exp', '.obj', '.dblite', '.uid']);
+const SKIP_EXTS = new Set(['.cpp', '.h', '.cmd', '.py', '.md', '.dll', '.lib', '.exp', '.obj', '.dblite', '.uid', '.import']);
 
 function collectProjectFiles(rootDir, relBase = '') {
   const list = [];

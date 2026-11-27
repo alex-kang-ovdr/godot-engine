@@ -26,8 +26,10 @@ var _char_box: VBoxContainer = null
 
 # Hero controls
 var _hero_auto_cb: CheckBox = null
+var _hero_ai_cb: CheckBox = null
 var _hero_lines_cb: CheckBox = null
 var _hero_status_lbl: Label = null
+var _hero_ai_lbl: Label = null
 var _hero_vars_lbl: Label = null
 
 # Quadruped controls
@@ -155,6 +157,39 @@ func _build_hero_section(parent: VBoxContainer) -> void:
 	)
 	_hero_box.add_child(_hero_auto_cb)
 
+	_hero_ai_cb = CheckBox.new()
+	_hero_ai_cb.text = "AI Pathfinding 자율 주행 (Spatial Analysis + A*)"
+	_hero_ai_cb.toggled.connect(func(v: bool):
+		if not _syncing_ui and is_instance_valid(_bound_instance) and _bound_instance.has_method("set_ai_driven"):
+			_bound_instance.call("set_ai_driven", v)
+			if v:
+				_syncing_ui = true
+				_hero_auto_cb.button_pressed = false
+				_syncing_ui = false
+	)
+	_hero_box.add_child(_hero_ai_cb)
+
+	var ai_grid := GridContainer.new()
+	ai_grid.columns = 2
+	ai_grid.add_theme_constant_override("h_separation", 4)
+	ai_grid.add_theme_constant_override("v_separation", 4)
+	_hero_box.add_child(ai_grid)
+	for am in [["AI 풀코스 100%", "grand_tour"], ["AI 정상 10.25m", "summit_ascent"], ["AI 전술 엄폐", "tactical_cover"], ["AI 난간 슬라럼", "vault_slalom"]]:
+		var ab := Button.new()
+		ab.text = am[0]
+		ab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var amid: String = am[1]
+		ab.pressed.connect(func():
+			if is_instance_valid(_bound_instance) and _bound_instance.has_method("start_ai_mission"):
+				_syncing_ui = true
+				_hero_ai_cb.button_pressed = true
+				_hero_auto_cb.button_pressed = false
+				_syncing_ui = false
+				_bound_instance.call("start_ai_mission", amid)
+				update_live()
+		)
+		ai_grid.add_child(ab)
+
 	_hero_lines_cb = CheckBox.new()
 	_hero_lines_cb.text = "90개 도킹 라인 오버레이 표시"
 	_hero_lines_cb.button_pressed = true
@@ -170,6 +205,11 @@ func _build_hero_section(parent: VBoxContainer) -> void:
 	_hero_status_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_hero_status_lbl.modulate = Color("#7fd6cc")
 	_hero_box.add_child(_hero_status_lbl)
+
+	_hero_ai_lbl = Label.new()
+	_hero_ai_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hero_ai_lbl.modulate = Color("#f6d279")
+	_hero_box.add_child(_hero_ai_lbl)
 
 	_hero_vars_lbl = Label.new()
 	_hero_vars_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -324,6 +364,8 @@ func bind_instance(inst: Node3D) -> void:
 	_syncing_ui = true
 	if role == "hero_arena":
 		_hero_auto_cb.button_pressed = bool(snap.get("auto_demo", true))
+		if _hero_ai_cb != null:
+			_hero_ai_cb.button_pressed = bool(snap.get("ai_driven", false))
 	elif role == "quadruped":
 		_quad_auto_cb.button_pressed = bool(snap.get("auto_demo", true))
 		var qspd := float(snap.get("quad_speed", 2.6))
@@ -384,6 +426,18 @@ func update_live() -> void:
 			str(snap.get("cam_mode", "follow")),
 			dock_str,
 		]
+		if _hero_ai_lbl != null:
+			var aitel: Dictionary = snap.get("ai_telemetry", {})
+			if bool(snap.get("ai_driven", false)) and not aitel.is_empty():
+				_hero_ai_lbl.visible = true
+				_hero_ai_lbl.text = "AI Pathfinding: %s (%d/%d)\n구간: %s | 거리: %.1fm | 커버리지: %d/%d" % [
+					str(aitel.get("goal_label", "")),
+					int(aitel.get("waypoint_idx", 1)), int(aitel.get("waypoint_total", 1)),
+					str(aitel.get("seg_type", "Walk")), float(aitel.get("path_len_m", 0.0)),
+					int(aitel.get("covered_count", 0)), int(aitel.get("coverage_total", 12)),
+				]
+			else:
+				_hero_ai_lbl.visible = false
 		var vars: Dictionary = snap.get("variables", {})
 		var lines := PackedStringArray()
 		for k in ["CharacterSpeed", "Direction", "SwordEquipped", "CoverEdgeAngle", "VaultHeight", "ClimbHeight", "LeapDistance", "IsFalling"]:

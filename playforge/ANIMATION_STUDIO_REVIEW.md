@@ -182,3 +182,18 @@ Havok SDK 2015.1.0-r1의 공식 Hero 3인칭 액션 어드벤처 테스트 맵(`
 4. **검증**:
    - 로컬 포크 엔진 헤드리스 회귀 6종 **53/53 PASS**(`animation_editor_docks` 7/7, `animation_hero_arena` 9/9, `animation_character_roster` 5/5, `animation_soldier_compare` 7/7, `animation_quadruped_locomotor` 12/12, `animation_hero_studio` 13/13).
    - 로컬 포크 Godot 에디터 부팅(`ANIMATION_STUDIO_EDITOR_READY mode=standard_docks`, 오류 0건) 및 Godot 4.7.2 웹 에디터 라이브 브라우저 검증(`Hero_Arena` 매달림 + `Soldier_M4` 도크 전환·114본 트리·`Animation Flow` 그래프 동기화, 오류 0건) 완료.
+
+## AI Pathfinding · Spatial Analysis · AI+Behavior Hero 전체 맵 자율 구동 데모 · 2026-11-27
+
+Havok AI SDK(`SpatialAnalysisDemo`, `AbstractTraversalDemo`, `UserEdgesDemo`, `PreferHighPlacesCostModifier`, `Gdc2009AiTactical`, `DynamicSilhouette`, `PathFollowing` + `BehaviorBlockedDetector`)와 Havok Behavior Hero 10종 Lua 상태머신 구조를 참고해, **외부 `.hkt`/SDK 런타임 의존성 없이 100% Godot 네이티브로 Hero 맵 전체(`Y=-3.0m` 지하 참호 ~ `Y=+10.25m` 정상)를 AI 길찾기로 자율 주행·커버하는 데모**를 구현했다.
+
+- **Spatial Analysis & 다층 NavMesh + Traversal UserEdge 자동 추출** ([hero_spatial_analysis.gd](animation_studio/hero/ai/hero_spatial_analysis.gd)):
+  - `hero_environment.glb`의 1,602개 보행 가능 삼각형을 분석해 다층 2.5D NavGraph(**1,823 NavNodes · 13,472 WalkEdges**)를 구축하고, 6종 공간 분석기(`Vault` 12 · `ClimbUp` 21 · `Leap` 8 · `DropDown` 43 · `CoverWalk` 24 · `CoverRoll` 32 = **총 140개 Annotated UserEdges**) 및 다층 NavMesh/호(arc) 오버레이를 자동 생성한다.
+- **3D A\* Pathfinding & Havok CostModifier / 동적 장애물 회피** ([hero_ai_pathfinder.gd](animation_studio/hero/ai/hero_ai_pathfinder.gd)):
+  - `Shortest` / `PreferHighPlaces` / `TacticalCover` / `ParkourExpress` 4종 비용 수정자, Traversal UserEdge 비트마스크 실시간 필터링, 동적 장애물 실루엣 자동 재탐색을 지원한다.
+- **AI + Behavior 브리지 (텔레포트 없는 자율 파쿠르·전술 구동)** ([hero_ai_behavior_driver.gd](animation_studio/hero/ai/hero_ai_behavior_driver.gd)):
+  - AI A\* 경로 세그먼트와 로컬 스티어링을 실제 `HeroLuaGamepad`·`HeroLuaController` 이벤트로 변환해 `Walk/Run` · `115° Turn180` · `Low/High Cover` · `CoverRoll` · `Vault` · `Climbing/Hanging/ClimbUp` · `Skybridge Leap` · `DropDown` · `지하 참호(-3m)` · `정상(+10.25m)` · `DrawSword/Strafe/Attack` **12/12 전체 맵 기능**을 텔레포트 없이 연속 완주한다.
+- **플레이 가능 데모 & 표준 3D 에디터 도크·로컬 포크 런처 통합**:
+  - 단독 데모([hero_ai_demo.tscn](animation_studio/hero/ai/hero_ai_demo.tscn), [hero_ai_demo.gd](animation_studio/hero/ai/hero_ai_demo.gd)): 6종 미션 프리셋, 3D 맵 아무 지점 좌클릭 A\* 이동, CostModifier·UserEdge 필터·동적 장애물·오버레이 실시간 토글 및 12/12 커버리지 체크리스트 HUD.
+  - 표준 3D 뷰포트 `Hero_Arena`([animation_studio_instance.gd](animation_studio/addons/animation_studio/animation_studio_instance.gd)) 및 우측 도크 **`AnimStudio · 상태`**([state_dock.gd](animation_studio/addons/animation_studio/docks/state_dock.gd))에서도 AI 자율 주행·오버레이를 직접 켜고 제어할 수 있으며, 로컬 포크 런처(`/local-fork`, `/launch-local-demo?scene=ai_hero`, `run_local_fork_demo.cmd`, `build_and_test_local_fork.cmd`)에 연동했다.
+- **검증**: `animation_hero_ai_pathfinding` **8/8 PASS**([hero_ai_pathfinding_verify.gd](animation_studio/tests/hero_ai_pathfinding_verify.gd): 6종 Traversal 추출, 지면→`10.25m` 정상 A\*, `PreferHigh` 평균고도 `0.00m→4.12m`, `TacticalCover` `CoverWalk 3 + CoverRoll 2`, `FLAG_CLIMB` 필터 차단, 동적 장애물 회피 `min_dist=2.83m`, Grand Tour `Y=-3.00m~+10.25m` 및 12/12 기능 완주) + 전체 Animation Studio 7종 스위트 **61/61 PASS**, GPU 3종 스크린샷 육안 검수 완료.

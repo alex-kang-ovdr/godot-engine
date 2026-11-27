@@ -23,6 +23,7 @@ const TOOL_OPEN_HERO := "Animation Studio · Hero 상태머신 스튜디오 씬 
 const TOOL_OPEN_SOLDIER := "Animation Studio · Soldier 114본 · M4 비교 씬 열기"
 const TOOL_OPEN_ROSTER := "Animation Studio · 전체 28종 캐릭터 로스터 씬 열기"
 const TOOL_OPEN_ARENA := "Animation Studio · Hero 배경맵 단독 데모 씬 열기"
+const TOOL_OPEN_AI_HERO := "Animation Studio · AI Pathfinding Hero 전체 맵 데모 열기"
 
 var _hierarchy_dock: Control = null
 var _state_dock: Control = null
@@ -66,6 +67,7 @@ func _enter_tree() -> void:
 	add_tool_menu_item(TOOL_OPEN_SOLDIER, func(): _open_scene("res://soldier/soldier_demo.tscn"))
 	add_tool_menu_item(TOOL_OPEN_ROSTER, func(): _open_scene("res://characters/character_showcase.tscn"))
 	add_tool_menu_item(TOOL_OPEN_ARENA, func(): _open_scene("res://hero/arena/hero_arena.tscn"))
+	add_tool_menu_item(TOOL_OPEN_AI_HERO, func(): _open_scene("res://hero/ai/hero_ai_demo.tscn"))
 
 	if not scene_changed.is_connected(_on_scene_changed):
 		scene_changed.connect(_on_scene_changed)
@@ -92,6 +94,7 @@ func _exit_tree() -> void:
 	remove_tool_menu_item(TOOL_OPEN_SOLDIER)
 	remove_tool_menu_item(TOOL_OPEN_ROSTER)
 	remove_tool_menu_item(TOOL_OPEN_ARENA)
+	remove_tool_menu_item(TOOL_OPEN_AI_HERO)
 
 	if scene_changed.is_connected(_on_scene_changed):
 		scene_changed.disconnect(_on_scene_changed)
