@@ -49,7 +49,7 @@ output_dir = os.path.normpath(os.path.join("..", "addons", "animation_studio", "
 os.makedirs(output_dir, exist_ok=True)
 library = env.SharedLibrary(
 	os.path.join(output_dir, "animation_studio_pose_sampler{}{}".format(env["suffix"], env["SHLIBSUFFIX"])),
-	["animation_studio_pose_sampler.cpp", "animation_studio_crowd_evaluator.cpp"],
+	["animation_studio_pose_sampler.cpp", "animation_studio_crowd_evaluator.cpp", "animation_studio_hkb_kernel.cpp"],
 )
 env.NoCache(library)
 

@@ -22,6 +22,21 @@ extends Node3D
 ##         including `maxForce = 0.0` full-body gravity ragdoll collapse in `MultipleControllers:Die`!)
 
 const SPEC_JSON := "res://compare/assets/havok_soldier_ragdoll_spec.json"
+const EXTRA_RAGDOLL_SPECS := {
+	"soldier": "res://compare/assets/havok_soldier_ragdoll_spec.json",
+	"firefighter": "res://compare/assets/ragdoll_firefighter_spec.json",
+	"desert_dan": "res://compare/assets/ragdoll_firefighter_spec.json",
+	"jungle_joe": "res://compare/assets/ragdoll_firefighter_spec.json",
+	"snow_sam": "res://compare/assets/ragdoll_firefighter_spec.json",
+	"ninja_blue": "res://compare/assets/ragdoll_ninja_spec.json",
+	"orc_captain": "res://compare/assets/ragdoll_orc_captain_spec.json",
+	"orc_troll": "res://compare/assets/ragdoll_orc_troll_spec.json",
+	"havok_girl": "res://compare/assets/ragdoll_havok_girl_spec.json",
+	"havok_girl_sdk": "res://compare/assets/ragdoll_havok_girl_spec.json",
+	"zombie": "res://compare/assets/ragdoll_zombie_spec.json",
+	"highres": "res://compare/assets/ragdoll_highres_spec.json",
+	"dismemberment": "res://compare/assets/ragdoll_dismemberment_spec.json",
+}
 
 enum DriveMode {
 	INACTIVE = 0,
@@ -55,21 +70,28 @@ var ragdoll_active: bool = false
 var last_torque_nm: float = 0.0
 var last_max_joint_err_deg: float = 0.0
 var free_fall_ticks: int = 0
+var use_active_pd_drive: bool = false
 var _skel: Skeleton3D = null
 var _prev_state: String = ""
 var _mc_mode: String = "normal" # MultipleControllersSM state tracked from live Behavior events (Normal/BrokenArm/Death/FullRagdoll)
 var _stagger_impulse_applied: bool = false
+var _prev_targets: Array[Transform3D] = []
 
 
-static func load_spec() -> Dictionary:
-	if not _spec_cache.is_empty():
-		return _spec_cache
-	if not FileAccess.file_exists(SPEC_JSON):
+static func load_spec(spec_path: String = SPEC_JSON) -> Dictionary:
+	if _spec_cache.has(spec_path):
+		return _spec_cache[spec_path] as Dictionary
+	if not FileAccess.file_exists(spec_path):
 		return {}
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SPEC_JSON))
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(spec_path))
 	if parsed is Dictionary:
-		_spec_cache = parsed as Dictionary
-	return _spec_cache
+		_spec_cache[spec_path] = parsed as Dictionary
+		return parsed as Dictionary
+	return {}
+
+
+static func spec_path_for_character(char_id: String) -> String:
+	return str(EXTRA_RAGDOLL_SPECS.get(char_id.to_lower(), SPEC_JSON))
 
 
 static func clear_caches() -> void:
@@ -188,8 +210,8 @@ static func is_ragdoll_demo(p_menu_path: String) -> bool:
 	)
 
 
-func setup(skel: Skeleton3D, p_menu_path: String, show_shapes: bool = true) -> bool:
-	spec = load_spec()
+func setup(skel: Skeleton3D, p_menu_path: String, show_shapes: bool = true, spec_path: String = SPEC_JSON) -> bool:
+	spec = load_spec(spec_path)
 	if spec.is_empty() or skel == null or not is_instance_valid(skel):
 		return false
 	_skel = skel
@@ -199,6 +221,7 @@ func setup(skel: Skeleton3D, p_menu_path: String, show_shapes: bool = true) -> b
 	_mc_mode = "normal"
 	_stagger_impulse_applied = false
 	free_fall_ticks = 0
+	_prev_targets.clear()
 
 	# Clean any previous rig
 	for c in get_children():
@@ -236,8 +259,19 @@ func setup(skel: Skeleton3D, p_menu_path: String, show_shapes: bool = true) -> b
 		bone_to_body[int(bd["index"])] = int(bd["body_index"])
 		bone_parent[int(bd["index"])] = int(bd["parent"])
 
-	# 1. Spawn ALL 15 official Havok RigidBody3D segments
+	# 1. Spawn ALL official Havok RigidBody3D segments (auto-converts Havok Z-up specs such as Ninja/Orcs/Dismemberment to Godot Y-up!)
 	var bodies_arr: Array = spec.get("bodies", []) as Array
+	var max_abs_y := 0.0
+	var max_abs_z := 0.0
+	var min_z_raw := 1e9
+	for bd_raw in bodies_arr:
+		var p_chk := _vec3((bd_raw as Dictionary)["position"] as Array)
+		max_abs_y = maxf(max_abs_y, absf(p_chk.y))
+		max_abs_z = maxf(max_abs_z, absf(p_chk.z))
+		min_z_raw = minf(min_z_raw, p_chk.z)
+	var is_zup := (max_abs_z > max_abs_y * 1.4)
+	var ground_lift := Vector3(0.0, -min_z_raw + 0.08, 0.0) if (is_zup and min_z_raw < -0.15) else Vector3.ZERO
+	var zup_fix := Transform3D(Basis(Vector3.RIGHT, -PI * 0.5), ground_lift) if is_zup else Transform3D.IDENTITY
 	var skel_xf := skel.global_transform
 	for i in bodies_arr.size():
 		var bd: Dictionary = bodies_arr[i] as Dictionary
@@ -256,7 +290,7 @@ func setup(skel: Skeleton3D, p_menu_path: String, show_shapes: bool = true) -> b
 			p_rbone = int(bone_parent.get(p_rbone, -1))
 		body_parent_idx.append(p_body)
 
-		# Official hkaSkeletonMapper mapping to Soldier 114-bone Skeleton3D
+		# Official hkaSkeletonMapper mapping to high-res Skeleton3D
 		var hi_idx := -1
 		var a_from_b := Transform3D.IDENTITY
 		if mapper_by_rag_bone.has(rbone):
@@ -270,7 +304,7 @@ func setup(skel: Skeleton3D, p_menu_path: String, show_shapes: bool = true) -> b
 		body_a_from_b.append(a_from_b)
 		body_b_from_a.append(a_from_b.affine_inverse())
 
-		var rest_local := Transform3D(Basis(_quat(bd["orientation"] as Array)), _vec3(bd["position"] as Array))
+		var rest_local := zup_fix * Transform3D(Basis(_quat(bd["orientation"] as Array)), _vec3(bd["position"] as Array))
 		var rest_world := skel_xf * rest_local
 		body_rest_world.append(rest_world)
 
@@ -577,16 +611,22 @@ func step(dt: float, skel: Skeleton3D, state_name: String, tick: int, events: Ar
 	for i in bodies.size():
 		targets[i] = _target_body_transform_from_skel(i, skel)
 
-	# When GoFullRagdoll fires (tick 80 in MultipleControllers), unfreeze all 15 bodies at live Death clip pose!
+	# When GoFullRagdoll fires (tick 80 in MultipleControllers), unfreeze all 15 bodies at live Death clip pose
+	# inheriting exact finite-difference velocity + backward Maya -X -> Godot +Z chest-shot collapse momentum!
 	if entered_free_fall:
 		free_fall_ticks = 0
+		var inv_dt := 1.0 / maxf(0.008, dt)
 		for i in bodies.size():
 			var rb := bodies[i]
 			rb.freeze = false
 			rb.global_transform = targets[i]
-			# Subtle forward/downward collapse momentum matching Havok Death -> Full Ragdoll release
-			rb.linear_velocity = Vector3(0.05, -0.55, -0.35)
-			rb.angular_velocity = Vector3(-0.35, 0.15, 0.25)
+			var v_anim := Vector3.ZERO
+			if _prev_targets.size() == bodies.size():
+				v_anim = ((targets[i].origin - _prev_targets[i].origin) * inv_dt).limit_length(3.5)
+			# Soldier faces Godot -Z, so Havok DeathTwistClip backward (-X Maya) momentum is Godot +Z (+2.15 m/s)
+			var h_fac := clampf(targets[i].origin.y / 1.45, 0.35, 1.25)
+			rb.linear_velocity = v_anim * 0.4 + Vector3(0.38 * h_fac, -0.35, 2.25 * h_fac)
+			rb.angular_velocity = Vector3(2.35 * h_fac, -0.30, 0.20)
 
 	var max_err_rad := 0.0
 	var accum_torque := 0.0
@@ -601,8 +641,8 @@ func step(dt: float, skel: Skeleton3D, state_name: String, tick: int, events: Ar
 				rb.freeze = false
 			# Pure gravity + 14 Generic6DOFJoint3D limits + floor friction (maxForce = 0.0)
 			free_fall_ticks += 1 if i == 0 else 0
-		elif mode == DriveMode.POWERED and body_max_force[i] <= 2.0:
-			# Low-torque limp arm (e.g. BrokenArm left arm maxForce = 1.0) -> dynamic body with weak PD torque
+		elif (mode == DriveMode.POWERED and (body_max_force[i] <= 2.0 or use_active_pd_drive)) or (mode == DriveMode.RIGID_BODY and use_active_pd_drive):
+			# Active physical PD spring-damper controller (hknpRagdollMotorController / KeyFrameHierarchyController)
 			if rb.freeze:
 				rb.freeze = false
 				rb.global_transform = tgt
@@ -618,9 +658,13 @@ func step(dt: float, skel: Skeleton3D, state_name: String, tick: int, events: Ar
 				max_err_rad = ang
 			var ax := Vector3(q_err.x, q_err.y, q_err.z)
 			if ax.length_squared() > 1e-8:
-				var tau_vec := ax.normalized() * minf(body_max_force[i], ang * 1.5) - rb.angular_velocity * 0.25
+				var kp_gain := 24.0 if mode == DriveMode.RIGID_BODY else clampf(body_max_force[i] * 0.45, 1.5, 45.0)
+				var tau_vec := ax.normalized() * minf(maxf(1.0, body_max_force[i]), ang * kp_gain) - rb.angular_velocity * 0.35
 				rb.apply_torque(tau_vec)
 				accum_torque += tau_vec.length()
+			if mode == DriveMode.RIGID_BODY and use_active_pd_drive:
+				var pos_err := tgt.origin - rb.global_position
+				rb.apply_central_force((pos_err * 95.0 - rb.linear_velocity * 8.0) * rb.mass)
 		else:
 			# Kinematic / high-gain KeyFrameHierarchy / high-gain Powered (ControlPalettes, Stagger, RagdollAttachments, AnimationTest):
 			# Keep body strictly locked to exact Havok animated bone transform with zero solver jitter,
@@ -639,6 +683,8 @@ func step(dt: float, skel: Skeleton3D, state_name: String, tick: int, events: Ar
 			rb.global_transform = tgt
 			rb.linear_velocity = Vector3.ZERO
 			rb.angular_velocity = Vector3.ZERO
+
+	_prev_targets = targets.duplicate()
 
 	# When in free-fall or partial dynamic physics (MultipleControllers Die / BrokenArm),
 	# map simulated Godot RigidBody3D transforms back onto Soldier's 114-bone Skeleton3D

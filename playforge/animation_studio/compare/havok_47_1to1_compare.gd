@@ -116,7 +116,8 @@ func _havok_lm_to_canonical_local(
 	root_world: Vector3,
 	hk_yaw: float,
 	is_soldier_swizzled: bool,
-	char_id: String
+	char_id: String,
+	hk_yaw0: float = 0.0
 ) -> Vector3:
 	var rel := lm_world - root_world
 	if is_soldier_swizzled:
@@ -125,8 +126,9 @@ func _havok_lm_to_canonical_local(
 		# Rotate into Godot Standard (-Z forward, +Y up, +X right): +PI/2 around Y
 		return Basis(Vector3.UP, PI * 0.5) * maya
 	if char_id == "soldier":
-		# Non-swizzled Soldier (z_up=false, #11/#30/#44) records yaw_g = PI/2 for Maya +X resting heading
-		return Basis(Vector3.UP, PI - hk_yaw) * rel
+		# Non-swizzled Soldier (#11/#12/#20/#30/#44): landmarks sit in Maya +X forward at t=0
+		# regardless of scene world yaw_g offset (1.5708 on Studio vs 3.1416 on AttachmentScene).
+		return Basis(Vector3.UP, PI * 0.5 - (hk_yaw - hk_yaw0)) * rel
 	# Hero (genuine Havok Z-up -> already Godot Y-up with +Z forward in rest pose):
 	# Un-rotate character world yaw, then apply CHARACTER_ALIGNMENT yaw (PI) to face Godot Standard -Z
 	var align_yaw := float(Standards.get_alignment(char_id).get("yaw", PI))
@@ -433,7 +435,7 @@ func _run_all() -> void:
 						var ha: Array = h_lm[nm] as Array
 						var h_local := _havok_lm_to_canonical_local(
 							Vector3(float(ha[0]), float(ha[1]), float(ha[2])),
-							h_root, h_yaw, is_soldier_swizzled, hk_expected_char
+							h_root, h_yaw, is_soldier_swizzled, hk_expected_char, hk_yaw0
 						)
 						var g_local: Vector3 = g_lm[nm] as Vector3
 						var d_mm := g_local.distance_to(h_local) * 1000.0

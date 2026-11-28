@@ -1,0 +1,53 @@
+{
+  "schema": "havok-extra-sdk-assets-v2",
+  "contains_sdk_hkt_runtime_dep": false,
+  "axis_standard": "godot_y_up_neg_z_forward",
+  "physics2012_policy": "SPEC_OUT",
+  "spec_out_legacy_physics2012_assets": [
+    "Animation/Ragdoll/dismemberment_skin.hkt",
+    "Behavior/GameAssets/FlyingImp/CharacterAssets/FlyingImpSkelSkinRagdoll.hkt",
+    "Cloth/*_ragdoll*.hkt"
+  ],
+  "scenes": [
+    "env_hk_gdc_level.glb",
+    "env_ninja_environment.glb",
+    "env_climbing_wall.glb",
+    "env_foot_ik_runway.glb",
+    "env_anim_seesaw.glb",
+    "env_anim_bricks.glb",
+    "env_orcs_grid.glb",
+    "env_penetration_landscape.glb",
+    "prop_boar_rig.glb",
+    "prop_penetration_rig.glb",
+    "prop_swordfight_dummy.glb",
+    "prop_teapot.glb"
+  ],
+  "ragdolls": [
+    "ragdoll_firefighter_spec.json",
+    "ragdoll_ninja_spec.json",
+    "ragdoll_orc_captain_spec.json",
+    "ragdoll_havok_girl_spec.json",
+    "ragdoll_highres_spec.json",
+    "ragdoll_zombie_spec.json",
+    "ragdoll_orc_troll_spec.json",
+    "ragdoll_dismemberment_spec.json"
+  ],
+  "skyboxes": [
+    "sky_boardwalk.png",
+    "sky_clouds.png",
+    "sky_dockblur.png",
+    "sky_duskfair.png",
+    "sky_duskfair_180.png",
+    "sky_duskfair_270.png",
+    "sky_meadowblur.png",
+    "sky_roomblur.png",
+    "sky_sincity.png",
+    "sky_skyboxemptyspace.png",
+    "sky_skynin.png",
+    "sky_skyrays.png",
+    "sky_subwayblur.png"
+  ],
+  "props_specs": [
+    "prop_door_rig_spec.json"
+  ]
+}

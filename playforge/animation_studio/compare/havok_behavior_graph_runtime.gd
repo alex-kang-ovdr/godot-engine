@@ -21,6 +21,8 @@ extends RefCounted
 
 const Hero := preload("res://hero/hero.gd")
 const Standards := preload("res://catalog/havok_demo_standards.gd")
+const HkbMods := preload("res://addons/animation_studio/hkb/hkb_modifiers.gd")
+const HkbPoseCls := preload("res://addons/animation_studio/hkb/hkb_pose.gd")
 
 const GRAPHS_JSON := "res://compare/assets/havok_47_behavior_graphs.json"
 const HERO_CLIPS_RES := "res://compare/assets/hero_behavior_clips.res"
@@ -47,6 +49,7 @@ var _accum_root_yaw: float = 0.0
 var _apply_root_motion: bool = false
 var _modifiers: Dictionary = {}
 var _base_align_yaw: float = PI
+var _foot_ik_driver: HkbMods.HkbFootIkDriver = null
 
 
 static func load_all_graphs() -> Dictionary:
@@ -66,6 +69,45 @@ static func has_graph(menu_path: String) -> bool:
 
 static func get_graph_def(menu_path: String) -> Dictionary:
 	return load_all_graphs().get(menu_path, {}) as Dictionary
+
+
+static func find_graph_menu_path(demo_path: String, variant_name: String = "") -> String:
+	var graphs := load_all_graphs()
+	if graphs.is_empty():
+		return ""
+	var norm_p := demo_path.replace("\\", "/")
+	var dir_p := norm_p.get_base_dir()
+	var stem := norm_p.get_file().get_basename()
+	var var_clean := variant_name.strip_edges()
+	# 1. Exact direct menu_path match (`dir_p` or `dir_p/variant`)
+	for cand in [
+		dir_p + "/" + var_clean,
+		dir_p,
+		dir_p + "/" + var_clean.trim_suffix("Demo"),
+		dir_p.trim_suffix("Demo"),
+	]:
+		if graphs.has(cand):
+			return cand
+	# 2. Case-insensitive match against menu_path or suffix match
+	var dir_low := dir_p.to_lower()
+	var var_low := var_clean.to_lower().trim_suffix("demo").replace(" ", "")
+	var stem_low := stem.to_lower().trim_suffix("demo")
+	var best := ""
+	for k in graphs.keys():
+		var ks := str(k)
+		var kl := ks.to_lower()
+		if kl == dir_low or kl == (dir_low + "/" + var_clean.to_lower()):
+			return ks
+		if kl.begins_with(dir_low + "/"):
+			var tail := kl.substr(dir_low.length() + 1).replace(" ", "")
+			if not var_low.is_empty() and (tail == var_low or var_low in tail or tail in var_low):
+				return ks
+			if best.is_empty():
+				best = ks
+		elif not stem_low.is_empty() and kl.ends_with("/" + stem_low):
+			if best.is_empty():
+				best = ks
+	return best
 
 
 static func load_clip_pack(rig: String) -> Dictionary:
@@ -122,6 +164,12 @@ func reset() -> void:
 	_last_events.clear()
 	_accum_root_pos = Vector3.ZERO
 	_accum_root_yaw = 0.0
+	if _modifiers.has("foot_ik"):
+		if _foot_ik_driver == null:
+			_foot_ik_driver = HkbMods.HkbFootIkDriver.new()
+		_foot_ik_driver.reset()
+	else:
+		_foot_ik_driver = null
 
 	for st_raw in _graph.get("state_schedule", []) as Array:
 		var st: Dictionary = st_raw as Dictionary
@@ -197,6 +245,7 @@ func step(dt: float, skel: Skeleton3D, actor_node: Node3D = null) -> Dictionary:
 				"fade_out_t": int(ly.get("fade_out_t", -1)),
 				"fade_out": int(ly.get("fade_out", 0)),
 				"fade_to_ref": bool(ly.get("fade_to_ref", false)),
+				"dip_windows": ly.get("dip_windows", []) as Array,
 				"base_weight": float(ly.get("weight", 1.0)),
 				"mask": str(ly.get("mask", "")),
 				"over_ref": bool(ly.get("over_ref", false)),
@@ -208,9 +257,10 @@ func step(dt: float, skel: Skeleton3D, actor_node: Node3D = null) -> Dictionary:
 			remaining_pending.append(ly)
 	_pending_layers = remaining_pending
 
-	# 2. Advance every active clip's clock (skip advancing on its activation tick t == t0 because start_t is exact post-step t0 time)
-	var step_root_delta := Transform3D.IDENTITY
-	var primary_rm_taken := false
+	# 2. Advance every active clip's clock & weight-average root motion across active base layers
+	var rm_pos_sum := Vector3.ZERO
+	var rm_yaw_sum := 0.0
+	var rm_w_sum := 0.0
 	for ly in _active_layers:
 		var spd_map: Dictionary = ly["spd_map"] as Dictionary
 		if spd_map.has(t):
@@ -228,23 +278,32 @@ func step(dt: float, skel: Skeleton3D, actor_node: Node3D = null) -> Dictionary:
 				)
 				ly["local_time"] = float(adv["time"])
 				ly["pp_back"] = bool(adv["pp_back"])
-				if _apply_root_motion and not primary_rm_taken and not bool(ly["additive"]) and str(ly["mask"]).is_empty():
-					step_root_delta = adv["delta"] as Transform3D
-					primary_rm_taken = true
+				if _apply_root_motion and not bool(ly["additive"]) and str(ly["mask"]).is_empty():
+					var lw := _layer_envelope(ly, t)
+					if lw > 1e-4:
+						var rd: Transform3D = adv["delta"] as Transform3D
+						rm_pos_sum += rd.origin * lw
+						rm_yaw_sum += atan2(rd.basis.z.x, rd.basis.z.z) * lw
+						rm_w_sum += lw
 
-	# 3. Apply root motion delta to actor_node in Godot Standard space (-Z forward)
-	if _apply_root_motion:
+	# 3. Apply weight-averaged root motion delta to actor_node in Godot Standard space (-Z forward)
+	if _apply_root_motion and rm_w_sum > 1e-5:
+		var avg_pos := rm_pos_sum / rm_w_sum
+		var avg_yaw := rm_yaw_sum / rm_w_sum
 		var rot_align := Basis(Vector3.UP, _base_align_yaw + _accum_root_yaw)
-		_accum_root_pos += rot_align * step_root_delta.origin
-		var dyaw := atan2(step_root_delta.basis.z.x, step_root_delta.basis.z.z)
-		_accum_root_yaw += dyaw
+		_accum_root_pos += rot_align * avg_pos
+		_accum_root_yaw += avg_yaw
 		if actor_node != null and is_instance_valid(actor_node):
 			actor_node.position = _accum_root_pos
 			actor_node.rotation.y = _accum_root_yaw
 
-	# 4. Evaluate LIVE full-skeleton pose on Skeleton3D
+	# 4. Evaluate LIVE full-skeleton pose on Skeleton3D (+ live HkbFootIkDriver when enabled)
 	if skel != null and is_instance_valid(skel):
 		_evaluate_pose(skel, t)
+		if _foot_ik_driver != null and skel.is_inside_tree():
+			var w3d := skel.get_world_3d()
+			if w3d != null:
+				_foot_ik_driver.solve_skeleton(skel, w3d, {"max_raise": 0.14, "max_lower": -0.14, "ground_asc_gain": 0.22, "ground_desc_gain": 0.22, "ik_weight": 0.55})
 
 	# 5. Prune finished layers whose end tick t1 == t
 	var next_active: Array[Dictionary] = []
@@ -280,6 +339,25 @@ func _layer_envelope(ly: Dictionary, t: int) -> float:
 		var dt_out := t - fot + 1
 		var uo := clampf(float(dt_out) / float(fo + 1), 0.0, 1.0)
 		w *= (1.0 - uo * uo * (3.0 - 2.0 * uo))
+	var dips: Array = ly.get("dip_windows", []) as Array
+	for dw_raw in dips:
+		var dw: Array = dw_raw as Array
+		if dw.size() < 4:
+			continue
+		var d0 := int(dw[0])
+		var d1 := int(dw[1])
+		var d_out := maxi(1, int(dw[2]))
+		var d_in := maxi(1, int(dw[3]))
+		var floor_w := float(dw[4]) if dw.size() >= 5 else 0.0
+		if t >= d0 and t <= d1:
+			if t < d0 + d_out:
+				var u1 := clampf(float(t - d0 + 1) / float(d_out + 1), 0.0, 1.0)
+				w *= lerpf(1.0, floor_w, u1 * u1 * (3.0 - 2.0 * u1))
+			elif t > d1 - d_in:
+				var u2 := clampf(float(t - (d1 - d_in) + 1) / float(d_in + 1), 0.0, 1.0)
+				w *= lerpf(floor_w, 1.0, u2 * u2 * (3.0 - 2.0 * u2))
+			else:
+				w *= floor_w
 	return clampf(w, 0.0, 1.0)
 
 
@@ -387,11 +465,15 @@ func _apply_sagittal_mirror(skel: Skeleton3D) -> void:
 	# Exact Havok hkaMirroredSkeleton formula in model space:
 	#   G_mir[b].origin = M * G[m(b)].origin
 	#   G_mir[b].basis  = M * (G[m(b)].basis * R[m(b)]^-1) * M * R[b]
-	# Conjugating the skinning delta by M preserves right-handedness (det = +1) and
-	# reduces identically to R[b] on the bind pose (zero skinning twist on asymmetric bone axes!).
+	# Uses C++ GDExtension `AnimationStudioHkbKernel.mirror_skeleton_model_space` when available,
+	# falling back automatically to identical pure GDScript when the native DLL is absent.
+	var mp := _get_mirror_bone_map(skel)
+	var k := HkbPoseCls.get_native_kernel()
+	if k != null:
+		k.call(&"mirror_skeleton_model_space", skel, mp)
+		return
 	skel.force_update_all_bone_transforms()
 	var n := skel.get_bone_count()
-	var mp := _get_mirror_bone_map(skel)
 	var mirror_b := Basis(Vector3(-1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 1.0))
 
 	# Precompute global rest transforms R[b]

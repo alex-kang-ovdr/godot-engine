@@ -17,15 +17,24 @@ const AiDriverScript := preload("res://hero/ai/hero_ai_behavior_driver.gd")
 const QuadRigScript := preload("res://quadruped/quadruped_rig.gd")
 const QuadLocomotorScript := preload("res://quadruped/quadruped_locomotor.gd")
 const MotionCommandsScript := preload("res://addons/animation_studio/authoring/motion_commands.gd")
+const HkbGraphScript := preload("res://addons/animation_studio/hkb/hkb_behavior_graph.gd")
+const HavokRagdollRt := preload("res://compare/havok_ragdoll_runtime.gd")
 
 const HERO_ARENA_MOTION_RES := "res://hero/assets/hero_arena_motion.res"
 const HERO_SKIN_GLB := "res://hero/assets/hero_skin.glb"
 
-@export_enum("hero_arena", "quadruped", "character") var role: String = "character":
+@export_enum("hero_arena", "quadruped", "character", "hkb_graph") var role: String = "character":
 	set(v):
 		if role != v:
 			role = v
 			if is_inside_tree():
+				rebuild_instance()
+
+@export var hkb_graph_key: String = "Soldier/ControlPalettes":
+	set(v):
+		if hkb_graph_key != v:
+			hkb_graph_key = v
+			if is_inside_tree() and role == "hkb_graph":
 				rebuild_instance()
 
 @export var character_id: String = "soldier":
@@ -92,6 +101,11 @@ var play_time: float = 0.0
 var quantized_clips: Dictionary = {}
 var _ref_skeleton: Skeleton3D = null
 var _last_compare_metrics: Dictionary = {}
+
+# Role: hkb_graph (unified pure-GDScript Havok hkbBehaviorGraph VM)
+var hkb_graph: HkbGraphScript = null
+var hkb_ragdoll: HavokRagdollRt = null
+var hkb_last_telemetry: Dictionary = {}
 
 
 func _ready() -> void:
@@ -162,12 +176,17 @@ func rebuild_instance() -> void:
 	_ref_skeleton = null
 	_hero_last_clip = ""
 	_hero_has_driven = false
+	hkb_graph = null
+	hkb_ragdoll = null
+	hkb_last_telemetry.clear()
 
 	match role:
 		"hero_arena":
 			_build_hero_arena()
 		"quadruped":
 			_build_quadruped()
+		"hkb_graph":
+			_build_hkb_graph()
 		_:
 			_build_roster_character()
 
@@ -428,6 +447,8 @@ func step_once(dt: float) -> void:
 			_step_hero_arena(dt)
 		"quadruped":
 			_step_quadruped(dt)
+		"hkb_graph":
+			_step_hkb_graph(dt)
 		_:
 			_step_roster_character(dt)
 	if overlay_skeleton:
@@ -519,6 +540,49 @@ func _step_quadruped(dt: float) -> void:
 	var desired_dir := to_target.normalized() if to_target.length() > 0.05 else Vector3(-sin(_quad_orbit_angle), 0.0, cos(_quad_orbit_angle))
 	_quad_last_snap = quad_locomotor.step(desired_dir, spd, dt, 5)
 	play_time = float(_quad_last_snap.get("cycle_phase", 0.0)) * clip_duration
+
+
+func _build_hkb_graph() -> void:
+	var is_soldier := hkb_graph_key.begins_with("Soldier/")
+	var cid := "soldier" if is_soldier else "hero"
+	var rig := Store.build_rig(cid, "HkbActor_" + cid)
+	if rig.is_empty():
+		return
+	runtime_root.add_child(rig["root"])
+	skeleton = rig["skeleton"]
+	player = rig["player"]
+	if player != null:
+		player.active = false
+	library = rig["library"]
+	motion_dict = rig["data"]
+	skin_stats = rig["skin_info"]
+
+	hkb_graph = HkbGraphScript.new()
+	if not hkb_graph.load_from_library(hkb_graph_key, cid):
+		hkb_graph.load_from_library("Soldier/ControlPalettes" if is_soldier else "Hero/01_Locomotion", cid)
+	active_clip = hkb_graph_key
+	clip_duration = 2.0
+	play_time = 0.0
+	hkb_last_telemetry = hkb_graph.step(1.0 / 60.0, skeleton, self)
+
+
+func _step_hkb_graph(dt: float) -> void:
+	if hkb_graph == null or skeleton == null:
+		return
+	play_time += dt
+	hkb_last_telemetry = hkb_graph.step(dt, skeleton, self)
+
+
+func set_hkb_variable(var_name: String, value: Variant) -> bool:
+	return hkb_graph.set_variable(var_name, value) if hkb_graph != null else false
+
+
+func raise_hkb_event(ev_name: String) -> int:
+	return hkb_graph.raise_event(ev_name) if hkb_graph != null else -1
+
+
+func get_hkb_telemetry() -> Dictionary:
+	return hkb_graph.get_telemetry() if hkb_graph != null else {}
 
 
 func _step_roster_character(dt: float) -> void:

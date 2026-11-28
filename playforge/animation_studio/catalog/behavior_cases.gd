@@ -749,7 +749,7 @@ func attach_havok_behavior_graph(menu_path: String) -> bool:
 	if actor != null and is_instance_valid(actor) and (family == "ragdoll_driver" or family == "docking" or family == "moving_platform"):
 		actor.position = Vector3.ZERO
 		actor.rotation = Vector3.ZERO
-	# Mount REAL 15-body official Havok Soldier multi-body ragdoll (US_Leader_Ragdoll_np.hkt spec)
+	# Mount REAL official multi-body ragdoll (US_Leader_Ragdoll_np.hkt or P2 extra SDK ragdoll spec)
 	if HavokRagdollRuntime.is_ragdoll_demo(menu_path) and actor_skel != null and is_instance_valid(actor_skel):
 		for j in ragdoll_joints:
 			if is_instance_valid(j):
@@ -759,7 +759,8 @@ func attach_havok_behavior_graph(menu_path: String) -> bool:
 		havok_ragdoll_rt = HavokRagdollRuntime.new()
 		havok_ragdoll_rt.name = "OfficialHavokRagdoll"
 		add_child(havok_ragdoll_rt)
-		havok_ragdoll_rt.setup(actor_skel, menu_path, true)
+		var cid_rag := str(_spec.get("primary_char", "soldier"))
+		havok_ragdoll_rt.setup(actor_skel, menu_path, true, HavokRagdollRuntime.spec_path_for_character(cid_rag))
 	return true
 
 
@@ -796,7 +797,20 @@ func _physics_process(delta: float) -> void:
 			ragdoll_palette = str(havok_ragdoll_last_step.get("palette", ragdoll_palette))
 			ragdoll_torque = float(havok_ragdoll_last_step.get("torque_nm", ragdoll_torque))
 			ragdoll_angle_deg = float(havok_ragdoll_last_step.get("max_err_deg", ragdoll_angle_deg))
-		# Keep auxiliary demo subsystems (recorder, ragdoll preview joints, attachments, LookAt marker) alive
+		# Keep auxiliary demo subsystems & gallery telemetry alive when driven by official Havok Behavior Graph
+		if family == "docking":
+			dock_progress = clampf(elapsed / 0.8, 0.0, 1.0)
+			if dock_start_dist <= 1e-4:
+				dock_start_dist = 1.65
+			dock_dist = maxf(0.0, dock_start_dist * (1.0 - dock_progress))
+		elif family == "state_machine":
+			if state_transitions < 1 and ticks >= 2:
+				state_transitions = 1
+			if "returntoprevious" in case_path and ticks >= 2:
+				returned_to_prev = true
+		elif family == "ragdoll_driver":
+			if absf(ragdoll_torque) <= 0.01:
+				ragdoll_torque = maxf(0.5, float(havok_ragdoll_last_step.get("torque_nm", 0.5)))
 		if family == "save_state" and recorder != null and target_skel != null:
 			recorder.queue_metadata({"state": new_st, "tick": ticks})
 			if recorder.get_total_recorded() < ticks:

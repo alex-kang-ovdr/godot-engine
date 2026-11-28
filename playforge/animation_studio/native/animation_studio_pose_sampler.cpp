@@ -2,6 +2,7 @@
 #include <cstdint>
 
 #include "animation_studio_crowd_evaluator.h"
+#include "animation_studio_hkb_kernel.h"
 
 #include <godot_cpp/classes/animation.hpp>
 #include <godot_cpp/classes/ref_counted.hpp>
@@ -142,6 +143,7 @@ void initialize_animation_studio_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		GDREGISTER_CLASS(AnimationStudioPoseSampler);
 		GDREGISTER_CLASS(AnimationStudioCrowdEvaluator);
+		GDREGISTER_CLASS(AnimationStudioHkbKernel);
 	}
 }
 

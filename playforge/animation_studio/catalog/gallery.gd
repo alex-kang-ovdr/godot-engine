@@ -3,12 +3,17 @@ extends Control
 const CATALOG := "res://catalog/catalog.json"
 const BASE := "res://catalog/"
 const Standards := preload("res://catalog/havok_demo_standards.gd")
+const HavokGraphRuntime := preload("res://compare/havok_behavior_graph_runtime.gd")
+const HavokDemoEnv := preload("res://compare/havok_demo_environment.gd")
 
 var entries: Array = []
 var visible_indices: Array[int] = []
 var stage := Node3D.new()
 var stage_camera: Camera3D
+var havok_env: HavokDemoEnv
 var active_spec: Dictionary = {}
+var active_graph_menu_path: String = ""
+var active_env_kind: String = "studio"
 var listing := ItemList.new()
 var search := LineEdit.new()
 var back := Button.new()
@@ -111,32 +116,12 @@ func _build_controls() -> void:
 	stage_camera.position = Vector3(2.2, 2.0, -3.2)
 	stage_camera.look_at(Vector3(0.0, 0.95, 0.0), Vector3.UP)
 	stage_camera.current = true
-	var light := DirectionalLight3D.new()
-	light.position = Vector3(3.0, 5.0, -4.0)
-	light.shadow_enabled = true
-	stage.add_child(light)
-	light.look_at(Vector3.ZERO, Vector3.UP)
-	var world := WorldEnvironment.new()
-	world.environment = Environment.new()
-	world.environment.background_mode = Environment.BG_COLOR
-	world.environment.background_color = Color("#344b4b")
-	world.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	world.environment.ambient_light_color = Color.WHITE
-	world.environment.ambient_light_energy = 0.65
-	stage.add_child(world)
-	var floor_mesh := MeshInstance3D.new()
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(26, 26)
-	var material := ShaderMaterial.new()
-	material.shader = preload("../demo/floor.gdshader")
-	plane.material = material
-	floor_mesh.mesh = plane
-	stage.add_child(floor_mesh)
-	var ground := StaticBody3D.new()
-	var shape := CollisionShape3D.new()
-	shape.shape = WorldBoundaryShape3D.new()
-	ground.add_child(shape)
-	stage.add_child(ground)
+	# Official Havok 2015.1.0-r1 Skybox, Lighting & Per-Demo Environment Restorer (P0 Integration)
+	havok_env = HavokDemoEnv.new()
+	havok_env.name = "HavokDemoEnvironment"
+	stage.add_child(havok_env)
+	havok_env.setup_lighting_and_sky()
+	havok_env.configure_for_demo("", "", "soldier")
 
 
 func _family(path: String) -> String:
@@ -215,10 +200,18 @@ func select_entry(index: int) -> void:
 			filename = "clip_cases.gd"
 	var script := load(BASE + filename) as Script
 	active_spec = Standards.resolve_demo_spec(path, str(entry.name))
+	active_graph_menu_path = HavokGraphRuntime.find_graph_menu_path(path, str(entry.name)) if (prod == "behavior" or lower.begins_with("behavior/")) else ""
+	var prim_char := str(active_spec.get("primary_char", "soldier"))
+	if havok_env != null and is_instance_valid(havok_env):
+		active_env_kind = havok_env.configure_for_demo(active_graph_menu_path, path, prim_char)
 	Standards.apply_camera(stage_camera, active_spec)
 	heading.text = _title(entry)
 	source_path.text = "%s · %s" % [entry.get("case", ""), path.get_base_dir()]
 	scope_text.text = Standards.describe_spec(active_spec)
+	if not active_graph_menu_path.is_empty():
+		scope_text.text += "  ·  공식 Behavior 그래프 + 환경 [%s]" % active_env_kind
+	elif active_env_kind != "studio":
+		scope_text.text += "  ·  공식 SDK 환경 [%s]" % active_env_kind
 	if entry.get("registration") == "source_only_unregistered":
 		scope_text.text += "  ·  SDK 미등록 소스"
 	elif str(entry.get("registration", "")).begins_with("conditional"):
@@ -229,11 +222,20 @@ func select_entry(index: int) -> void:
 	probe = script.new()
 	stage.add_child(probe)
 	probe.call("start_case", path, str(entry.name))
+	if not active_graph_menu_path.is_empty() and probe.has_method("attach_havok_behavior_graph"):
+		probe.call("attach_havok_behavior_graph", active_graph_menu_path)
 	selected_index = index
 	_refresh()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if havok_env != null and is_instance_valid(havok_env):
+		var follow_node: Node3D = null
+		if is_instance_valid(probe):
+			var act = probe.get("actor")
+			if act is Node3D and is_instance_valid(act):
+				follow_node = act as Node3D
+		havok_env.step(delta, follow_node)
 	if is_instance_valid(probe):
 		_refresh()
 

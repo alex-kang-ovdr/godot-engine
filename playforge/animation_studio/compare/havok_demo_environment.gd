@@ -21,13 +21,45 @@ extends Node3D
 
 const Standards := preload("res://catalog/havok_demo_standards.gd")
 const HeroEnvNode := preload("res://hero/arena/hero_environment_node.gd")
+const HkbMods := preload("res://addons/animation_studio/hkb/hkb_modifiers.gd")
 
 const SKYBOX_PNG := "res://compare/assets/havok_default_skybox.png"
+const EXTRA_SKYBOXES := {
+	"default": "res://compare/assets/havok_default_skybox.png",
+	"boardwalk": "res://compare/assets/skyboxes/sky_boardwalk.png",
+	"clouds": "res://compare/assets/skyboxes/sky_clouds.png",
+	"dockblur": "res://compare/assets/skyboxes/sky_dockblur.png",
+	"duskfair": "res://compare/assets/skyboxes/sky_duskfair.png",
+	"duskfair_180": "res://compare/assets/skyboxes/sky_duskfair_180.png",
+	"duskfair_270": "res://compare/assets/skyboxes/sky_duskfair_270.png",
+	"meadowblur": "res://compare/assets/skyboxes/sky_meadowblur.png",
+	"roomblur": "res://compare/assets/skyboxes/sky_roomblur.png",
+	"sincity": "res://compare/assets/skyboxes/sky_sincity.png",
+	"skyboxemptyspace": "res://compare/assets/skyboxes/sky_skyboxemptyspace.png",
+	"skynin": "res://compare/assets/skyboxes/sky_skynin.png",
+	"skyrays": "res://compare/assets/skyboxes/sky_skyrays.png",
+	"subwayblur": "res://compare/assets/skyboxes/sky_subwayblur.png",
+}
 const HK_ANIM_LEVEL_GLB := "res://compare/assets/env_hk_anim_level.glb"
 const ATTACHMENT_SCENE_GLB := "res://compare/assets/env_attachment_scene.glb"
 const ATTACHMENT_PROPS_JSON := "res://compare/assets/env_attachment_props.json"
+const DOOR_RIG_SPEC_JSON := "res://compare/assets/prop_door_rig_spec.json"
+const EXTRA_ENV_GLBS := {
+	"hk_gdc_level": "res://compare/assets/env_hk_gdc_level.glb",
+	"ninja_environment": "res://compare/assets/env_ninja_environment.glb",
+	"climbing_wall": "res://compare/assets/env_climbing_wall.glb",
+	"foot_ik_runway": "res://compare/assets/env_foot_ik_runway.glb",
+	"anim_seesaw": "res://compare/assets/env_anim_seesaw.glb",
+	"anim_bricks": "res://compare/assets/env_anim_bricks.glb",
+	"orcs_grid": "res://compare/assets/env_orcs_grid.glb",
+	"penetration_landscape": "res://compare/assets/env_penetration_landscape.glb",
+	"boar_rig": "res://compare/assets/prop_boar_rig.glb",
+	"penetration_rig": "res://compare/assets/prop_penetration_rig.glb",
+	"swordfight_dummy": "res://compare/assets/prop_swordfight_dummy.glb",
+	"teapot": "res://compare/assets/prop_teapot.glb",
+}
 
-static var _sky_tex_cache: ImageTexture = null
+static var _sky_tex_cache: Dictionary = {}
 static var _glb_mesh_cache: Dictionary = {}
 static var _attachment_props_cache: Dictionary = {}
 
@@ -40,27 +72,33 @@ var level_pivot: Node3D
 var moving_platform: Node3D
 var moving_capsule: Node3D
 var proxy_capsule_mesh: MeshInstance3D
+var attachment_manager: HkbMods.HkbAttachmentManager = null
+var dynamic_props: Array[RigidBody3D] = []
 var _moving_platform_mode: String = ""
 var _env_time: float = 0.0
 var _proxy_target: Node3D = null
 
 
 static func clear_caches() -> void:
-	_sky_tex_cache = null
+	_sky_tex_cache.clear()
 	_glb_mesh_cache.clear()
 	_attachment_props_cache.clear()
 
 
-static func get_skybox_texture() -> ImageTexture:
-	if _sky_tex_cache != null:
-		return _sky_tex_cache
-	if not FileAccess.file_exists(SKYBOX_PNG):
-		return null
-	var img := Image.load_from_file(ProjectSettings.globalize_path(SKYBOX_PNG))
+static func get_skybox_texture(sky_id: String = "default") -> ImageTexture:
+	var path := str(EXTRA_SKYBOXES.get(sky_id.to_lower(), SKYBOX_PNG))
+	if _sky_tex_cache.has(path):
+		return _sky_tex_cache[path] as ImageTexture
+	if not FileAccess.file_exists(path):
+		path = SKYBOX_PNG
+		if not FileAccess.file_exists(path):
+			return null
+	var img := Image.load_from_file(ProjectSettings.globalize_path(path))
 	if img == null or img.is_empty():
 		return null
-	_sky_tex_cache = ImageTexture.create_from_image(img)
-	return _sky_tex_cache
+	var tex := ImageTexture.create_from_image(img)
+	_sky_tex_cache[path] = tex
+	return tex
 
 
 static func _load_glb_meshes(glb_path: String) -> Array[Dictionary]:
@@ -189,7 +227,29 @@ static func classify_env_kind(menu_path: String, demo_path: String) -> String:
 		return "docking_multiple"
 	if "movingplatforms" in dp:
 		return "moving_platforms"
+	if "bodyik" in dp or "climbing" in dp:
+		return "climbing_wall"
+	if "ninja" in dp or "ninja" in mp:
+		return "ninja_environment"
+	if "orcs" in dp or "animationsets" in dp:
+		return "orcs_grid"
+	if "gdc" in dp or "handik" in dp or "firefighter" in dp:
+		return "hk_gdc_level"
+	if "penetration" in dp:
+		return "penetration_landscape"
+	if "seesaw" in dp:
+		return "anim_seesaw"
+	if "footik" in dp or "footplacement" in dp:
+		return "foot_ik_runway"
 	return "studio"
+
+
+func set_skybox(sky_id: String) -> void:
+	if world_env == null or world_env.environment == null:
+		return
+	var tex := get_skybox_texture(sky_id)
+	if tex != null and world_env.environment.sky != null and world_env.environment.sky.sky_material is PanoramaSkyMaterial:
+		(world_env.environment.sky.sky_material as PanoramaSkyMaterial).panorama = tex
 
 
 func configure_for_demo(
@@ -201,10 +261,23 @@ func configure_for_demo(
 ) -> String:
 	setup_lighting_and_sky()
 	clear_stage()
+	dynamic_props.clear()
+	attachment_manager = null
 	env_kind = classify_env_kind(menu_path, demo_path)
 	_proxy_target = proxy_target
 
-	# Tune sky rotation & lighting per demo family so purple-magenta/green horizon matches DX11
+	# Tune skybox & lighting per demo family
+	if env_kind == "ninja_environment":
+		set_skybox("skynin")
+	elif env_kind == "climbing_wall":
+		set_skybox("clouds")
+	elif env_kind == "orcs_grid":
+		set_skybox("duskfair")
+	elif env_kind == "hk_gdc_level":
+		set_skybox("boardwalk")
+	else:
+		set_skybox("default")
+
 	if world_env != null and world_env.environment != null:
 		world_env.environment.sky_rotation = Vector3(0.0, 3.25 if primary_char == "soldier" else 0.15, 0.0)
 		world_env.environment.ambient_light_energy = 0.88 if env_kind.begins_with("hk_anim_level") else 0.65
@@ -213,12 +286,9 @@ func configure_for_demo(
 		"hero_environment":
 			_build_hero_environment()
 		"hk_anim_level_cc":
-			# CharacterControllerDriver: Hero stands on stone dungeon floor near (9.25, 4.76, 2.79)
-			# or at provided Havok world coordinate (Godot Y-up)
 			var anchor := hero_world_offset_godot if hero_world_offset_godot.length() > 0.1 else Vector3(11.5, 4.76, 6.0)
 			_build_hk_anim_level(anchor, true)
 		"hk_anim_level_footik":
-			# FootIkDriver: Hero stands on stone stairs near (-2.0, 4.50, 10.0)
 			var anchor := hero_world_offset_godot if hero_world_offset_godot.length() > 0.1 else Vector3(-2.0, 4.50, 10.0)
 			_build_hk_anim_level(anchor, false)
 		"attachment_scene":
@@ -233,6 +303,8 @@ func configure_for_demo(
 			_build_docking_multiple()
 		"moving_platforms":
 			_build_moving_platforms()
+		"hk_gdc_level", "ninja_environment", "climbing_wall", "foot_ik_runway", "anim_seesaw", "anim_bricks", "orcs_grid", "penetration_landscape":
+			_build_extra_sdk_env(env_kind, primary_char)
 		_:
 			_build_studio_floor(primary_char)
 
@@ -408,6 +480,17 @@ func _build_hk_anim_level(anchor_godot: Vector3, with_proxy_capsule: bool) -> vo
 				dup.roughness = 0.88
 				mi.set_surface_override_material(si, dup)
 		inner.add_child(mi)
+		# Attach real ConcavePolygonShape3D trimesh collider so HkbFootIkDriver raycasts hit exact stairs!
+		var tri_shape := m.create_trimesh_shape()
+		if tri_shape != null:
+			var tsb := StaticBody3D.new()
+			tsb.name = str(ent["name"]) + "_Col"
+			tsb.collision_layer = 1
+			tsb.collision_mask = 0
+			var tcs := CollisionShape3D.new()
+			tcs.shape = tri_shape
+			tsb.add_child(tcs)
+			inner.add_child(tsb)
 
 	# Solid invisible safety floor right at Y = 0 so physics actors never fall through stairs
 	var sb := StaticBody3D.new()
@@ -483,6 +566,75 @@ func _build_attachment_scene(primary_char: String) -> void:
 	bs.size = Vector3(60.0, 0.5, 60.0)
 	cs.shape = bs
 	cs.position = Vector3(0.0, -0.25, 0.0)
+	sb.add_child(cs)
+	stage_root.add_child(sb)
+
+	# Spawn REAL dynamic RigidBody3D skull props + HkbAttachmentManager from env_attachment_props.json!
+	attachment_manager = HkbMods.HkbAttachmentManager.new()
+	var props_meta := get_attachment_props()
+	for p_raw in props_meta.get("dynamic_props", []) as Array:
+		var pd: Dictionary = p_raw as Dictionary
+		var pos_a: Array = pd.get("position", [0.0, 0.3, 0.0]) as Array
+		var p_raw_v := Vector3(float(pos_a[0]), float(pos_a[1]), float(pos_a[2]))
+		var rb := RigidBody3D.new()
+		rb.name = str(pd.get("name", "SkullProp"))
+		rb.mass = maxf(0.5, float(pd.get("mass", 2.0)))
+		rb.collision_layer = 4
+		rb.collision_mask = 1
+		rb.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+		rb.freeze = true
+		var col := CollisionShape3D.new()
+		var sp := SphereShape3D.new()
+		sp.radius = 0.16
+		col.shape = sp
+		rb.add_child(col)
+		level_pivot.add_child(rb)
+		rb.position = p_raw_v
+		dynamic_props.append(rb)
+		attachment_manager.register_prop(rb)
+
+
+func _build_extra_sdk_env(kind: String, primary_char: String) -> void:
+	var glb_path := str(EXTRA_ENV_GLBS.get(kind, ""))
+	if glb_path.is_empty() or not FileAccess.file_exists(glb_path):
+		_build_studio_floor(primary_char)
+		return
+	level_pivot = Node3D.new()
+	level_pivot.name = "ExtraSdkEnv_" + kind
+	level_pivot.rotation.y = PI
+	stage_root.add_child(level_pivot)
+	var inner_parent: Node3D = level_pivot
+	if kind == "hk_gdc_level":
+		var off := Node3D.new()
+		off.name = "HkGdcLevelOffset"
+		off.position = -Vector3(11.5, 4.76, 6.0)
+		level_pivot.add_child(off)
+		inner_parent = off
+	var entries := _load_glb_meshes(glb_path)
+	for ent in entries:
+		var m: Mesh = ent["mesh"] as Mesh
+		var mi := MeshInstance3D.new()
+		mi.name = str(ent["name"])
+		mi.mesh = m
+		for si in m.get_surface_count():
+			var mat := m.surface_get_material(si)
+			if mat is BaseMaterial3D:
+				var dup := (mat as BaseMaterial3D).duplicate() as BaseMaterial3D
+				dup.cull_mode = BaseMaterial3D.CULL_DISABLED
+				if kind == "hk_gdc_level":
+					dup.vertex_color_use_as_albedo = true
+					dup.vertex_color_is_srgb = true
+				mi.set_surface_override_material(si, dup)
+		inner_parent.add_child(mi)
+	# Safety floor at Y = 0
+	var sb := StaticBody3D.new()
+	sb.collision_layer = 1
+	sb.collision_mask = 0
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(100.0, 0.4, 100.0)
+	cs.shape = bs
+	cs.position = Vector3(0.0, -0.2, 0.0)
 	sb.add_child(cs)
 	stage_root.add_child(sb)
 

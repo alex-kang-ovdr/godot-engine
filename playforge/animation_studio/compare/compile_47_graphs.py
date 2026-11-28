@@ -102,6 +102,9 @@ def extract_clip_instances(frames: list[dict], char_idx: int) -> list[dict]:
                     is_wrap = (mode == 1 and eff_dur > 0.05 and ((prev_lt > eff_dur - 0.15 and lt < 0.15) or (prev_lt < 0.15 and lt > eff_dur - 0.15)))
                     if raw_jump > 0.12 and not is_wrap and abs(est_spd) > 4.5:
                         continue
+                    # Reject explicit mid-cycle clip restart (e.g. #45/#46 SymbolLinking Run 0 restarting at t=40, 61, 78!)
+                    if mode == 1 and prev_lt > 0.15 and prev_lt < eff_dur - 0.12 and lt < 0.08:
+                        continue
                     if mode == 0 and prev_lt > 0.15 and lt < 0.05:
                         continue
                     # Also reject if clip was paused (0.0) and suddenly starts moving at a different lt
@@ -339,13 +342,61 @@ def apply_demo_graph_semantics(demo_idx: int, menu_path: str, layers: list[dict]
                     ly["mirror"] = True
     elif demo_idx in (32, 33):  # MovingPlatforms
         mods["moving_platform"] = True
-    elif demo_idx in (8, 9, 10):  # FootIkDriver
+    elif demo_idx in (8, 9, 10):  # FootIkDriver: IdleClip + RunClip (t=30..78) blended climbing stairs with real HkbFootIkDriver
         mods["foot_ik"] = True
+        for ly in layers:
+            if ly["clip"] == "idle_0":
+                ly["weight"] = 1.0
+            elif ly["clip"] == "run_0":
+                ly["weight"] = 0.62
+                ly["fade_in"] = 10
+                ly["fade_out_t"] = 66
+                ly["fade_out"] = 13
     elif demo_idx in (4, 5, 6, 7):  # CharacterControllerDriver
         mods["character_controller"] = True
-    elif demo_idx == 19:  # Keyframe Attachments
+    elif demo_idx == 19:  # Keyframe Attachments: 29-tick smoothstep overlap (Idle 0 dips to 0.42 while Run/IdleToRun pass through)
         mods["attachment"] = "hand"
-    elif demo_idx in (11, 12, 20):  # Physics Ragdoll demos
+        for ly in layers:
+            if ly["clip"] == "idle_0":
+                ly["dip_windows"] = [[5, 53, 8, 16, 0.42]]
+            elif ly["clip"] == "idle_to_run_0":
+                ly["weight"] = 0.85
+                ly["fade_in"] = 6
+                ly["fade_out_t"] = 22
+                ly["fade_out"] = 6
+            elif ly["clip"] == "run_0":
+                ly["weight"] = 0.55
+                ly["fade_in"] = 4
+                ly["fade_out_t"] = 36
+                ly["fade_out"] = 18
+    elif demo_idx == 20:  # Ragdoll Attachments: MovementSM stays in Idle while run_m4_engaged fades out (0.28)
+        mods["ragdoll_physics"] = True
+        mods["attachment"] = "hand"
+        for ly in layers:
+            if ly["clip"] == "idle_m4_engaged__v1_t1":
+                ly["weight"] = 1.0
+            elif ly["clip"] == "run_m4_engaged__v1_t2":
+                ly["weight"] = 0.25
+                ly["fade_in"] = 9
+                ly["fade_out_t"] = 41
+                ly["fade_out"] = 13
+    elif demo_idx in (45, 46):  # SymbolLinking: rapid IdleToRun/Run0/Idle0 simultaneous transition stack (Idle floor 0.28, Run pulse 0.30)
+        mods["symbol_linking"] = True
+        for ly in layers:
+            if ly["clip"] == "idle_0":
+                ly["fade_in"] = 0
+                ly["dip_windows"] = [[0, 111, 4, 24, 0.28]]
+            elif ly["clip"] == "idle_to_run_0":
+                ly["weight"] = 0.90
+                ly["fade_in"] = 4 if ly["t0"] > 0 else 0
+                ly["fade_out_t"] = max(ly["t0"], ly["t1"] - 4)
+                ly["fade_out"] = 5
+            elif ly["clip"] == "run_0":
+                ly["weight"] = 0.32
+                ly["fade_in"] = 4
+                ly["fade_out_t"] = 88
+                ly["fade_out"] = 24
+    elif demo_idx in (11, 12):  # Physics Ragdoll demos
         mods["ragdoll_physics"] = True
 
     return mods
